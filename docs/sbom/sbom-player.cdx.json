@@ -1,0 +1,674 @@
+﻿{
+  "$schema": "http://cyclonedx.org/schema/bom-1.5.schema.json",
+  "bomFormat": "CycloneDX",
+  "specVersion": "1.5",
+  "serialNumber": "urn:uuid:c7c45654-78c8-4112-b7ff-28cfd5e2ca2a",
+  "version": 1,
+  "metadata": {
+    "timestamp": "2026-11-04T13:44:32.628Z",
+    "lifecycles": [
+      {
+        "phase": "build"
+      }
+    ],
+    "tools": [
+      {
+        "vendor": "npm",
+        "name": "cli",
+        "version": "10.9.4"
+      }
+    ],
+    "component": {
+      "bom-ref": "saie-ceeac-player@1.0.0",
+      "type": "library",
+      "name": "player",
+      "version": "1.0.0",
+      "scope": "required",
+      "purl": "pkg:npm/saie-ceeac-player@1.0.0",
+      "properties": [
+        {
+          "name": "cdx:npm:package:path",
+          "value": ""
+        },
+        {
+          "name": "cdx:npm:package:private",
+          "value": "true"
+        }
+      ],
+      "externalReferences": []
+    }
+  },
+  "components": [
+    {
+      "bom-ref": "@fontsource/dm-sans@5.2.8",
+      "type": "library",
+      "name": "@fontsource/dm-sans",
+      "version": "5.2.8",
+      "scope": "required",
+      "author": "Google Inc.",
+      "description": "Self-host the DM Sans font in a neatly bundled NPM package.",
+      "purl": "pkg:npm/%40fontsource/dm-sans@5.2.8",
+      "properties": [
+        {
+          "name": "cdx:npm:package:path",
+          "value": "node_modules/@fontsource/dm-sans"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "distribution",
+          "url": "https://registry.npmjs.org/@fontsource/dm-sans/-/dm-sans-5.2.8.tgz"
+        },
+        {
+          "type": "vcs",
+          "url": "git+https://github.com/fontsource/font-files.git"
+        },
+        {
+          "type": "website",
+          "url": "https://fontsource.org/fonts/dm-sans"
+        },
+        {
+          "type": "issue-tracker",
+          "url": "https://github.com/fontsource/font-files/issues"
+        }
+      ],
+      "hashes": [
+        {
+          "alg": "SHA-512",
+          "content": "b65a2f1b8da6f44486dbc5a21e92eadc5e6e980966eb8aefd1192a4db628c119fbd1ef4e951af96b7c93261ae1ad8fa4e657ed47f3852633f338b43393c11f08"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "OFL-1.1"
+          }
+        }
+      ]
+    },
+    {
+      "bom-ref": "@fontsource/manrope@5.2.8",
+      "type": "library",
+      "name": "@fontsource/manrope",
+      "version": "5.2.8",
+      "scope": "required",
+      "author": "Google Inc.",
+      "description": "Self-host the Manrope font in a neatly bundled NPM package.",
+      "purl": "pkg:npm/%40fontsource/manrope@5.2.8",
+      "properties": [
+        {
+          "name": "cdx:npm:package:path",
+          "value": "node_modules/@fontsource/manrope"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "distribution",
+          "url": "https://registry.npmjs.org/@fontsource/manrope/-/manrope-5.2.8.tgz"
+        },
+        {
+          "type": "vcs",
+          "url": "git+https://github.com/fontsource/font-files.git"
+        },
+        {
+          "type": "website",
+          "url": "https://fontsource.org/fonts/manrope"
+        },
+        {
+          "type": "issue-tracker",
+          "url": "https://github.com/fontsource/font-files/issues"
+        }
+      ],
+      "hashes": [
+        {
+          "alg": "SHA-512",
+          "content": "8091c999cb9493ba9670d09f700ae2fc3250b57b4162a8bdc8aadab6be235e14a8d08df152d34d288fa281021cc3973e9bde60d2fa2e9e4f199d7fe46fca344c"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "OFL-1.1"
+          }
+        }
+      ]
+    },
+    {
+      "bom-ref": "@napi-rs/canvas@0.1.100",
+      "type": "library",
+      "name": "@napi-rs/canvas",
+      "version": "0.1.100",
+      "scope": "optional",
+      "description": "Canvas for Node.js with skia backend",
+      "purl": "pkg:npm/%40napi-rs/canvas@0.1.100",
+      "properties": [
+        {
+          "name": "cdx:npm:package:path",
+          "value": "node_modules/@napi-rs/canvas"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "distribution",
+          "url": "https://registry.npmjs.org/@napi-rs/canvas/-/canvas-0.1.100.tgz"
+        },
+        {
+          "type": "vcs",
+          "url": "git+https://github.com/Brooooooklyn/canvas.git"
+        },
+        {
+          "type": "website",
+          "url": "https://github.com/Brooooooklyn/canvas#readme"
+        },
+        {
+          "type": "issue-tracker",
+          "url": "https://github.com/Brooooooklyn/canvas/issues"
+        }
+      ],
+      "hashes": [
+        {
+          "alg": "SHA-512",
+          "content": "c6095803aab75cee4fdc1349631559d4857b0cb563a753f2ea7c1a83cf189edad2fb7bca1f261c32a5d54b8673b499b0cf6b86bf3d455a123fe0b81b479b900c"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ]
+    },
+    {
+      "bom-ref": "@napi-rs/canvas-win32-x64-msvc@0.1.100",
+      "type": "library",
+      "name": "@napi-rs/canvas-win32-x64-msvc",
+      "version": "0.1.100",
+      "scope": "optional",
+      "description": "Canvas for Node.js with skia backend",
+      "purl": "pkg:npm/%40napi-rs/canvas-win32-x64-msvc@0.1.100",
+      "properties": [
+        {
+          "name": "cdx:npm:package:path",
+          "value": "node_modules/@napi-rs/canvas-win32-x64-msvc"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "distribution",
+          "url": "https://registry.npmjs.org/@napi-rs/canvas-win32-x64-msvc/-/canvas-win32-x64-msvc-0.1.100.tgz"
+        },
+        {
+          "type": "vcs",
+          "url": "git+https://github.com/Brooooooklyn/canvas.git"
+        },
+        {
+          "type": "website",
+          "url": "https://github.com/Brooooooklyn/canvas#readme"
+        },
+        {
+          "type": "issue-tracker",
+          "url": "https://github.com/Brooooooklyn/canvas/issues"
+        }
+      ],
+      "hashes": [
+        {
+          "alg": "SHA-512",
+          "content": "3324f58f79870b6f8bbb8a418bd98ac8c261b4fe94ee4ec495d63bb23fee4b980903ae604d7b7c31e7c94172c9a3977fbd96ee5a67f1ce411435cfeead5de91c"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ]
+    },
+    {
+      "bom-ref": "html-to-image@1.11.13",
+      "type": "library",
+      "name": "html-to-image",
+      "version": "1.11.13",
+      "scope": "required",
+      "author": "bubkooo",
+      "description": "Generates an image from a DOM node using HTML5 canvas and SVG.",
+      "purl": "pkg:npm/html-to-image@1.11.13",
+      "properties": [
+        {
+          "name": "cdx:npm:package:path",
+          "value": "node_modules/html-to-image"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "distribution",
+          "url": "https://registry.npmjs.org/html-to-image/-/html-to-image-1.11.13.tgz"
+        },
+        {
+          "type": "vcs",
+          "url": "git+https://github.com/bubkoo/html-to-image.git"
+        },
+        {
+          "type": "website",
+          "url": "https://github.com/bubkoo/html-to-image#readme"
+        },
+        {
+          "type": "issue-tracker",
+          "url": "https://github.com/bubkoo/html-to-image/issues"
+        }
+      ],
+      "hashes": [
+        {
+          "alg": "SHA-512",
+          "content": "72e38fa08ed6029ca10449534dbf68aac6b046f674ac785a1f082144b953b9f7e80f50766837a6942aee2de66b50821dbc6ee0b3dc5e10b10f9ba3e1b804aaae"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ]
+    },
+    {
+      "bom-ref": "node-readable-to-web-readable-stream@0.4.2",
+      "type": "library",
+      "name": "node-readable-to-web-readable-stream",
+      "version": "0.4.2",
+      "scope": "optional",
+      "author": "Borewit",
+      "description": "Convert Node Readable to Web API ReadableStream",
+      "purl": "pkg:npm/node-readable-to-web-readable-stream@0.4.2",
+      "properties": [
+        {
+          "name": "cdx:npm:package:path",
+          "value": "node_modules/node-readable-to-web-readable-stream"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "distribution",
+          "url": "https://registry.npmjs.org/node-readable-to-web-readable-stream/-/node-readable-to-web-readable-stream-0.4.2.tgz"
+        },
+        {
+          "type": "vcs",
+          "url": "git+https://github.com/Borewit/node-readable-to-web-readable-stream.git"
+        },
+        {
+          "type": "website",
+          "url": "https://github.com/Borewit/node-readable-to-web-readable-stream#readme"
+        },
+        {
+          "type": "issue-tracker",
+          "url": "https://github.com/Borewit/node-readable-to-web-readable-stream/issues"
+        }
+      ],
+      "hashes": [
+        {
+          "alg": "SHA-512",
+          "content": "fdc319348df8bfffe3513ac8f94228e22787001e4465163ffbb3a65d9801c5a58131c5b6b4675c788c34e911715b1aca679269dec2368b94ec468f82061b552d"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ]
+    },
+    {
+      "bom-ref": "pdfjs-dist@5.4.624",
+      "type": "library",
+      "name": "pdfjs-dist",
+      "version": "5.4.624",
+      "scope": "required",
+      "description": "Generic build of Mozilla's PDF.js library.",
+      "purl": "pkg:npm/pdfjs-dist@5.4.624",
+      "properties": [
+        {
+          "name": "cdx:npm:package:path",
+          "value": "node_modules/pdfjs-dist"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "distribution",
+          "url": "https://registry.npmjs.org/pdfjs-dist/-/pdfjs-dist-5.4.624.tgz"
+        },
+        {
+          "type": "vcs",
+          "url": "git+https://github.com/mozilla/pdf.js.git"
+        },
+        {
+          "type": "website",
+          "url": "https://mozilla.github.io/pdf.js/"
+        },
+        {
+          "type": "issue-tracker",
+          "url": "https://github.com/mozilla/pdf.js/issues"
+        }
+      ],
+      "hashes": [
+        {
+          "alg": "SHA-512",
+          "content": "b26e93c4a4ed5afd4e87a9f70ba27a6bca1d7a36f9b8ee00e33a3fd9d8241ee0b48aef193005ce7b310e0e455aa15a7c9d7d57cebfb45b114926652be39850ce"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ]
+    },
+    {
+      "bom-ref": "qrcode.react@4.2.0",
+      "type": "library",
+      "name": "qrcode.react",
+      "version": "4.2.0",
+      "scope": "required",
+      "author": "Paul O’Shannessy",
+      "description": "React component to generate QR codes",
+      "purl": "pkg:npm/qrcode.react@4.2.0",
+      "properties": [
+        {
+          "name": "cdx:npm:package:path",
+          "value": "node_modules/qrcode.react"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "distribution",
+          "url": "https://registry.npmjs.org/qrcode.react/-/qrcode.react-4.2.0.tgz"
+        },
+        {
+          "type": "vcs",
+          "url": "git+https://github.com/zpao/qrcode.react.git"
+        },
+        {
+          "type": "website",
+          "url": "http://zpao.github.io/qrcode.react"
+        },
+        {
+          "type": "issue-tracker",
+          "url": "https://github.com/zpao/qrcode.react/issues"
+        }
+      ],
+      "hashes": [
+        {
+          "alg": "SHA-512",
+          "content": "42982a5a2f2b0fd0ec4bd10fdf3ec14fee6563948586ca868e9816e4363f8b798ae0cf434c1373dc4acc8bc0566047c8dcbd1df0621b1a671d1404b5b884468c"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "ISC"
+          }
+        }
+      ]
+    },
+    {
+      "bom-ref": "react@19.3.1",
+      "type": "library",
+      "name": "react",
+      "version": "19.3.1",
+      "scope": "required",
+      "description": "React is a JavaScript library for building user interfaces.",
+      "purl": "pkg:npm/react@19.3.1",
+      "properties": [
+        {
+          "name": "cdx:npm:package:path",
+          "value": "node_modules/react"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "distribution",
+          "url": "https://registry.npmjs.org/react/-/react-19.3.1.tgz"
+        },
+        {
+          "type": "vcs",
+          "url": "git+https://github.com/react/react.git"
+        },
+        {
+          "type": "website",
+          "url": "https://react.dev/"
+        },
+        {
+          "type": "issue-tracker",
+          "url": "https://github.com/react/react/issues"
+        }
+      ],
+      "hashes": [
+        {
+          "alg": "SHA-512",
+          "content": "40d85676dee7ae05565901b9f10b86b004778efdc76dee266f8bf3ef0d9cb271dabdc89926075ad423cd6a5745e9e571bfdd2e7778d45e92a51cbebd80edfccb"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ]
+    },
+    {
+      "bom-ref": "react-dom@19.3.1",
+      "type": "library",
+      "name": "react-dom",
+      "version": "19.3.1",
+      "scope": "required",
+      "description": "React package for working with the DOM.",
+      "purl": "pkg:npm/react-dom@19.3.1",
+      "properties": [
+        {
+          "name": "cdx:npm:package:path",
+          "value": "node_modules/react-dom"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "distribution",
+          "url": "https://registry.npmjs.org/react-dom/-/react-dom-19.3.1.tgz"
+        },
+        {
+          "type": "vcs",
+          "url": "git+https://github.com/react/react.git"
+        },
+        {
+          "type": "website",
+          "url": "https://react.dev/"
+        },
+        {
+          "type": "issue-tracker",
+          "url": "https://github.com/react/react/issues"
+        }
+      ],
+      "hashes": [
+        {
+          "alg": "SHA-512",
+          "content": "6346c0473e77961102d4d302012b34fe3f9f681ff3aaddd1f21a6f8357bcfbad59549e142f451d0b87016d77d931c22e86b7e07882d32def9978109abd03ed29"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ]
+    },
+    {
+      "bom-ref": "scheduler@0.28.0",
+      "type": "library",
+      "name": "scheduler",
+      "version": "0.28.0",
+      "scope": "required",
+      "description": "Cooperative scheduler for the browser environment.",
+      "purl": "pkg:npm/scheduler@0.28.0",
+      "properties": [
+        {
+          "name": "cdx:npm:package:path",
+          "value": "node_modules/scheduler"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "distribution",
+          "url": "https://registry.npmjs.org/scheduler/-/scheduler-0.28.0.tgz"
+        },
+        {
+          "type": "vcs",
+          "url": "git+https://github.com/react/react.git"
+        },
+        {
+          "type": "website",
+          "url": "https://react.dev/"
+        },
+        {
+          "type": "issue-tracker",
+          "url": "https://github.com/react/react/issues"
+        }
+      ],
+      "hashes": [
+        {
+          "alg": "SHA-512",
+          "content": "8eea2b7c2988908c3cb53fa9e415d29ba3c98d017fc9c11898acb3511088b7f45a64884bf8fba56d0f58bb6cf51dd3890dda834e5c40d7ec4a0661d726c73303"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ]
+    },
+    {
+      "bom-ref": "tweetnacl@1.0.3",
+      "type": "library",
+      "name": "tweetnacl",
+      "version": "1.0.3",
+      "scope": "required",
+      "author": "TweetNaCl-js contributors",
+      "description": "Port of TweetNaCl cryptographic library to JavaScript",
+      "purl": "pkg:npm/tweetnacl@1.0.3",
+      "properties": [
+        {
+          "name": "cdx:npm:package:path",
+          "value": "node_modules/tweetnacl"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "distribution",
+          "url": "https://registry.npmjs.org/tweetnacl/-/tweetnacl-1.0.3.tgz"
+        },
+        {
+          "type": "vcs",
+          "url": "git+https://github.com/dchest/tweetnacl-js.git"
+        },
+        {
+          "type": "website",
+          "url": "https://tweetnacl.js.org"
+        },
+        {
+          "type": "issue-tracker",
+          "url": "https://github.com/dchest/tweetnacl-js/issues"
+        }
+      ],
+      "hashes": [
+        {
+          "alg": "SHA-512",
+          "content": "eabb7e44deda3a2d6718cc82e176b90dd622ba497651609b7097eded887145e046403ece00cf0f6f1c3a60ca38af676234403c1449aedf660e9fdae16a2139cb"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "Unlicense"
+          }
+        }
+      ]
+    }
+  ],
+  "dependencies": [
+    {
+      "ref": "saie-ceeac-player@1.0.0",
+      "dependsOn": [
+        "@fontsource/dm-sans@5.2.8",
+        "@fontsource/manrope@5.2.8",
+        "html-to-image@1.11.13",
+        "pdfjs-dist@5.4.624",
+        "qrcode.react@4.2.0",
+        "react@19.3.1",
+        "react-dom@19.3.1",
+        "tweetnacl@1.0.3"
+      ]
+    },
+    {
+      "ref": "@fontsource/dm-sans@5.2.8",
+      "dependsOn": []
+    },
+    {
+      "ref": "@fontsource/manrope@5.2.8",
+      "dependsOn": []
+    },
+    {
+      "ref": "@napi-rs/canvas@0.1.100",
+      "dependsOn": [
+        "@napi-rs/canvas-win32-x64-msvc@0.1.100"
+      ]
+    },
+    {
+      "ref": "@napi-rs/canvas-win32-x64-msvc@0.1.100",
+      "dependsOn": []
+    },
+    {
+      "ref": "html-to-image@1.11.13",
+      "dependsOn": []
+    },
+    {
+      "ref": "node-readable-to-web-readable-stream@0.4.2",
+      "dependsOn": []
+    },
+    {
+      "ref": "pdfjs-dist@5.4.624",
+      "dependsOn": [
+        "@napi-rs/canvas@0.1.100",
+        "node-readable-to-web-readable-stream@0.4.2"
+      ]
+    },
+    {
+      "ref": "qrcode.react@4.2.0",
+      "dependsOn": [
+        "react@19.3.1"
+      ]
+    },
+    {
+      "ref": "react@19.3.1",
+      "dependsOn": []
+    },
+    {
+      "ref": "react-dom@19.3.1",
+      "dependsOn": [
+        "react@19.3.1",
+        "scheduler@0.28.0"
+      ]
+    },
+    {
+      "ref": "scheduler@0.28.0",
+      "dependsOn": []
+    },
+    {
+      "ref": "tweetnacl@1.0.3",
+      "dependsOn": []
+    }
+  ]
+}

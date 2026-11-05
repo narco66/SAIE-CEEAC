@@ -1,0 +1,128 @@
+# Chaîne d'intégration continue SAIE-CEEAC (TECH-03) : installation reproductible, contrôles statiques, tests sur
+# PostgreSQL 18 réel, builds, audits de sécurité, SBOM, artefacts contrôlés par empreinte. Le déploiement en préproduction
+# est manuel (environnement protégé) ; la production exige la validation de la Commission.
+name: ci
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    runs-on: ubuntu-24.04
+    defaults: { run: { working-directory: backend } }
+    services:
+      postgres:
+        image: postgres:18
+        env: { POSTGRES_USER: saie, POSTGRES_PASSWORD: saie, POSTGRES_DB: saie_ceeac_test }
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U saie" --health-interval 5s --health-timeout 5s --health-retries 20
+    env:
+      DB_PORT: 5432
+      DB_USERNAME: saie
+      DB_PASSWORD: saie
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: pdo_pgsql, mbstring, openssl, intl, fileinfo, zip, gd, bcmath
+          coverage: none
+      - name: Extensions obligatoires (TECH-01)
+        run: php -r 'foreach (["pdo_pgsql","mbstring","openssl","intl","fileinfo","zip","gd"] as $e) { if (!extension_loaded($e)) { fwrite(STDERR, "Extension manquante: $e\n"); exit(1); } }'
+      - run: composer install --no-interaction --prefer-dist --no-progress
+      - run: cp .env.example .env && php artisan key:generate
+      - name: Formatage (Pint)
+        run: vendor/bin/pint --test
+      - name: Tests unitaires et fonctionnels (PostgreSQL 18)
+        run: vendor/bin/phpunit
+      - name: Migrations depuis une base vierge puis retour arrière
+        run: |
+          php artisan migrate --force --env=testing --database=pgsql
+          php artisan migrate:rollback --force --env=testing --database=pgsql
+          php artisan migrate --force --env=testing --database=pgsql
+        env: { DB_DATABASE: saie_ceeac_test }
+      - name: Audit des dépendances
+        run: composer audit
+      - name: Licences et nomenclature PHP
+        run: composer licenses --format=json > ../sbom-php.json
+      - name: Contrat OpenAPI à jour
+        run: php artisan saie:openapi && git diff --exit-code ../docs/api/openapi.json
+      - uses: actions/upload-artifact@v4
+        with: { name: sbom-php, path: sbom-php.json }
+
+  frontend:
+    runs-on: ubuntu-24.04
+    defaults: { run: { working-directory: frontend } }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '22', cache: npm, cache-dependency-path: frontend/package-lock.json }
+      - run: npm ci
+      - run: npx tsc -p tsconfig.json --noEmit
+      - run: npm run build
+      - run: npm audit --omit=dev
+      - run: npm sbom --sbom-format cyclonedx --omit dev > ../sbom-frontend.cdx.json
+      - name: Empreinte de l'artefact
+        run: tar -czf ../frontend-dist.tgz dist && sha256sum ../frontend-dist.tgz | tee ../frontend-dist.sha256
+      - uses: actions/upload-artifact@v4
+        with: { name: frontend, path: 'frontend-dist.*' }
+      - uses: actions/upload-artifact@v4
+        with: { name: sbom-frontend, path: sbom-frontend.cdx.json }
+
+  player:
+    runs-on: ubuntu-24.04
+    defaults: { run: { working-directory: player } }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '22', cache: npm, cache-dependency-path: player/package-lock.json }
+      - run: npm ci
+      - run: npx tsc -p tsconfig.json
+      - run: npm test
+      - run: NODE_ENV=production npm run build
+      - run: npm audit --omit=dev
+      - run: npm sbom --sbom-format cyclonedx --omit dev > ../sbom-player.cdx.json
+      - name: Empreinte de l'artefact
+        run: tar -czf ../player-dist.tgz dist && sha256sum ../player-dist.tgz | tee ../player-dist.sha256
+      - uses: actions/upload-artifact@v4
+        with: { name: player, path: 'player-dist.*' }
+      - uses: actions/upload-artifact@v4
+        with: { name: sbom-player, path: sbom-player.cdx.json }
+
+  e2e:
+    # Parcours de bout en bout sur la pile complète (API, worker, frontend, lecteur) avec le jeu de démonstration.
+    needs: [backend, frontend, player]
+    runs-on: ubuntu-24.04
+    services:
+      postgres:
+        image: postgres:18
+        env: { POSTGRES_USER: saie, POSTGRES_PASSWORD: saie, POSTGRES_DB: saie_ceeac }
+        ports: ['5432:5432']
+        options: --health-cmd "pg_isready -U saie" --health-interval 5s --health-retries 20
+    env: { DB_PORT: 5432, DB_USERNAME: saie, DB_PASSWORD: saie, SAIE_DEMO_MODE: 'true', SAIE_MFA_ENFORCED: 'false', MAIL_MAILER: log }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with: { php-version: '8.4', extensions: 'pdo_pgsql, intl, zip, gd, bcmath' }
+      - uses: actions/setup-node@v4
+        with: { node-version: '22' }
+      - name: Pile applicative
+        run: |
+          cd backend && composer install --no-interaction --no-progress && cp .env.example .env && php artisan key:generate
+          sed -i 's/^APP_ENV=.*/APP_ENV=local/' .env && php artisan migrate --seed --force
+          (php artisan serve --port=8000 &) ; (php artisan queue:work --queue=default,notifications,media,exports &)
+          cd ../frontend && npm ci && (npx vite --port 5173 &)
+          cd ../player && npm ci && (npx vite --port 5174 &)
+          sleep 15
+      - run: cd frontend && npx playwright install --with-deps chromium && E2E_CHANNEL=chromium npx playwright test
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with: { name: e2e-report, path: frontend/test-results }

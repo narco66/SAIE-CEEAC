@@ -1,0 +1,12 @@
+/* Préflight minimal équivalent à celui de la maquette Figma Make (Tailwind v4 Preflight), sans dépendance externe. */
+*, ::before, ::after { box-sizing: border-box; border: 0 solid; margin: 0; padding: 0; }
+html { line-height: 1.5; -webkit-text-size-adjust: 100%; }
+h1, h2, h3, h4, h5, h6 { font-size: inherit; font-weight: inherit; }
+ol, ul, menu { list-style: none; }
+img, svg, video, canvas { display: block; vertical-align: middle; }
+img, video { max-width: 100%; height: auto; }
+button, input, select, textarea { font: inherit; color: inherit; background-color: transparent; border-radius: 0; }
+button, [role="button"] { cursor: pointer; }
+table { border-collapse: collapse; }
+a { color: inherit; text-decoration: inherit; }
+:disabled { cursor: not-allowed; }

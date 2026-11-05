@@ -1,0 +1,59 @@
+# Lancement local complet : PostgreSQL 18, Redis, Mailpit, ClamAV, API Laravel, workers, planificateur, frontend et lecteur.
+# Usage : cp infra/.env.example infra/.env (compléter APP_KEY et DB_PASSWORD), puis
+#         docker compose -f infra/docker-compose.yml up --build   →  http://localhost:8080 et http://localhost:8080/player/
+# Aucun secret n'est versionné.
+name: saie-ceeac
+
+x-app: &app
+  build: { context: ../backend, dockerfile: ../infra/php.Dockerfile }
+  env_file: [.env]
+  environment:
+    DB_HOST: postgres
+    DB_PORT: 5432
+    REDIS_HOST: redis
+    MAIL_HOST: mailpit
+    MAIL_PORT: 1025
+    SAIE_AV_DRIVER: clamd
+    SAIE_CLAMD_HOST: clamav
+    QUEUE_CONNECTION: redis
+    CACHE_STORE: redis
+  volumes:
+    - storage:/var/www/html/storage
+  depends_on:
+    postgres: { condition: service_healthy }
+    redis: { condition: service_started }
+
+services:
+  postgres:
+    image: postgres:18
+    environment:
+      POSTGRES_DB: saie_ceeac
+      POSTGRES_USER: saie
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?définir DB_PASSWORD dans infra/.env}
+    volumes: [pgdata:/var/lib/postgresql]
+    healthcheck: { test: ["CMD-SHELL", "pg_isready -U saie -d saie_ceeac"], interval: 5s, retries: 20 }
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--appendonly", "yes", "--maxmemory-policy", "noeviction"]
+  mailpit:
+    image: axllent/mailpit:latest
+    ports: ["8025:8025"]
+  clamav:
+    image: clamav/clamav:stable
+  api:
+    <<: *app
+    command: ["php-fpm"]
+  worker:
+    <<: *app
+    command: ["php", "artisan", "queue:work", "--queue=default,notifications,media,exports", "--tries=3", "--max-time=3600"]
+  scheduler:
+    <<: *app
+    command: ["php", "artisan", "schedule:work"]
+  web:
+    build: { context: .., dockerfile: infra/web.Dockerfile }
+    ports: ["8080:80"]
+    depends_on: [api]
+
+volumes:
+  pgdata: {}
+  storage: {}
