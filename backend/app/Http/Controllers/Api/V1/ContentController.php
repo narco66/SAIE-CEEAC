@@ -172,6 +172,8 @@ class ContentController extends Controller
             foreach ($content->languages as $line) {
                 $copy->languages()->create($line->only(['lang', 'title', 'body', 'extra', 'subtitles_asset_version_id']) + ['status' => 'draft', 'revision' => 1]);
             }
+            // Le QR recopié pointerait vers le contenu d'origine : la copie reçoit son propre lien (inchangé s'il vise un document).
+            $this->ensureQr($copy);
             $this->audit()->log('content.duplicated', $copy, after: ['source' => $content->reference]);
 
             return $copy;

@@ -36,7 +36,8 @@ class ReservationController extends Controller
         $scope = $request->query('scope', 'mine');
         $query = Reservation::query()->with(['organizer', 'structure', 'occurrences.room.floor', 'occurrences.serviceRequests.serviceType']);
         match ($scope) {
-            'to_validate' => $query->whereHas('occurrences', fn ($q) => $q->where('status', 'pending')->whereHas('room', fn ($r) => $this->access()->hasRole($user, 'admin_fonc') ? $r : $r->where('manager_id', $user->id))),
+            'to_validate' => $query->where(fn ($w) => $w->whereHas('occurrences', fn ($q) => $q->where('status', 'pending')->whereHas('room', fn ($r) => $this->access()->hasRole($user, 'admin_fonc') ? $r : $r->where('manager_id', $user->id)))
+                ->orWhereIn('id', Approval::query()->select('object_id')->where('object_type', 'reservation')->where('status', 'open')->whereNotNull('escalated_at')->where('backup_id', $user->id))),
             'managed' => $query->whereHas('occurrences.room', fn ($r) => $this->access()->hasRole($user, 'admin_fonc') ? $r : $r->where('manager_id', $user->id)),
             'welcome' => $query->where('confidential', false)->whereHas('occurrences', fn ($o) => $o->where('status', 'confirmed')->where('ends_at', '>', now())),
             default => $query->where('organizer_id', $user->id),
@@ -74,6 +75,7 @@ class ReservationController extends Controller
         $data = $this->validated($request);
         $room = Room::query()->findOrFail($data['room_id']);
         $slots = $this->service->expand(CarbonImmutable::parse($data['start_at'])->utc(), CarbonImmutable::parse($data['end_at'])->utc(), $data['recurrence'] ?? null);
+        $this->service->assertBookable($room, $slots, $this->user(), $data['services'] ?? []);
         $conflicts = $this->service->conflicts($room, $slots);
         $alternatives = [];
         if ($conflicts !== [] && count($slots) === 1) {
@@ -115,7 +117,7 @@ class ReservationController extends Controller
         }
         $data['permissions'] = [
             'modify' => $reservation->organizer_id === $this->user()->id || $this->managesAny($reservation),
-            'approve' => $this->managesAny($reservation) && $reservation->occurrences->contains('status', 'pending'),
+            'approve' => ($this->managesAny($reservation) || $this->service->isEscalatedBackup($reservation, $this->user())) && $reservation->occurrences->contains('status', 'pending'),
             'no_show' => $this->managesAny($reservation),
             'welcome' => $this->can('visits.manage') && ! $reservation->confidential,
         ];
@@ -233,7 +235,10 @@ class ReservationController extends Controller
     {
         $data = $request->validate(['scope' => ['required', 'in:this,following,all'], 'reason' => ['required', 'string', 'min:3', 'max:500']]);
         $count = $this->service->cancel($occurrence, $data['scope'], $this->user(), $data['reason']);
-        Content::query()->where('occurrence_id', $occurrence->id)->where('kind', 'welcome')->get()->each(fn (Content $c) => $c->forceFill(['status' => 'archived', 'archived_at' => now()])->save());
+        // Les messages de bienvenue de toutes les occurrences annulées (« cette occurrence », « les suivantes » ou « toutes ») sont retirés.
+        $cancelled = $occurrence->reservation->occurrences()->where('status', 'cancelled')->pluck('id');
+        Content::query()->whereIn('occurrence_id', $cancelled)->where('kind', 'welcome')->where('status', '!=', 'archived')->get()
+            ->each(fn (Content $c) => $c->forceFill(['status' => 'archived', 'archived_at' => now()])->save());
 
         return response()->json(['cancelled' => $count] + $this->show($occurrence->reservation)->getData(true));
     }
@@ -289,7 +294,7 @@ class ReservationController extends Controller
 
     private function canSeeAll(Reservation $reservation): bool
     {
-        return $reservation->organizer_id === $this->user()->id || $this->managesAny($reservation);
+        return $reservation->organizer_id === $this->user()->id || $this->managesAny($reservation) || $this->service->isEscalatedBackup($reservation, $this->user());
     }
 
     private function assertCanView(Reservation $reservation): void

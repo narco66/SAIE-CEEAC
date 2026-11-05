@@ -3,9 +3,12 @@
 namespace Tests\Feature;
 
 use App\Models\Approval;
+use App\Models\Content;
 use App\Models\Reservation;
 use App\Models\ReservationOccurrence;
 use App\Models\Room;
+use App\Models\ServiceRequest;
+use App\Models\ServiceType;
 use App\Models\User;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\QueryException;
@@ -140,6 +143,66 @@ class ReservationTest extends TestCase
 
         $this->assertSame('refused', ReservationOccurrence::query()->value('status'));
         $this->assertSame('cancelled', Approval::query()->where('object_id', $created->json('data.id'))->value('status'));
+    }
+
+    public function test_escalated_request_can_be_seen_and_decided_by_the_manager_backup(): void
+    {
+        $backup = $this->userWith('gestionnaire_salle', 'MG');
+        $manager = $this->userWith('gestionnaire_salle', 'MG');
+        $manager->forceFill(['backup_user_id' => $backup->id])->save();
+        $manual = $this->room(['approval_mode' => 'manual', 'manager_id' => $manager->id]);
+        $id = $this->actingAs($this->agent)->postJson('/api/v1/reservations', $this->payload('10:00', '11:00', ['room_id' => $manual->id]))->assertCreated()->json('data.id');
+
+        // Avant l'échéance, le suppléant ne voit ni ne tranche la demande.
+        $this->actingAs($backup)->getJson('/api/v1/reservations?scope=to_validate')->assertOk()->assertJsonCount(0, 'data');
+        $this->actingAs($backup)->postJson("/api/v1/reservations/{$id}/approve")->assertForbidden();
+
+        Approval::query()->where('object_id', $id)->update(['due_at' => now()->subMinute()]);
+        $this->artisan('saie:tick')->assertSuccessful();
+
+        $this->actingAs($backup)->getJson('/api/v1/reservations?scope=to_validate')->assertOk()->assertJsonCount(1, 'data')->assertJsonPath('data.0.id', $id);
+        $this->actingAs($backup)->getJson("/api/v1/reservations/{$id}")->assertOk()->assertJsonPath('data.permissions.approve', true);
+        $this->actingAs($backup)->postJson("/api/v1/reservations/{$id}/approve")->assertOk();
+        $this->assertSame('confirmed', ReservationOccurrence::query()->value('status'));
+        $this->assertSame('decided', Approval::query()->where('object_id', $id)->value('status'));
+    }
+
+    public function test_availability_check_applies_the_same_room_rules_as_the_booking(): void
+    {
+        $short = $this->room(['min_minutes' => 60, 'max_minutes' => 120, 'open_from' => '08:00', 'open_to' => '18:00']);
+
+        $this->actingAs($this->agent)->postJson('/api/v1/reservations/check', $this->payload('10:00', '10:15', ['room_id' => $short->id]))
+            ->assertStatus(422)->assertJsonPath('code', 'DURATION_OUT_OF_RANGE');
+        $this->actingAs($this->agent)->postJson('/api/v1/reservations/check', $this->payload('06:00', '07:00', ['room_id' => $short->id]))
+            ->assertStatus(422)->assertJsonPath('code', 'OUTSIDE_OPENING_HOURS');
+        $this->actingAs($this->agent)->postJson('/api/v1/reservations/check', $this->payload('10:00', '11:00', ['room_id' => $short->id]))
+            ->assertOk()->assertJsonPath('data.conflicts', []);
+    }
+
+    public function test_cancelling_a_whole_series_archives_every_welcome_message(): void
+    {
+        $series = $this->actingAs($this->agent)->postJson('/api/v1/reservations', $this->payload('09:00', '10:00', ['recurrence' => ['freq' => 'weekly', 'count' => 3]]))->assertCreated();
+        $occurrenceIds = collect($series->json('data.occurrences'))->pluck('id');
+        $author = $this->userWith('contributeur');
+        foreach ($occurrenceIds as $index => $occurrenceId) {
+            Content::query()->create(['reference' => "CNT-BV-$index", 'title' => "Bienvenue $index", 'kind' => 'welcome', 'occurrence_id' => $occurrenceId, 'category_id' => $this->category()->id, 'owner_structure_id' => $author->structure_id, 'author_id' => $author->id, 'classification' => 'public', 'expires_at' => now()->addDays(30), 'status' => 'approved']);
+        }
+
+        $this->actingAs($this->agent)->postJson("/api/v1/occurrences/{$occurrenceIds->first()}/cancel", ['scope' => 'all', 'reason' => 'Mission annulée'])->assertOk();
+
+        $this->assertSame(3, Content::query()->where('kind', 'welcome')->where('status', 'archived')->count());
+    }
+
+    public function test_moving_a_meeting_moves_the_deadline_of_its_services(): void
+    {
+        $created = $this->actingAs($this->agent)->postJson('/api/v1/reservations', $this->payload('10:00', '11:00'))->assertCreated();
+        $occurrence = ReservationOccurrence::query()->findOrFail($created->json('data.occurrences.0.id'));
+        $service = ServiceRequest::query()->create(['occurrence_id' => $occurrence->id, 'service_type_id' => ServiceType::query()->where('code', 'VISIO')->value('id'), 'due_at' => $occurrence->starts_at->subHours(2)]);
+
+        $newStart = $this->day->setTime(15, 0);
+        $this->actingAs($this->agent)->patchJson("/api/v1/occurrences/{$occurrence->id}", ['start_at' => $newStart->toIso8601String(), 'end_at' => $newStart->addHour()->toIso8601String()])->assertOk();
+
+        $this->assertTrue($service->refresh()->due_at->equalTo($newStart->subHours(2)), (string) $service->due_at);
     }
 
     public function test_no_show_is_declared_by_manager_after_start_only(): void

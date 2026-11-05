@@ -84,6 +84,24 @@ class SecurityAndAccessTest extends TestCase
         $this->assertSame('Météo', $entry->after['name']);
     }
 
+    public function test_qr_link_works_again_after_a_document_is_unpublished_then_republished(): void
+    {
+        $document = $this->document('public', 'DSI');
+        $owner = $this->userWith('contributeur', 'DSI', null, 'DSI');
+        $this->actingAs($owner)->postJson("/api/v1/documents/{$document->id}/publish")->assertOk();
+        $code = AccessLink::query()->where('target_id', $document->id)->value('code');
+        $this->app['auth']->forgetGuards();
+        $this->getJson("/api/v1/q/{$code}")->assertOk();
+
+        $this->actingAs($owner)->postJson("/api/v1/documents/{$document->id}/unpublish", ['reason' => 'Mise à jour du texte'])->assertOk();
+        $this->app['auth']->forgetGuards();
+        $this->getJson("/api/v1/q/{$code}")->assertNotFound();
+
+        $this->actingAs($owner)->postJson("/api/v1/documents/{$document->id}/publish")->assertOk();
+        $this->app['auth']->forgetGuards();
+        $this->getJson("/api/v1/q/{$code}")->assertOk();
+    }
+
     public function test_internal_qr_requires_authentication_and_reevaluates_rights(): void
     {
         $document = $this->document('interne');

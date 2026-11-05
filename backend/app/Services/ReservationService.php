@@ -44,10 +44,7 @@ class ReservationService
         $end = CarbonImmutable::parse($data['end_at'])->utc();
         $override = $this->checkCapacity($room, (int) $data['participant_count'], $data['capacity_override_reason'] ?? null, $user);
         $slots = $this->expand($start, $end, $data['recurrence'] ?? null);
-        foreach ($slots as [$s, $e]) {
-            $this->checkRules($room, $s, $e, $user);
-        }
-        $this->assertServicesValid($data['services'] ?? [], $slots);
+        $this->assertBookable($room, $slots, $user, $data['services'] ?? []);
         $mode = $data['recurrence_mode'] ?? 'all_or_nothing';
         $conflicts = $this->conflicts($room, $slots);
         if ($conflicts !== [] && $mode !== 'partial') {
@@ -124,8 +121,10 @@ class ReservationService
             if ($occurrences->isEmpty()) {
                 throw new BusinessException('INVALID_TRANSITION', 'Aucune occurrence en attente de validation.', 409);
             }
-            foreach ($occurrences as $occurrence) {
-                $this->assertManages($occurrence->room, $user);
+            if (! $this->isEscalatedBackup($reservation, $user)) {
+                foreach ($occurrences as $occurrence) {
+                    $this->assertManages($occurrence->room, $user);
+                }
             }
             if (! $approve && (! $reason || mb_strlen(trim($reason)) < 5)) {
                 throw new BusinessException('REASON_REQUIRED', 'Le motif du refus est obligatoire.', 422);
@@ -181,6 +180,8 @@ class ReservationService
                     'version' => $occurrence->version + 1,
                 ])->save();
                 $occurrence->resourceBookings()->update(['blocking_start' => $occurrence->blocking_start, 'blocking_end' => $occurrence->blocking_end]);
+                // Les prestations encore ouvertes suivent la réunion déplacée : échéance 2 h avant le nouveau début.
+                $occurrence->serviceRequests()->whereNotIn('status', ['ready', 'impossible', 'cancelled'])->update(['due_at' => $start->subHours(2), 'updated_at' => now()]);
                 if (isset($changes['participant_count']) || isset($changes['subject'])) {
                     $reservation->forceFill(array_filter(['participant_count' => $changes['participant_count'] ?? null, 'subject' => $changes['subject'] ?? null]) + ['version' => $reservation->version + 1])->save();
                 }
@@ -376,6 +377,16 @@ class ReservationService
         return implode("\r\n", array_map(fn ($l) => mb_strlen($l) > 74 ? implode("\r\n ", mb_str_split($l, 73)) : $l, $lines))."\r\n";
     }
 
+    /**
+     * Escalade (HAB-04) : une demande non traitée à l'échéance passe au suppléant du gestionnaire, qui peut alors la voir et
+     * la trancher, à condition de détenir lui-même le droit d'approuver les réservations.
+     */
+    public function isEscalatedBackup(Reservation $reservation, User $user): bool
+    {
+        return $this->access->can($user, 'reservations.approve') && Approval::query()->where('object_type', 'reservation')->where('object_id', $reservation->id)
+            ->where('status', 'open')->whereNotNull('escalated_at')->where('backup_id', $user->id)->exists();
+    }
+
     public function manages(Room $room, User $user): bool
     {
         if (! $this->access->can($user, 'reservations.approve') && ! $this->access->can($user, 'rooms.manage')) {
@@ -499,6 +510,21 @@ class ReservationService
         }
 
         return $slots;
+    }
+
+    /**
+     * Règles de réservation communes à la vérification (étape « Vérification ») et à la création, pour qu'un créneau
+     * déclaré disponible ne soit jamais refusé ensuite pour une règle de la salle ou une prestation.
+     *
+     * @param  list<array{0: CarbonImmutable, 1: CarbonImmutable}>  $slots
+     * @param  list<array<string, mixed>>  $services
+     */
+    public function assertBookable(Room $room, array $slots, User $user, array $services = []): void
+    {
+        foreach ($slots as [$start, $end]) {
+            $this->checkRules($room, $start, $end, $user);
+        }
+        $this->assertServicesValid($services, $slots);
     }
 
     private function checkRules(Room $room, CarbonImmutable $start, CarbonImmutable $end, User $user): void

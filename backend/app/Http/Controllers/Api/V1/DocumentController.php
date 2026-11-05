@@ -145,7 +145,9 @@ class DocumentController extends Controller
         }
         $document->forceFill(['status' => 'published', 'published_at' => now(), 'search_text' => $file->text_content])->save();
         if ($document->classification !== 'restreint') {
-            AccessLink::query()->firstOrCreate(['target_type' => 'document', 'target_id' => $document->id], ['code' => Str::lower(Str::random(10)), 'classification' => $document->classification, 'created_by' => $this->user()->id]);
+            $link = AccessLink::query()->firstOrCreate(['target_type' => 'document', 'target_id' => $document->id], ['code' => Str::lower(Str::random(10)), 'classification' => $document->classification, 'created_by' => $this->user()->id]);
+            // Une republication réactive le QR déjà imprimé (expiré à la dépublication) avec la classification courante.
+            $link->forceFill(['expires_at' => null, 'classification' => $document->classification])->save();
         }
         $this->event($document, 'published');
         $this->audit()->log('document.published', $document);

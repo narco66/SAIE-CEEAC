@@ -39,6 +39,14 @@ Défauts corrigés, chacun prouvé par un test qui échouait avant le correctif 
   - secrets imbriqués écrits au journal (filtrage désormais récursif) ;
   - média plus classifié que son contenu accepté, et **média interne diffusé sur un écran public**. La règle est appliquée à la soumission et à la compilation du programme.
   - alerte « tâche sans suppléant » envoyée à d’anciens administrateurs.
+- **5 novembre, priorité 2 (premier lot)** :
+  - le suppléant d’un gestionnaire voit et tranche une demande de réservation escaladée ;
+  - le QR d’un document republié fonctionne de nouveau ;
+  - un contenu dupliqué reçoit son propre QR ;
+  - la vérification de disponibilité applique les règles de la salle et des prestations, comme la création ;
+  - l’annulation d’une série archive tous ses messages de bienvenue ;
+  - déplacer une réunion recale l’échéance de ses prestations ;
+  - la notification « expiration prochaine » part une fois, dans les deux jours précédant l’échéance.
 
 ### Priorité 1 — décisions à prendre (aucune correction faite)
 
@@ -49,7 +57,6 @@ Défauts corrigés, chacun prouvé par un test qui échouait avant le correctif 
 ### Priorité 2 — fonctions qui ne se comportent pas comme annoncé
 
 - **Validations**
-  - Escalade d’une réservation au suppléant du gestionnaire : le suppléant est notifié, mais il ne voit pas la demande et ne peut pas la traiter.
   - Une validation éditoriale sans validateur éligible est créée « non assignée » et n’apparaît dans les tâches de personne.
   - La liste « nouveau validateur » n’est pas filtrée par habilitation, et le suppléant n’est pas contrôlé (langue, auteur).
 - **Paramètres et données**
@@ -57,17 +64,10 @@ Défauts corrigés, chacun prouvé par un test qui échouait avant le correctif 
   - Aucun écran ne permet de marquer une réunion « prioritaire ». Cette donnée protège pourtant de la libération automatique.
   - Référentiel des types de prestation : l’option « couverts et heure exigés » ne se règle pas, et le code reste modifiable alors que les périmètres du pouvoir « prestations » s’y réfèrent.
   - Les bornes des paramètres numériques ne sont contrôlées que dans le navigateur.
-- **QR codes**
-  - Le QR d’un document dépublié puis republié reste inactif.
-  - Un contenu dupliqué garde le QR du contenu d’origine.
 - **Réservations et visites**
-  - La vérification de disponibilité (étape 3) n’applique pas les règles de la salle (durée, délai, horaires) : le refus n’arrive qu’à la confirmation.
   - Le code de présence ne peut être saisi nulle part.
-  - Annuler une série n’archive que le message de bienvenue de l’occurrence choisie.
   - Le statut d’une visite ne quitte jamais « Message à valider ».
-  - Déplacer une réunion ne recale pas l’échéance de ses prestations.
 - **Contenus et documents**
-  - La notification « expiration prochaine » dépend d’une fenêtre d’une minute.
   - Une nouvelle version d’un document publié le rend indisponible au téléchargement pendant l’analyse.
   - L’archivage d’un contenu existe côté serveur mais sans bouton.
 - **Journal et exports**

@@ -2,10 +2,12 @@
 
 namespace Tests\Feature;
 
+use App\Models\AccessLink;
 use App\Models\Approval;
 use App\Models\Content;
 use App\Models\ContentVersion;
 use App\Models\User;
+use App\Models\UserNotification;
 use Illuminate\Database\QueryException;
 use Tests\TestCase;
 
@@ -36,6 +38,34 @@ class ContentWorkflowTest extends TestCase
         ])->assertCreated();
 
         return Content::query()->findOrFail($response->json('data.id'));
+    }
+
+    public function test_duplicated_content_gets_its_own_qr_code_pointing_to_the_copy(): void
+    {
+        $original = $this->actingAs($this->author)->postJson('/api/v1/contents', [
+            'title' => 'Annonce avec QR', 'category_id' => $this->category()->id, 'classification' => 'interne', 'expires_at' => now()->addDays(5)->toIso8601String(),
+            'qr' => ['enabled' => true, 'label' => 'En savoir plus'],
+            'languages' => ['fr' => ['title' => 'Annonce', 'body' => 'Texte.']],
+        ])->assertCreated()->json('data');
+        $originalCode = Content::query()->findOrFail($original['id'])->qr['code'];
+
+        $copyId = $this->actingAs($this->author)->postJson("/api/v1/contents/{$original['id']}/duplicate")->assertCreated()->json('data.id');
+        $copyCode = Content::query()->findOrFail($copyId)->qr['code'] ?? null;
+
+        $this->assertNotNull($copyCode);
+        $this->assertNotSame($originalCode, $copyCode);
+        $this->assertSame($copyId, AccessLink::query()->where('code', $copyCode)->value('target_id'));
+    }
+
+    public function test_author_is_warned_once_when_content_expires_within_two_days(): void
+    {
+        $content = $this->createContent();
+        $content->forceFill(['status' => 'approved', 'expires_at' => now()->addHours(30)])->save();
+
+        $this->artisan('saie:tick')->assertSuccessful();
+        $this->artisan('saie:tick')->assertSuccessful();
+
+        $this->assertSame(1, UserNotification::query()->where('event', 'content.expiring')->where('object_id', $content->id)->where('user_id', $this->author->id)->count());
     }
 
     public function test_author_cannot_approve_own_content_and_distinct_validator_can(): void
