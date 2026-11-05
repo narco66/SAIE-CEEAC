@@ -74,6 +74,34 @@ class CateringServiceTest extends TestCase
             ->assertJsonPath('data.0.type.code', 'RESTAURATION')->assertJsonPath('data.0.headcount', 18)->assertJsonPath('data.0.serve_time', '10:30');
     }
 
+    public function test_checklist_is_limited_to_meetings_with_a_service_in_the_power_scope(): void
+    {
+        $occurrence = $this->actingAs($this->agent)->postJson('/api/v1/reservations', $this->payload(['headcount' => 18, 'serve_time' => '10:30']))
+            ->assertCreated()->json('data.occurrences.0.id');
+        $items = ['items' => [['phase' => 'opening', 'label' => 'Tables dressées', 'done' => false]]];
+
+        $visioOnly = $this->userWith('gestionnaire_salle', 'DSI');
+        $this->grantPower($visioOnly, 'prestations', ['service_types' => ['VISIO']]);
+        $this->actingAs($visioOnly)->postJson("/api/v1/occurrences/{$occurrence}/checklist", $items)->assertForbidden();
+        $this->assertDatabaseCount('checklist_items', 0);
+
+        $catering = $this->userWith('gestionnaire_salle', 'DSI');
+        $this->grantPower($catering, 'prestations', ['service_types' => ['RESTAURATION']]);
+        $this->actingAs($catering)->postJson("/api/v1/occurrences/{$occurrence}/checklist", $items)->assertOk();
+        $this->assertDatabaseCount('checklist_items', 1);
+    }
+
+    public function test_unrestricted_power_holder_keeps_the_checklist_of_a_meeting_without_service(): void
+    {
+        $payload = $this->payload([]);
+        unset($payload['services']);
+        $occurrence = $this->actingAs($this->agent)->postJson('/api/v1/reservations', $payload)->assertCreated()->json('data.occurrences.0.id');
+        $manager = $this->userWith('gestionnaire_salle', 'DSI');
+        $this->grantPower($manager, 'prestations');
+
+        $this->actingAs($manager)->postJson("/api/v1/occurrences/{$occurrence}/checklist", ['items' => [['phase' => 'opening', 'label' => 'Salle aérée']]])->assertOk();
+    }
+
     public function test_other_services_keep_free_text_details_only(): void
     {
         $visio = ServiceType::query()->where('code', 'VISIO')->firstOrFail();

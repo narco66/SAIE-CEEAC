@@ -85,15 +85,17 @@ Pour y mettre fin avant l’échéance : **Révoquer**, motif, puis **Révoquer 
 
 Onglet **Droits effectifs** : rôles actifs, pouvoirs en vigueur, langues de validation et liste des permissions réellement ouvertes, regroupées par domaine.
 
-### Désactiver, réactiver, couper les sessions
+### Désactiver, réactiver, débloquer, couper les sessions
 
 1. Ouvrez le compte par **Détail**.
 2. Choisissez l’action :
    - **Révoquer les sessions** puis **Révoquer toutes les sessions** : l’utilisateur est déconnecté partout et doit se reconnecter ;
    - **Désactiver**, **Motif**, puis **Désactiver et couper les sessions** : les sessions sont fermées et l’utilisateur ne peut plus se connecter ; ses actions passées restent au journal ;
    - **Réactiver** puis **Réactiver** : l’utilisateur peut de nouveau se connecter, ses rôles encore valides s’appliquent aussitôt et un verrouillage éventuel est levé.
+   - **Débloquer** (proposé quand la fiche indique « Verrouillé jusqu’au … ») : saisissez le **Motif** après avoir vérifié l’identité de la personne. Le compteur d’échecs est remis à zéro et la personne peut se reconnecter immédiatement.
+   - **Réinitialiser le second facteur** (proposé quand il est activé) : à utiliser quand la personne a perdu son téléphone et ses codes de secours. Vérifiez d’abord son identité, puis saisissez le **Motif**. Son application et ses codes cessent de fonctionner et ses sessions sont fermées ; elle configure un nouveau second facteur à sa prochaine connexion.
 
-Un compte ne se supprime pas : il se désactive. Vous ne pouvez pas désactiver votre propre compte.
+Un compte ne se supprime pas : il se désactive. Vous ne pouvez ni désactiver, ni débloquer, ni réinitialiser votre propre compte, et vous ne pouvez pas vous attribuer à vous-même un rôle, un pouvoir étendu ou des permissions supplémentaires sur un rôle que vous détenez : un autre administrateur doit le faire.
 
 ## Gérer les rôles et les délégations
 
@@ -339,7 +341,8 @@ Menu **Pilotage › Exports & traitements** (ou **Mes exports** dans le menu du 
 - Un lecteur révoqué hors ligne continue à lire son cache jusqu’à l’expiration de son autorisation en cours.
 - Une version du lecteur passe par le canal pilote avant le canal stable ; le retrait ramène le canal à la version précédente.
 - Les jetons (comptes de service) et les valeurs secrètes ne sont jamais réaffichés.
-- Un compte verrouillé après 5 échecs de connexion se débloque seul au bout de 15 minutes.
+- Un compte verrouillé après 5 échecs de connexion se débloque seul au bout de 15 minutes, ou immédiatement par **Débloquer**.
+- Nul ne modifie ses propres droits : attribution de rôle ou de pouvoir à soi-même et modification des permissions d’un rôle détenu sont refusées et journalisées.
 
 ## En cas de problème
 
@@ -347,9 +350,10 @@ Menu **Pilotage › Exports & traitements** (ou **Mes exports** dans le menu du 
 | --- | --- |
 | « Vous n’êtes pas autorisé à effectuer cette action. » ou « Accès interdit » | Votre rôle ne donne pas ce droit. Vérifiez vos **Droits effectifs** ou adressez-vous à l’administrateur fonctionnel. |
 | « Ce pouvoir est une extension du rôle « … » que l’utilisateur ne détient pas. » | Attribuez d’abord le rôle requis, puis le pouvoir. |
-| « Attribution d’un rôle excédant vos propres droits » ou « Délégation au-delà de vos propres droits » | Demandez l’opération à un administrateur fonctionnel. |
+| « Un administrateur ne peut pas modifier ses propres droits : un autre administrateur doit le faire. » | Vous avez tenté de vous attribuer un rôle ou un pouvoir, ou de modifier un rôle que vous détenez : demandez-le à un autre administrateur. |
+| « Cette opération sur votre propre compte doit être faite par un autre administrateur. » | Le déblocage ou la réinitialisation de votre propre compte est fait par un autre administrateur. |
 | « Vous ne pouvez pas désactiver votre propre compte. » | Faites désactiver le compte par un autre administrateur. |
-| Un utilisateur a perdu son application d’authentification | Il se connecte avec un de ses codes de secours. L’application ne permet pas à un administrateur de réinitialiser le second facteur d’un autre compte : signalez le cas à la DSI. |
+| Un utilisateur a perdu son application d’authentification | S’il a encore ses codes de secours, il se connecte avec l’un d’eux. Sinon, après vérification de son identité, utilisez **Réinitialiser le second facteur** sur sa fiche. |
 | « Colonnes obligatoires absentes : … » | Repartez du **Modèle CSV** du type choisi. |
 | « Le fichier contient des lignes invalides : corrigez-les avant confirmation. » | **Exporter les erreurs (CSV)**, corrigez, simulez de nouveau. |
 | « Corrigez les champs signalés (un code déjà utilisé est refusé). » dans un référentiel | Corrigez le champ signalé ; si le code existe déjà, modifiez l’élément existant ou choisissez un autre code. |

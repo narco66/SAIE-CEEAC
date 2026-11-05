@@ -205,7 +205,7 @@ class ManifestBuilder
                     if (! $version || (self::CLASS_RANK[$version->classification] ?? 2) > $maxRank) {
                         continue;
                     }
-                    $slide = $this->slide($version, $assets, $item->duration_s ?? $campaign->slide_duration_s);
+                    $slide = $this->slide($version, $assets, $item->duration_s ?? $campaign->slide_duration_s, $maxRank);
                     $entries[] = [
                         'entry_id' => $item->id.':'.$language->lang,
                         'campaign_id' => $campaign->id,
@@ -237,17 +237,17 @@ class ManifestBuilder
      * @param  array<string, array<string, mixed>>  $assets
      * @return array<string, mixed>
      */
-    private function slide(ContentVersion $version, array &$assets, int $defaultDuration): array
+    private function slide(ContentVersion $version, array &$assets, int $defaultDuration, int $maxRank): array
     {
         $payload = $version->payload;
         $media = [];
         foreach ($payload['media'] ?? [] as $item) {
-            if ($this->registerAsset($item['asset_version_id'], $assets)) {
+            if ($this->registerAsset($item['asset_version_id'], $assets, $maxRank)) {
                 $media[] = ['asset' => $item['asset_version_id'], 'kind' => $item['kind'], 'pages' => $item['pages'] ?? null, 'page_duration_s' => $item['page_duration_s'] ?? null, 'role' => $item['role'] ?? 'main'];
             }
         }
         $subtitles = null;
-        if (! empty($payload['subtitles_asset_version_id']) && $this->registerAsset($payload['subtitles_asset_version_id'], $assets)) {
+        if (! empty($payload['subtitles_asset_version_id']) && $this->registerAsset($payload['subtitles_asset_version_id'], $assets, $maxRank)) {
             $subtitles = $payload['subtitles_asset_version_id'];
         }
         $pdfPages = collect($media)->where('kind', 'pdf')->sum(fn ($m) => count($m['pages'] ?? [1]) * (int) ($m['page_duration_s'] ?? $defaultDuration));
@@ -277,15 +277,19 @@ class ManifestBuilder
     }
 
     /**
+     * Un média n'est référencé que s'il est sain et pas plus classifié que la zone de l'écran (DOC-04) : défense en profondeur
+     * contre une donnée antérieure à la règle de soumission.
+     *
      * @param  array<string, array<string, mixed>>  $assets
      */
-    private function registerAsset(string $assetVersionId, array &$assets): bool
+    private function registerAsset(string $assetVersionId, array &$assets, int $maxRank): bool
     {
         if (isset($assets[$assetVersionId])) {
             return true;
         }
         $version = AssetVersion::query()->with('asset')->find($assetVersionId);
-        if (! $version || $version->scan_status !== 'ready' || $version->asset->classification === 'restreint' || ! $version->sha256) {
+        if (! $version || $version->scan_status !== 'ready' || $version->asset->classification === 'restreint' || ! $version->sha256
+            || (self::CLASS_RANK[$version->asset->classification] ?? 2) > $maxRank) {
             return false;
         }
         $assets[$assetVersionId] = [
@@ -400,7 +404,7 @@ class ManifestBuilder
         return [
             'content_version' => $fallback->content_version_id,
             'valid_until' => $fallback->valid_until->utc()->toIso8601ZuluString(),
-            'slide' => $this->slide($fallback->contentVersion, $assets, 15),
+            'slide' => $this->slide($fallback->contentVersion, $assets, 15, self::CLASS_RANK['public']),
         ];
     }
 }

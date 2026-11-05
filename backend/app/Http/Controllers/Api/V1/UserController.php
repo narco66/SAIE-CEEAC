@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Support\BusinessException;
 use App\Support\Present;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -97,6 +98,44 @@ class UserController extends Controller
         return $this->show($user);
     }
 
+    /**
+     * Déblocage d'un compte verrouillé après des échecs de connexion (SEC-01), sur motif, jamais pour soi-même.
+     */
+    public function unlock(Request $request, User $user): JsonResponse
+    {
+        $this->authorizePermission('users.manage');
+        $data = $request->validate(['reason' => ['required', 'string', 'min:5', 'max:300']]);
+        $this->refuseOwnAccount($user);
+        $user->forceFill(['failed_logins' => 0, 'locked_until' => null])->save();
+        $this->audit()->log('user.unlocked', $user, $data['reason']);
+
+        return $this->show($user);
+    }
+
+    /**
+     * Réinitialisation du second facteur d'un agent qui a perdu son application (SEC-01) : secret et codes de secours effacés,
+     * sessions fermées ; un nouvel enrôlement est exigé à la prochaine connexion si son rôle l'impose.
+     */
+    public function resetMfa(Request $request, User $user): JsonResponse
+    {
+        $this->authorizePermission('users.manage');
+        $data = $request->validate(['reason' => ['required', 'string', 'min:5', 'max:300']]);
+        $this->refuseOwnAccount($user);
+        $user->forceFill(['mfa_secret' => null, 'mfa_enabled_at' => null, 'mfa_recovery_codes' => null, 'remember_token' => null])->save();
+        $sessions = DB::table('sessions')->where('user_id', $user->id)->delete();
+        $this->audit()->log('user.mfa_reset', $user, $data['reason'], after: ['sessions_closed' => $sessions]);
+
+        return $this->show($user);
+    }
+
+    private function refuseOwnAccount(User $user): void
+    {
+        if ($user->id === $this->user()->id) {
+            $this->audit()->log('access.denied', $user, 'Tentative de déblocage ou de réinitialisation de son propre compte', outcome: 'denied');
+            throw new AuthorizationException('Cette opération sur votre propre compte doit être faite par un autre administrateur.');
+        }
+    }
+
     public function revokeSessions(User $user): JsonResponse
     {
         $this->authorizePermission('users.manage');
@@ -124,7 +163,7 @@ class UserController extends Controller
             'powers' => $u->relationLoaded('roleExtensions') ? $u->roleExtensions->map(fn ($e) => [
                 'id' => $e->id, 'power' => $e->power, 'scope' => $e->scope, 'starts_at' => Present::date($e->starts_at), 'ends_at' => Present::date($e->ends_at), 'revoked_at' => Present::date($e->revoked_at), 'active' => $active($e),
             ])->values() : [],
-            'mfa_enabled' => (bool) $u->mfa_enabled_at, 'last_login_at' => Present::date($u->last_login_at), 'last_activity_at' => Present::date($u->last_activity_at), 'is_demo' => $u->is_demo,
+            'mfa_enabled' => (bool) $u->mfa_enabled_at, 'locked' => (bool) $u->locked_until?->isFuture(), 'locked_until' => Present::date($u->locked_until), 'last_login_at' => Present::date($u->last_login_at), 'last_activity_at' => Present::date($u->last_activity_at), 'is_demo' => $u->is_demo,
         ];
     }
 }

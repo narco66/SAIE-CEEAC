@@ -6,7 +6,6 @@ use App\Models\AuditLog;
 use App\Models\Device;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Arr;
 
 /**
  * Journal applicatif en ajout seul (SEC-04). Les secrets sont filtrés avant écriture (SEC-05).
@@ -66,6 +65,26 @@ class Audit
      */
     private function filter(array $values): array
     {
-        return Arr::except($values, self::SENSITIVE);
+        $filtered = [];
+        foreach ($values as $key => $value) {
+            if (is_string($key) && $this->isSensitive($key)) {
+                continue;
+            }
+            $filtered[$key] = is_array($value) ? $this->filter($value) : $value;
+        }
+
+        return $filtered;
+    }
+
+    /**
+     * Secrets à ne jamais journaliser (SEC-05), à tout niveau de profondeur : clés connues, ou nom évoquant un mot de passe,
+     * un jeton, un secret ou une clé privée / d'API / d'authentification.
+     */
+    private function isSensitive(string $key): bool
+    {
+        $key = strtolower($key);
+
+        return in_array($key, self::SENSITIVE, true) || in_array($key, ['auth', 'api_key', 'apikey', 'private_key', 'authorization'], true)
+            || preg_match('/(password|passwd|secret|token|private_key|api_key|apikey|credential)/', $key) === 1;
     }
 }

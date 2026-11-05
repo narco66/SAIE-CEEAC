@@ -10,6 +10,7 @@ use App\Models\RoleExtension;
 use App\Models\User;
 use App\Support\BusinessException;
 use App\Support\Present;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -39,6 +40,9 @@ class RoleController extends Controller
     {
         $this->authorizePermission('roles.manage');
         $data = $request->validate(['permissions' => ['present', 'array'], 'permissions.*' => ['string', 'exists:permissions,code'], 'reason' => ['required', 'string', 'min:5', 'max:300']]);
+        if (in_array($role->code, $this->access()->roleCodes($this->user()), true)) {
+            $this->refuseSelfChange();
+        }
         $before = $role->permissions()->pluck('code')->all();
         $powerOnly = collect(config('saie.powers'))->flatMap(fn ($p) => $p['permissions'])->all();
         if (! $this->access()->hasRole($this->user(), 'admin_fonc') && array_diff($data['permissions'], $this->access()->permissions($this->user())) !== []) {
@@ -60,6 +64,9 @@ class RoleController extends Controller
             'languages' => ['nullable', 'array'], 'languages.*' => ['in:fr,en,pt,es'], 'starts_at' => ['nullable', 'date'], 'ends_at' => ['nullable', 'date', 'after:starts_at'],
             'reason' => ['required', 'string', 'min:5', 'max:300'],
         ]);
+        if ($data['user_id'] === $this->user()->id) {
+            $this->refuseSelfChange();
+        }
         $role = Role::query()->where('code', $data['role_code'])->firstOrFail();
         $this->preventEscalation($role);
         $assignment = RoleAssignment::query()->create([
@@ -95,6 +102,9 @@ class RoleController extends Controller
             'scope' => ['nullable', 'array'], 'scope.zone_ids' => ['nullable', 'array'], 'scope.zone_ids.*' => ['uuid', 'exists:display_zones,id'],
             'scope.service_types' => ['nullable', 'array'], 'scope.service_types.*' => ['string', 'exists:service_types,code'],
         ]);
+        if ($data['user_id'] === $this->user()->id) {
+            $this->refuseSelfChange();
+        }
         $user = User::query()->findOrFail($data['user_id']);
         $requiredRole = config("saie.powers.{$data['power']}.role");
         if (! $this->access()->hasRole($user, $requiredRole)) {
@@ -131,6 +141,16 @@ class RoleController extends Controller
             'powers' => collect(['urgence', 'modeles', 'prestations'])->mapWithKeys(fn ($p) => [$p => $this->access()->hasPower($user, $p)]),
             'validation_languages' => $this->access()->validationLanguages($user),
         ]]);
+    }
+
+    /**
+     * Séparation des droits (HAB-01, HAB-03) : nul ne peut étendre ses propres droits, même administrateur ; l'opération
+     * doit être faite par un autre administrateur, ce qui la soumet à un second regard et au journal.
+     */
+    private function refuseSelfChange(): never
+    {
+        $this->audit()->log('access.denied', $this->user(), 'Tentative de modification de ses propres droits', outcome: 'denied');
+        throw new AuthorizationException('Un administrateur ne peut pas modifier ses propres droits : un autre administrateur doit le faire.');
     }
 
     private function preventEscalation(Role $role): void

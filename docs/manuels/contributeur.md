@@ -251,7 +251,7 @@ Une action est refusée dans les cas suivants :
   - contenu restreint ;
   - contenu temporaire sans date d’expiration ;
   - média qui n’est pas à l’état **Prêt** ;
-  - média restreint dans un contenu public ;
+  - média plus classifié que le contenu (média interne dans un contenu public, média restreint dans un contenu public ou interne) ;
   - titre manquant ou texte trop long ;
   - débordement du modèle ;
   - vidéo sans sous-titres dans la langue soumise ;
@@ -284,7 +284,7 @@ Toutes vos actions (création, soumission, dépôt, publication, dépublication,
 | « Une vidéo diffusée sur écran muet exige des sous-titres en … » | Déposez un fichier .vtt pour cette langue, enregistrez, puis soumettez. |
 | « Seuls les fichiers WebVTT (.vtt) sont acceptés. » | Choisissez un fichier de sous-titres au format WebVTT. |
 | « Un média n’est pas déclaré sain : soumission impossible. » / « Le fichier de sous-titres n’est pas encore déclaré sain. » | Attendez la fin de l’analyse ; si le fichier est **Rejeté**, remplacez-le. |
-| « Un média restreint ne peut pas illustrer un contenu diffusable. » | Retirez le média ou choisissez-en un autre. |
+| « Le média « … » est plus classifié que le contenu (… pour un contenu …) : il ne peut pas l’illustrer. » | Retirez ce média, choisissez-en un de classification égale ou inférieure, ou relevez la classification du contenu. |
 | « Un contenu restreint est exclu de tous les écrans collectifs. » | Changez la classification si le contenu doit être affiché, ou ne le soumettez pas. |
 | **Conflit de version.** | Quelqu’un a modifié le contenu entre-temps : cliquez sur **Recharger la version courante**, puis refaites vos modifications. |
 | « Lecture seule : vous ne pouvez pas modifier ce contenu (statut ou périmètre). » | Le contenu est expiré, archivé ou hors de votre périmètre : dupliquez-le si vous devez le réutiliser. |

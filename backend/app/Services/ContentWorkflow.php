@@ -265,8 +265,9 @@ class ContentWorkflow
             if (! $version || $version->scan_status !== 'ready') {
                 throw new BusinessException('MEDIA_NOT_READY', 'Un média n’est pas déclaré sain : soumission impossible.', 422);
             }
-            if ($content->classification === 'public' && $version->asset->classification === 'restreint') {
-                throw new BusinessException('CLASSIFICATION_MISMATCH', 'Un média restreint ne peut pas illustrer un contenu diffusable.', 422);
+            $rank = ['public' => 0, 'interne' => 1, 'restreint' => 2];
+            if (($rank[$version->asset->classification] ?? 2) > ($rank[$content->classification] ?? 2)) {
+                throw new BusinessException('CLASSIFICATION_MISMATCH', 'Le média « '.$version->asset->title.' » est plus classifié que le contenu ('.$version->asset->classification.' pour un contenu '.$content->classification.') : il ne peut pas l’illustrer.', 422);
             }
         }
         if ($content->classification === 'restreint') {

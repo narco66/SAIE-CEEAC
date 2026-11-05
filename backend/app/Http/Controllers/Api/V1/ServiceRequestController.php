@@ -65,6 +65,11 @@ class ServiceRequestController extends Controller
     {
         $this->authorizePermission('services.process');
         $data = $request->validate(['items' => ['required', 'array'], 'items.*.id' => ['nullable', 'uuid'], 'items.*.phase' => ['required', 'in:opening,closing'], 'items.*.label' => ['required', 'string', 'max:200'], 'items.*.done' => ['boolean'], 'items.*.note' => ['nullable', 'string', 'max:200']]);
+        // Un pouvoir « prestations » limité à certains types ne couvre que les réunions qui comportent l'un de ces types.
+        if ($this->access()->powerScope($this->user(), 'prestations') !== null
+            && ! $this->scoped(ServiceRequest::query()->where('occurrence_id', $occurrence->id))->exists()) {
+            $this->deny('Liste de contrôle d’une réunion sans prestation dans le périmètre du pouvoir');
+        }
         foreach ($data['items'] as $item) {
             $row = isset($item['id']) ? ChecklistItem::query()->where('occurrence_id', $occurrence->id)->findOrFail($item['id']) : new ChecklistItem(['occurrence_id' => $occurrence->id]);
             $row->fill(['phase' => $item['phase'], 'label' => $item['label'], 'note' => $item['note'] ?? null]);

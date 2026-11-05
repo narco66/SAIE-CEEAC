@@ -68,6 +68,22 @@ class SecurityAndAccessTest extends TestCase
         $this->actingAs($contributor)->getJson('/api/v1/search?q=CNT-HORS')->assertOk()->assertJsonCount(0, 'data');
     }
 
+    public function test_audit_log_masks_secrets_at_every_level_of_before_and_after(): void
+    {
+        app(Audit::class)->log('source.updated', 'DynamicSource', before: ['config' => ['api_key' => 'cle-avant', 'place' => 'Libreville']], after: [
+            'config' => ['api_key' => 'cle-apres', 'place' => 'Libreville'], 'keys' => ['auth' => 'jeton-push', 'p256dh' => 'cle-publique'],
+            'connexion' => ['password' => 'mdp', 'nested' => ['access_token' => 'jeton']], 'smtp_password' => 'mdp2', 'name' => 'Météo',
+        ]);
+
+        $entry = AuditLog::query()->latest('occurred_at')->firstOrFail();
+        $stored = json_encode([$entry->before, $entry->after], JSON_UNESCAPED_UNICODE);
+        foreach (['cle-avant', 'cle-apres', 'jeton-push', 'mdp', 'jeton'] as $secret) {
+            $this->assertStringNotContainsString("\"$secret\"", $stored);
+        }
+        $this->assertSame('Libreville', $entry->after['config']['place']);
+        $this->assertSame('Météo', $entry->after['name']);
+    }
+
     public function test_internal_qr_requires_authentication_and_reevaluates_rights(): void
     {
         $document = $this->document('interne');

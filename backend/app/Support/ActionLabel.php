@@ -32,7 +32,7 @@ class ActionLabel
         'welcome.created' => 'Message de bienvenue créé', 'approval.escalated' => 'Validation escaladée', 'setting.updated' => 'Paramètre modifié',
         'account.mfa_enabled' => 'Second facteur activé', 'account.password_changed' => 'Mot de passe modifié', 'account.preferences_updated' => 'Préférences modifiées',
         'account.push_subscribed' => 'Notifications push activées', 'account.push_unsubscribed' => 'Notifications push désactivées', 'account.session_revoked' => 'Session fermée',
-        'user.created_cli' => 'Compte créé en ligne de commande', 'user.sessions_revoked' => 'Sessions fermées', 'user.updated' => 'Compte modifié',
+        'user.created_cli' => 'Compte créé en ligne de commande', 'user.sessions_revoked' => 'Sessions fermées', 'user.updated' => 'Compte modifié', 'user.unlocked' => 'Compte débloqué', 'user.mfa_reset' => 'Second facteur réinitialisé',
         'asset.updated' => 'Média modifié', 'document.updated' => 'Document modifié', 'import.committed' => 'Import appliqué',
         'template.created' => 'Modèle créé', 'template.updated' => 'Modèle modifié', 'template.duplicated' => 'Modèle dupliqué', 'template.archived' => 'Modèle archivé',
         'fallback.created' => 'Contenu de repli créé', 'fallback.disabled' => 'Contenu de repli désactivé',

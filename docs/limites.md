@@ -26,24 +26,25 @@
 
 La rédaction des manuels a imposé une lecture complète des écrans et des règles. Elle a fait apparaître les écarts ci-dessous. Ils sont signalés par la lecture du code et **restent à confirmer par un test avant correction**, sauf mention « vérifié ».
 
-Quatre défauts sont déjà corrigés et couverts par un test :
-- la recherche globale montrait les titres de contenus hors du périmètre de l’utilisateur ;
-- les messages de validation s’affichaient sous forme de clés brutes (« validation.required ») ;
-- les motifs de refus métier étaient masqués par un message générique ;
-- une demande de réservation expirée gardait sa validation ouverte.
+Défauts corrigés, chacun prouvé par un test qui échouait avant le correctif :
+- **5 novembre, rédaction des manuels** :
+  - la recherche globale montrait les titres de contenus hors du périmètre de l’utilisateur ;
+  - les messages de validation s’affichaient sous forme de clés brutes ;
+  - les motifs de refus métier étaient masqués par un message générique ;
+  - une demande de réservation expirée gardait sa validation ouverte.
+- **5 novembre, priorité 1** :
+  - auto-attribution de rôles et de pouvoirs, et élargissement des permissions d’un rôle qu’on détient ;
+  - aucun déblocage de compte ni réinitialisation du second facteur possible par un administrateur (actions **Débloquer** et **Réinitialiser le second facteur** ajoutées, motivées, journalisées) ;
+  - listes de contrôle des prestations hors du périmètre du pouvoir « prestations » ;
+  - secrets imbriqués écrits au journal (filtrage désormais récursif) ;
+  - média plus classifié que son contenu accepté, et **média interne diffusé sur un écran public**. La règle est appliquée à la soumission et à la compilation du programme.
+  - alerte « tâche sans suppléant » envoyée à d’anciens administrateurs.
 
-### Priorité 1 — droits et sécurité
+### Priorité 1 — décisions à prendre (aucune correction faite)
 
-- Un administrateur fonctionnel peut s’attribuer à lui-même des rôles et des pouvoirs étendus, dont « modèles » : rien n’interdit l’auto-attribution.
-- Aucun administrateur ne peut débloquer un compte verrouillé (statut jamais attribué) ni réinitialiser le second facteur d’un autre compte.
-- Les listes de contrôle des prestations ne tiennent pas compte du périmètre du pouvoir « prestations ».
-- Le filtrage des secrets du journal d’audit ne retire que les clés de premier niveau.
-- Pour une réunion standard, les participants (nom, organisation) sont visibles de tout agent qui peut voir les salles : arbitrage GOV-02 à prendre.
-- Un média restreint est accepté dans un contenu interne, puis retiré silencieusement à la diffusion.
-- Permissions détournées ou non contrôlées :
-  - `exports.create` n’est pas vérifiée côté serveur ;
-  - la publication des versions du lecteur relève de `incidents.manage` ;
-  - l’alerte « tâche sans suppléant » part aussi à d’anciens administrateurs fonctionnels.
+- **Participants des réunions standard** (nom, organisation) : visibles de tout agent qui peut voir les salles. À arbitrer au titre de GOV-02 : restreindre à l’organisateur, aux participants et aux gestionnaires ?
+- **Permission « Générer des exports »** (`exports.create`) : non contrôlée côté serveur, seule la permission propre à chaque export compte. L’exiger partout priverait les agents de leur confirmation PDF01. Proposition : l’exiger pour les extractions de masse (CSV, rapports PDF02, PDF05 à PDF09), pas pour les fiches individuelles (PDF01, PDF03, PDF04, PDF10).
+- **Versions du lecteur** : publication et retrait relèvent de la permission de gestion des incidents. Une permission dédiée est à créer si ces deux responsabilités sont séparées à la DSI.
 
 ### Priorité 2 — fonctions qui ne se comportent pas comme annoncé
 

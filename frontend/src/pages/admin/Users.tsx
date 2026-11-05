@@ -18,7 +18,7 @@ interface PowerGrant { id: string; power: string; scope: { zone_ids?: string[]; 
 export interface UserRow {
   id: string; name: string; email: string; initials: string; title: string | null; status: string; source: string
   structure: { id: string; name: string } | null; backup: { id: string; name: string } | null
-  roles: Assignment[]; powers: PowerGrant[]; mfa_enabled: boolean; last_login_at: string | null; last_activity_at: string | null; is_demo: boolean
+  roles: Assignment[]; powers: PowerGrant[]; mfa_enabled: boolean; locked?: boolean; locked_until?: string | null; last_login_at: string | null; last_activity_at: string | null; is_demo: boolean
 }
 export interface RolesData {
   roles: { id: string; code: string; name: string; description: string | null; permissions: string[]; users: number }[]
@@ -187,7 +187,7 @@ function UserDetail({ id, onClose }: { id: string; onClose: () => void }) {
   const toast = useToast()
   const [tab, setTab] = useState<DetailTab>('roles')
   const [editing, setEditing] = useState(false)
-  const [confirm, setConfirm] = useState<null | 'deactivate' | 'reactivate' | 'sessions'>(null)
+  const [confirm, setConfirm] = useState<null | 'deactivate' | 'reactivate' | 'sessions' | 'unlock' | 'reset-mfa'>(null)
   // Fiche toujours relue à l'ouverture : un autre administrateur peut avoir modifié rôles ou statut entre-temps.
   const query = useQuery({ queryKey: ['user', id], queryFn: ({ signal }) => api.get<{ data: UserRow }>(`/users/${id}`, undefined, signal).then((r) => r.data), staleTime: 0 })
   const refresh = async () => {
@@ -213,6 +213,7 @@ function UserDetail({ id, onClose }: { id: string; onClose: () => void }) {
               <dt>Statut</dt><dd><Status tone={(USER_STATUS[u.status] ?? [u.status, 'neutral'])[1]}>{(USER_STATUS[u.status] ?? [u.status])[0]}</Status></dd>
               <dt>Source d’identité</dt><dd>{u.source === 'local' ? 'Locale' : u.source}</dd>
               <dt>Second facteur</dt><dd>{u.mfa_enabled ? 'Activé' : 'Non activé'}</dd>
+              {u.locked && <><dt>Verrouillage</dt><dd>Verrouillé jusqu’au {fmtDateTime(u.locked_until)} (échecs de connexion)</dd></>}
               <dt>Dernière connexion</dt><dd>{fmtDateTime(u.last_login_at)}</dd>
             </dl>
           </div>
@@ -220,6 +221,8 @@ function UserDetail({ id, onClose }: { id: string; onClose: () => void }) {
             <div className="row-actions" style={{ justifyContent: 'flex-start', marginTop: 12 }}>
               <Button size="small" variant="secondary" icon="edit" onClick={() => setEditing(true)}>Modifier</Button>
               <Button size="small" variant="secondary" icon="logout" onClick={() => setConfirm('sessions')}>Révoquer les sessions</Button>
+              {u.locked && u.id !== me.id && <Button size="small" variant="secondary" icon="check" onClick={() => setConfirm('unlock')}>Débloquer</Button>}
+              {u.mfa_enabled && u.id !== me.id && <Button size="small" variant="secondary" icon="shield" onClick={() => setConfirm('reset-mfa')}>Réinitialiser le second facteur</Button>}
               {u.status === 'active'
                 ? <Button size="small" variant="danger" icon="x" disabled={u.id === me.id} title={u.id === me.id ? 'Vous ne pouvez pas désactiver votre propre compte' : undefined} onClick={() => setConfirm('deactivate')}>Désactiver</Button>
                 : <Button size="small" icon="check" onClick={() => setConfirm('reactivate')}>Réactiver</Button>}
@@ -247,6 +250,16 @@ function UserDetail({ id, onClose }: { id: string; onClose: () => void }) {
         <ConfirmDialog title="Réactiver le compte" object={u.name} confirmLabel="Réactiver"
           consequence="L’utilisateur pourra de nouveau se connecter ; ses rôles encore valides s’appliquent aussitôt. Le verrouillage éventuel est levé."
           onClose={() => setConfirm(null)} onConfirm={async () => { await api.post(`/users/${u.id}/reactivate`, undefined, false); toast.success('Compte réactivé'); await refresh() }} />
+      )}
+      {confirm === 'unlock' && u && (
+        <ConfirmDialog title="Débloquer le compte" object={u.name} confirmLabel="Débloquer" reasonLabel="Motif (vérification d’identité effectuée)" reasonRequired
+          consequence="Le compteur d’échecs est remis à zéro et l’utilisateur peut se reconnecter immédiatement. Vérifiez d’abord son identité."
+          onClose={() => setConfirm(null)} onConfirm={async (reason) => { await api.post(`/users/${u.id}/unlock`, { reason }, false); toast.success('Compte débloqué'); await refresh() }} />
+      )}
+      {confirm === 'reset-mfa' && u && (
+        <ConfirmDialog title="Réinitialiser le second facteur" object={u.name} danger confirmLabel="Réinitialiser" reasonLabel="Motif (vérification d’identité effectuée)" reasonRequired
+          consequence="L’application d’authentification et les codes de secours actuels cessent de fonctionner, et toutes les sessions sont fermées. L’utilisateur devra configurer à nouveau son second facteur à sa prochaine connexion. Vérifiez d’abord son identité."
+          onClose={() => setConfirm(null)} onConfirm={async (reason) => { await api.post(`/users/${u.id}/reset-mfa`, { reason }, false); toast.success('Second facteur réinitialisé'); await refresh() }} />
       )}
       {confirm === 'sessions' && u && (
         <ConfirmDialog title="Révoquer les sessions" object={u.name} confirmLabel="Révoquer toutes les sessions"

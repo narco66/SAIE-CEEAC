@@ -234,6 +234,8 @@ Route::middleware(['auth:sanctum', 'human', 'idempotent'])->group(function (): v
     Route::post('users/{user}/deactivate', [UserController::class, 'deactivate']);
     Route::post('users/{user}/reactivate', [UserController::class, 'reactivate']);
     Route::post('users/{user}/revoke-sessions', [UserController::class, 'revokeSessions']);
+    Route::post('users/{user}/unlock', [UserController::class, 'unlock']);
+    Route::post('users/{user}/reset-mfa', [UserController::class, 'resetMfa']);
     Route::get('roles', [RoleController::class, 'index']);
     Route::put('roles/{role}/permissions', [RoleController::class, 'permissions']);
     Route::post('role-assignments', [RoleController::class, 'assign']);
