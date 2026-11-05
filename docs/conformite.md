@@ -45,17 +45,17 @@
 | NOT-01, NOT-02 notifications, courriels | Réalisé | `Notifier`, file avec reprises | R22 ; Mailpit en local |
 | TAB-01, TAB-02 tableaux de bord, exports | Réalisé | V04, V33, `ExportService` (CSV neutralisés) | `test_csv_export_neutralizes…`, PDF01 vérifié |
 | UX-01 à UX-03 | Réalisé (audit avec lecteur d’écran non fait) | états chargement/vide/erreur/interdit, clavier, libellés, contrastes ≥ 4,5:1 | audit axe-core WCAG 2.2 AA sur 17 pages sans violation grave |
-| TECH-01 à TECH-04 | Réalisé (CI à exécuter une première fois) | Dockerfile et CI vérifient les extensions ; migrations additives ; chaîne `.github/workflows/ci.yml` (tests PostgreSQL 18, builds, audits, SBOM, empreintes, E2E) | dépôt non encore poussé : la CI n’a pas tourné |
+| TECH-01 à TECH-04 | Réalisé (CI à exécuter une première fois) | Dockerfile et CI vérifient les extensions ; migrations additives ; chaîne `.github/workflows/ci.yml` (tests PostgreSQL 18, builds, audits, SBOM, empreintes, E2E, construction et contrôle des images de production) ; contrôle d’ouverture `saie:preflight` | `PreflightTest` ; images jamais construites sur le poste (pas de Docker) : validation au premier passage du job `infra` |
 | DATA-01 à DATA-03 | Réalisé | 80 tables, index, contraintes, dictionnaire généré | migrations |
 | API-01 à API-06 | Réalisé | erreurs homogènes, pagination, idempotence, If-Match, OpenAPI généré | R12, `VERSION_CONFLICT` |
-| SEC-01 TLS, MFA, verrouillage | Réalisé (TLS au déploiement) | TOTP, verrouillage 5 échecs | `test_login_is_generic…` |
+| SEC-01 TLS, MFA, verrouillage | Réalisé | TOTP, verrouillage 5 échecs ; Nginx HTTPS seul (TLS 1.2/1.3, HSTS, redirection), cookies sécurisés et second facteur imposés par `saie:preflight` | `test_login_is_generic…`, `PreflightTest`, configuration Nginx essayée sur Nginx 1.28 (redirection, en-têtes, TLS 1.1 refusé) |
 | SEC-02 policies, CSP, SSRF | Réalisé | contrôles par action, CSP, aucune URL libre | — |
 | SEC-03 conversion isolée | Réalisé (binaires à installer) | conversion LibreOffice/ffmpeg optionnelle, processus isolé et borné (`SAIE_SOFFICE_PATH`, `SAIE_FFMPEG_PATH`) ; état explicite si absents ; contrôle des archives | `MediaConversionTest` |
 | SEC-04, SEC-05 journal en ajout seul, secrets filtrés | Réalisé | déclencheur PostgreSQL, `Audit::filter` | test dédié |
 | SEC-06 réseau des lecteurs | Hors réalisation | flux sortants uniquement depuis le lecteur | infra DSI |
 | SEC-07 ASVS / test d’intrusion | Hors réalisation | — | à commander |
 | PERF-01, CONT-01, CONT-02 | Réalisé sur poste ; à confirmer sur l’environnement cible | séparation des téléchargements, procédure de sauvegarde, outillage `infra/loadtest/` et `infra/restore-drill.ps1` | R15 : 100 lecteurs, 0 erreur, p95 199 ms ; R14 : restauration complète vérifiée (empreintes, volumes, contraintes) |
-| INF-01, INF-02, QUAL-02, LIV-02 (manuels complets), EXP-01 à EXP-05 | Partiel / hors réalisation | supervision applicative fournie ; organisationnel | — |
+| INF-01, INF-02, QUAL-02, LIV-02 (manuels complets), EXP-01 à EXP-05 | Partiel / hors réalisation | supervision applicative ; procédures de déploiement, de mise en service, de publication du lecteur, de mise à jour, de retour arrière et liste de contrôle d’exploitation (`docs/exploitation/mise-en-service.md`) ; manuels par rôle et organisation à produire | — |
 | LIV-01, LIV-03 | Réalisé | sources, migrations, OpenAPI, dictionnaire, comptes initiaux sécurisés | — |
 
 ## Exigences P1 / P2

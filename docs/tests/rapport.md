@@ -6,7 +6,7 @@ Environnement : Windows 11, PHP 8.4.7, PostgreSQL **18.6** (instance Laragon, po
 
 | Suite | Commande | Résultat |
 | --- | --- | --- |
-| Backend unitaires + fonctionnels (PHPUnit 12, PostgreSQL réel) | `vendor\bin\phpunit` | **69 / 69 réussis** (358 assertions) |
+| Backend unitaires + fonctionnels (PHPUnit 12, PostgreSQL réel) | `vendor\bin\phpunit` | **74 / 74 réussis** (373 assertions) |
 | Migrations depuis une base vierge, retour arrière complet, réapplication | `migrate`, `migrate:rollback`, `migrate` | 13 migrations appliquées, annulées puis réappliquées sans erreur ; les 3 migrations P2 ajoutées ensuite ont été annulées puis réappliquées sans erreur |
 | Résolveur du lecteur (node:test) | `cd player; npm test` | **10 / 10 réussis** |
 | Typage frontend et lecteur | `npx tsc --noEmit` | 0 erreur |

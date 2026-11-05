@@ -20,6 +20,12 @@ for ($i = 0; $i < $connections; $i++) {
     while (! str_ends_with($command, "\0")) {
         $command .= fread($client, 1);
     }
+    if ($command === "zPING\0") {
+        fwrite($client, "PONG\0");
+        fclose($client);
+
+        continue;
+    }
     $data = '';
     while (true) {
         $header = fread($client, 4);

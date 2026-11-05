@@ -13,3 +13,5 @@ Thumbs.db
 /player/dist
 /infra/.env
 /player/dist-release
+/infra/secrets/
+/infra/certs/

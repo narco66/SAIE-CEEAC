@@ -126,3 +126,35 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with: { name: e2e-report, path: frontend/test-results }
+
+  infra:
+    # Images de production : Compose valide, construction BuildKit (listes blanches *.Dockerfile.dockerignore),
+    # absence de secrets et de dépendances de développement dans l'image, preflight exécutable, configuration Nginx valide.
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - name: Fichier Compose valide
+        run: |
+          cp infra/.env.example infra/.env
+          sed -i 's/^DB_PASSWORD=.*/DB_PASSWORD=ci/' infra/.env
+          docker compose -f infra/docker-compose.yml --profile deploy --profile local config --quiet
+      - name: Image PHP
+        run: docker buildx build --load -f infra/php.Dockerfile -t saie-ceeac/php:ci .
+      - name: Image web
+        run: docker buildx build --load -f infra/web.Dockerfile -t saie-ceeac/web:ci .
+      - name: Aucun secret ni dépendance de développement dans l'image PHP
+        run: docker run --rm --entrypoint sh saie-ceeac/php:ci -c 'test ! -e .env && test -z "$(ls -A storage/app/private)" && test ! -d vendor/phpunit && test ! -d tests && php -m | grep -q "Zend OPcache"'
+      - name: Preflight exécutable et refus d'une configuration incomplète
+        run: |
+          set +e
+          docker run --rm -e APP_KEY="base64:$(openssl rand -base64 32)" -e DB_HOST=127.0.0.1 saie-ceeac/php:ci php artisan saie:preflight --json > preflight.json
+          code=$?
+          set -e
+          cat preflight.json
+          test "$code" -eq 1
+          grep -q '"ready": false' preflight.json
+      - name: Configuration Nginx valide (certificat de test)
+        run: |
+          mkdir -p certs && openssl req -x509 -newkey rsa:2048 -nodes -keyout certs/privkey.pem -out certs/fullchain.pem -days 1 -subj "/CN=ci"
+          docker run --rm --add-host api:127.0.0.1 -v "$PWD/certs:/etc/nginx/certs:ro" saie-ceeac/web:ci nginx -t
