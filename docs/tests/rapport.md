@@ -11,13 +11,44 @@ Environnement : Windows 11, PHP 8.4.7, PostgreSQL **18.6** (instance Laragon, po
 | Résolveur du lecteur (node:test) | `cd player; npm test` | **8 / 8 réussis** |
 | Typage frontend et lecteur | `npx tsc --noEmit` | 0 erreur |
 | Build de production du frontend | `npm run build` | réussi |
-| Parcours de bout en bout (Playwright) | `cd frontend; npx playwright test` | **39 / 39 réussis** en une exécution complète (10,8 min) |
+| Parcours de bout en bout (Playwright) | `cd frontend; npx playwright test` | **39 / 39 réussis** en une exécution complète (10,8 min), puis parcours V08 ajouté : fichier des fonctions P1 rejoué, 5 / 5 |
 | dont audit d’accessibilité automatisé (axe-core, WCAG 2.2 AA) | `e2e/accessibility.spec.ts` | 17 pages, aucune violation « serious » ou « critical » |
 | Audit des dépendances | `composer audit`, `npm audit --omit=dev` (frontend, lecteur) | 0 vulnérabilité (après mise à jour de Symfony 8.1.10 → 8.1.11) |
 | Formatage PHP | `vendorin\pint --test` | conforme |
 | Contrat OpenAPI | `php artisan saie:openapi` | 145 chemins, à jour |
 
-Répartition des parcours : accessibilité 17, vues 3, interactions des vues 11, circuits éditoriaux et réservation 2, lecteur 1, captures 1, fonctions P1 (sources dynamiques, comptes de service, versions du lecteur, push, présence et iCalendar) 4.
+Répartition des parcours (40) : accessibilité 17, vues 3, interactions des vues 11, circuits éditoriaux et réservation 2, lecteur 1, captures 1, fonctions P1 (sources dynamiques, comptes de service, versions du lecteur, canal d’un lecteur, push, présence et iCalendar) 5.
+
+## Recette technique (R14, R15)
+
+### R14 — restauration (CONT-02)
+
+`infra/restore-drill.ps1 -Port 5433` : sauvegarde `pg_dump` + copie des fichiers privés, restauration dans une base et un dossier vierges, contrôles.
+
+| Mesure | Résultat |
+| --- | --- |
+| Durée de sauvegarde | 1,8 s |
+| Durée de restauration (RTO technique, hors réinstallation de la configuration) | 2,9 s |
+| Volumes (utilisateurs, contenus, versions, campagnes, occurrences, documents, médias, journal, reçus) | identiques (ex. 355 → 355 entrées de journal, 6 726 → 6 726 reçus) |
+| Dernière écriture du journal | identique avant et après |
+| Contrainte d’exclusion des réservations, déclencheur du journal en ajout seul | présents |
+| Fichiers : empreinte SHA-256 | 23 conformes, 0 écart |
+
+Portée : jeu de démonstration (quelques Mo). La durée sur les volumes réels et le RPO avec archivage WAL (`docs/exploitation/sauvegarde-restauration.md`) restent à mesurer sur l’environnement cible.
+
+### R15 — charge de 100 lecteurs (PERF-01)
+
+Pile proche de la production : Nginx 1.28, 8 processus PHP 8.4 (FastCGI, OPcache), PostgreSQL 18, base de charge dédiée (100 écrans et lecteurs appairés, `saie:loadtest-fixtures`), supprimée après l’essai.
+
+| Scénario | Requêtes | Erreurs | p50 | p95 | p99 | max |
+| --- | --- | --- | --- | --- | --- | --- |
+| Requête isolée : manifeste complet / conditionnel / heartbeat (médiane) | 10 chacune | 0 | 86 / 93 / 58 ms | — | — | — |
+| 100 lecteurs, 3 min, cadence réelle (30 s + aléa) : manifeste | 556 | 0 | 91 ms | 199 ms | 216 ms | 242 ms |
+| idem : heartbeat | 556 | 0 | 59 ms | 171 ms | 186 ms | 202 ms |
+| Reprise simultanée après coupure : 100 manifestes complets au même instant (3 rafales) | 300 | 0 | 761–1 250 ms | 1,4–2,3 s | — | 2,5 s |
+
+82 % des synchronisations aboutissent à un `304` (456 sur 556) : le manifeste n’est pas retransmis. Le serveur recompile cependant le programme à chaque appel (les plages et campagnes dépendent de l’heure) : le `304` économise la bande passante, pas le calcul. Limite observée : environ 40 à 60 manifestes complets par seconde avec 8 processus PHP sur ce poste. Non couverts : téléchargement des médias (servis par Nginx, hors PHP), 10 lecteurs physiques, réseau réel de la Commission.
+
 
 ## Défauts détectés et corrigés le 5 novembre
 
@@ -58,7 +89,7 @@ Répartition des parcours : accessibilité 17, vues 3, interactions des vues 11,
 | Journal en ajout seul (SEC-04) | `SecurityAndAccessTest::test_audit_log_is_append_only_at_database_level` |
 | CSV neutralisés, PDF générés et réautorisés (TAB-02) | `SecurityAndAccessTest::test_csv_export_neutralizes…` ; PDF01 contrôlé visuellement |
 
-Non réalisables ici : R13 (arrêt du SMTP institutionnel — Mailpit local seulement), R14 (restauration chronométrée, outillage `infra/restore-drill.ps1`), R15 (charge 100 lecteurs, outillage `infra/loadtest/`), R16 (audit avec lecteur d’écran ; l’audit automatisé axe-core est fait), R18 (déploiement depuis dépôt vierge en CI : chaîne fournie, dépôt pas encore poussé), R27 (ASVS et test d’intrusion indépendant), cycle d’extinction physique de dalle (R25, partie matérielle), redémarrage électrique réel (R26, partie matérielle).
+Non réalisables ici : R13 (arrêt du SMTP institutionnel — Mailpit local seulement), R14 et R15 sur l’environnement cible (exécutés sur ce poste, voir plus haut), R16 (audit avec lecteur d’écran ; l’audit automatisé axe-core est fait), R18 (déploiement depuis dépôt vierge en CI : chaîne fournie, dépôt pas encore poussé), R27 (ASVS et test d’intrusion indépendant), cycle d’extinction physique de dalle (R25, partie matérielle), redémarrage électrique réel (R26, partie matérielle).
 
 ## Défauts détectés et corrigés le 4 novembre
 

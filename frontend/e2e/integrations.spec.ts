@@ -114,3 +114,23 @@ test('V28 : export iCalendar et confirmation de présence par l’organisateur',
 
   expect((await loic('POST', `/occurrences/${reservation.occurrences[0].id}/cancel`, { scope: 'this', reason: 'Nettoyage du test automatisé' })).status).toBe(200)
 })
+
+test('V08 : affecter un lecteur au canal pilote puis le remettre en stable', async ({ page, request }) => {
+  const alain = await apiAs(request, 'alain.mbeng')
+  const screens = (await alain('GET', '/screens?per_page=100')).body.data as { id: string; device: { status: string; release_channel?: string } | null }[]
+  const screen = screens.find((s) => s.device?.status === 'active' && (s.device.release_channel ?? 'stable') === 'stable')
+  expect(screen, 'un écran avec un lecteur actif sur le canal stable').toBeTruthy()
+
+  await login(page, 'alain.mbeng')
+  await page.goto(`/affichage/ecrans/${screen!.id}`)
+  await page.getByRole('tab', { name: 'Lecteur' }).click()
+  const channel = page.getByRole('combobox', { name: 'Canal de version du lecteur' })
+  await expect(channel).toHaveValue('stable')
+  await channel.selectOption('pilot')
+  await expect(page.getByText('Canal de version modifié')).toBeVisible()
+  await page.reload()
+  await page.getByRole('tab', { name: 'Lecteur' }).click()
+  await expect(channel).toHaveValue('pilot')
+  await channel.selectOption('stable')
+  await expect.poll(async () => (await alain('GET', `/screens/${screen!.id}`)).body.data.device.release_channel).toBe('stable')
+})

@@ -18,7 +18,8 @@
 ## Vérifications restant à exécuter
 
 - Premier passage de la chaîne CI : le dépôt git ne contient pas encore le code (un seul fichier versionné).
-- Mesures non réalisables sur ce poste : charge à 100 lecteurs (`infra/loadtest/`), restauration chronométrée (`infra/restore-drill.ps1`), arrêt du SMTP institutionnel, audit d’accessibilité avec lecteur d’écran, ASVS niveau 2 et test d’intrusion, coupure électrique réelle.
+- Charge (R15) et restauration (R14) mesurées sur ce poste (voir `docs/tests/rapport.md`) : à refaire sur l’environnement cible avec les volumes réels, l’archivage WAL et 10 lecteurs physiques.
+- Mesures non réalisables sur ce poste : arrêt du SMTP institutionnel, audit d’accessibilité avec lecteur d’écran, ASVS niveau 2 et test d’intrusion, coupure électrique réelle.
 
 ## Points d’exploitation
 

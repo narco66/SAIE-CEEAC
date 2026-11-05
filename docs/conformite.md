@@ -54,7 +54,7 @@
 | SEC-04, SEC-05 journal en ajout seul, secrets filtrés | Réalisé | déclencheur PostgreSQL, `Audit::filter` | test dédié |
 | SEC-06 réseau des lecteurs | Hors réalisation | flux sortants uniquement depuis le lecteur | infra DSI |
 | SEC-07 ASVS / test d’intrusion | Hors réalisation | — | à commander |
-| PERF-01, CONT-01, CONT-02 | Partiel | séparation des téléchargements, procédure de sauvegarde ; outillage de charge `infra/loadtest/` et exercice `infra/restore-drill.ps1` | mesures à produire sur l’environnement cible |
+| PERF-01, CONT-01, CONT-02 | Réalisé sur poste ; à confirmer sur l’environnement cible | séparation des téléchargements, procédure de sauvegarde, outillage `infra/loadtest/` et `infra/restore-drill.ps1` | R15 : 100 lecteurs, 0 erreur, p95 199 ms ; R14 : restauration complète vérifiée (empreintes, volumes, contraintes) |
 | INF-01, INF-02, QUAL-02, LIV-02 (manuels complets), EXP-01 à EXP-05 | Partiel / hors réalisation | supervision applicative fournie ; organisationnel | — |
 | LIV-01, LIV-03 | Réalisé | sources, migrations, OpenAPI, dictionnaire, comptes initiaux sécurisés | — |
 
