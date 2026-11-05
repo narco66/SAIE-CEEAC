@@ -10,10 +10,59 @@ chrome --kiosk --noerrdialogs --disable-session-crashed-bubble --disable-infobar
 ```
 
 - **Autoplay** : les vidéos sont lancées muettes (autorisé par tous les navigateurs) ; l’audio n’est activé qu’à l’accueil, de 8 h à 18 h, avec le volume plafond de la zone (PLY-10). Le drapeau `--autoplay-policy` est requis pour le son.
-- **Codecs** : H.264/AAC (MP4) et WebM VP9 ; tester chaque famille de matériel au pilote. Aucune conversion n’est faite côté serveur.
+- **Codecs** : H.264/AAC (MP4) et WebM VP9 ; tester chaque famille de matériel au pilote. Le transcodage côté serveur n’a lieu que si ffmpeg est installé et déclaré (`SAIE_FFMPEG_PATH`) ; sinon, déposer les vidéos en H.264/AAC.
 - **Stockage** : le lecteur demande le stockage persistant (`navigator.storage.persist()`) ; en mode kiosque sur profil dédié, Chrome l’accorde. La capacité réelle est remontée dans le heartbeat (`storage.usage/quota`). Réserve de 20 %, éviction des ressources non référencées ; si le navigateur ne garantit pas la persistance, prévoir un agent natif de cache (PLY-04, décision au pilote).
 - **Chien de garde** : le lecteur se recharge si le rendu est figé 60 s ou après 5 erreurs en une minute. Le redémarrage du processus et du poste relève du superviseur du système (tâche planifiée Windows / systemd `Restart=always`).
-- **Extinction de la dalle** (PLY-08) : hors plage, le lecteur affiche un écran noir et espace sa synchronisation à 5 minutes ; la commande HDMI-CEC / RS-232 requiert un agent local non fourni (état « Non mesuré » dans les vues, PLY-09 P1).
+- **Extinction de la dalle** (PLY-08) : hors plage, le lecteur affiche un écran noir et espace sa synchronisation à 5 minutes. Si l’agent local de pilotage est installé (voir ci-dessous), il éteint puis rallume physiquement la dalle et remonte son état (PLY-09) ; sinon, l’état reste « Non mesuré ».
+
+## Pilotage des dalles (PLY-08, PLY-09)
+
+Un agent local, `player/agent/panel-agent.mjs`, est installé sur le mini-PC à côté du navigateur kiosque :
+- il écoute uniquement `127.0.0.1:7071` ;
+- le lecteur l’appelle pour allumer ou éteindre la dalle aux bornes de la plage de fonctionnement ;
+- il lit aussi l’état de la dalle et le transmet à chaque heartbeat.
+
+Il exige Node.js 22.
+
+| Pilote (`SAIE_PANEL_DRIVER`) | Usage | Prérequis |
+| --- | --- | --- |
+| `cec` | HDMI-CEC (adresse logique de l’écran : 0) | paquet `libcec` (`cec-client`), dalle et câble compatibles CEC |
+| `command` | RS-232 ou API du constructeur | `SAIE_PANEL_ON_CMD`, `SAIE_PANEL_OFF_CMD`, `SAIE_PANEL_STATUS_CMD` ; cette dernière doit afficher `on`, `off` ou `standby` |
+| `simulate` | essais sans matériel | — |
+
+Mise en place, par lecteur :
+
+1. Copier `panel-agent.mjs` sur le poste, par exemple dans `/opt/saie/`.
+2. Le lancer comme service redémarré automatiquement, avec l’origine du lecteur en variable d’environnement. Exemple systemd :
+
+   ```ini
+   [Service]
+   Environment=SAIE_PANEL_DRIVER=cec
+   Environment=SAIE_PLAYER_ORIGIN=https://saie.ceeac.local
+   ExecStart=/usr/bin/node /opt/saie/panel-agent.mjs
+   Restart=always
+   ```
+
+   Sous Windows : tâche planifiée au démarrage, avec les mêmes variables.
+
+   Toujours renseigner `SAIE_PLAYER_ORIGIN` : par défaut, l’agent accepte toutes les origines.
+3. Vérifier localement : `curl http://127.0.0.1:7071/panel` renvoie le pilote et l’état (`on`, `standby`…). Puis `curl -X POST -H "Content-Type: application/json" -d '{"power":"off"}' http://127.0.0.1:7071/panel` éteint la dalle.
+4. Dans l’administration (fiche écran, V08), renseigner le **Canal de pilotage de la dalle** :
+   - **HDMI-CEC**, **RS-232** ou **API constructeur** : l’état réel s’affiche alors dans la fiche et dans la supervision ;
+   - sans canal, il reste « Non mesuré ».
+
+Chaque modèle de dalle se teste au pilote, avec un cycle complet d’extinction et de rallumage (R25, partie matérielle). Certaines dalles ignorent le CEC en veille profonde.
+
+## Versions du lecteur et capture de rendu
+
+- **Versions** (PLY-12) :
+  - chaque lecteur suit le canal **Stable** ou **Pilote**, choisi sur sa fiche (onglet **Lecteur**) ;
+  - la version cible de chaque canal est portée par le manifeste signé ;
+  - la publication, la promotion et le retrait se font en V40 (voir [mise en service, § 5](exploitation/mise-en-service.md#5-publier-une-version-du-lecteur-ply-12)).
+- **Capture de rendu** (PLY-11) :
+  - **Demander une capture** (fiche écran, onglet **Lecteur**) ;
+  - le lecteur photographie son affichage et le transmet une seule fois ;
+  - l’image est conservée 10 minutes.
 
 ## Enrôlement (PLY-02, P06)
 

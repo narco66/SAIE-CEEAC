@@ -65,6 +65,8 @@ return Application::configure(basePath: dirname(__DIR__))
                 $e instanceof BusinessException => $error($request, $e->errorCode, $e->getMessage(), $e->status, [], $e->details),
                 $e instanceof AuthenticationException => $error($request, 'UNAUTHENTICATED', 'Authentification requise ou session expirée.', 401),
                 $e instanceof TokenMismatchException => $error($request, 'CSRF_MISMATCH', 'Session expirée : rechargez la page.', 419),
+                // Un refus métier explicite (ex. auto-validation) est expliqué ; un refus sans motif reste générique (le motif va au journal).
+                ($e instanceof AuthorizationException || $e instanceof AccessDeniedHttpException) && ! in_array($e->getMessage(), ['', 'This action is unauthorized.'], true) => $error($request, 'FORBIDDEN', $e->getMessage(), 403),
                 $e instanceof AuthorizationException, $e instanceof AccessDeniedHttpException => $error($request, 'FORBIDDEN', 'Vous n’êtes pas autorisé à effectuer cette action.', 403),
                 $e instanceof ModelNotFoundException, $e instanceof NotFoundHttpException => $error($request, 'NOT_FOUND', 'Objet absent ou inaccessible.', 404),
                 $e instanceof ThrottleRequestsException => $error($request, 'TOO_MANY_REQUESTS', 'Trop de tentatives. Réessayez plus tard.', 429),

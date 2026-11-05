@@ -51,7 +51,7 @@ cd frontend; npx playwright test         # parcours de bout en bout (API, fronte
 ## Documentation
 
 - [Architecture](docs/architecture.md) · [Déploiement](docs/deploiement.md) · [API OpenAPI](docs/api/openapi.json) (`cd backend; php artisan saie:openapi` le régénère)
-- [Guide d’administration](docs/administration.md) · [Lecteurs : installation et enrôlement](docs/lecteur.md)
+- [Manuels utilisateur par rôle](docs/manuels/premiers-pas.md) · [Lecteurs : installation, enrôlement et pilotage des dalles](docs/lecteur.md)
 - [Mise en service et exploitation](docs/exploitation/mise-en-service.md) · [Sauvegarde et restauration](docs/exploitation/sauvegarde-restauration.md) · [Dictionnaire de données](docs/donnees/dictionnaire.md)
 - [Décisions et hypothèses](docs/decisions.md) · [Sources consultées](docs/inventaire-sources.md)
 - [Matrice de conformité](docs/conformite.md) · [Rapport de tests](docs/tests/rapport.md) · [Limites restantes](docs/limites.md)

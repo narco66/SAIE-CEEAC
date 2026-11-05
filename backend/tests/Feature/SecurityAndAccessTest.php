@@ -6,6 +6,7 @@ use App\Models\AccessLink;
 use App\Models\Asset;
 use App\Models\AssetVersion;
 use App\Models\AuditLog;
+use App\Models\Content;
 use App\Models\ContentCategory;
 use App\Models\Document;
 use App\Models\Reservation;
@@ -52,6 +53,19 @@ class SecurityAndAccessTest extends TestCase
         $response = $this->actingAs($agent)->getJson('/api/v1/documents?q=bastion')->assertOk();
         $this->assertSame(0, $response->json('meta.total'));
         $this->assertSame(0, count($response->json('data')));
+    }
+
+    public function test_global_search_never_reveals_contents_outside_the_user_scope(): void
+    {
+        $other = $this->userWith('contributeur', 'DSI', null, 'DSI');
+        $outside = Content::query()->create(['reference' => 'CNT-HORS', 'title' => 'Arbitrages budgétaires DSI', 'category_id' => $this->category()->id, 'owner_structure_id' => $other->structure_id, 'author_id' => $other->id, 'classification' => 'interne', 'status' => 'draft']);
+        $contributor = $this->userWith('contributeur', 'COM', null, 'COM');
+        $own = Content::query()->create(['reference' => 'CNT-COM', 'title' => 'Arbitrages de la communication', 'category_id' => $this->category()->id, 'owner_structure_id' => $contributor->structure_id, 'author_id' => $contributor->id, 'classification' => 'interne', 'status' => 'draft']);
+
+        $labels = collect($this->actingAs($contributor)->getJson('/api/v1/search?q=Arbitrages')->assertOk()->json('data'))->where('type', 'content')->pluck('label')->all();
+        $this->assertSame([$own->title], $labels);
+        $this->assertNotContains($outside->title, $labels);
+        $this->actingAs($contributor)->getJson('/api/v1/search?q=CNT-HORS')->assertOk()->assertJsonCount(0, 'data');
     }
 
     public function test_internal_qr_requires_authentication_and_reevaluates_rights(): void

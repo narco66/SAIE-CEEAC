@@ -55,6 +55,11 @@ class SaieTick extends Command
             $occurrence->forceFill(['status' => 'refused', 'decision_reason' => 'Délai de validation dépassé : créneau libéré', 'version' => $occurrence->version + 1])->save();
             $notifier->notify($occurrence->reservation->organizer, 'reservation.expired', 'Demande de réservation expirée', $occurrence->room->name, "/reservations/{$occurrence->reservation_id}", 'reservation', $occurrence->reservation_id, 'hold-'.$occurrence->id);
             $audit->log('reservation.hold_expired', $occurrence->reservation, 'Délai de blocage dépassé', actor: null);
+            // Plus aucune occurrence en attente : la validation n'a plus d'objet (sinon rappels et escalades sur une demande morte).
+            if (! $occurrence->reservation->occurrences()->where('status', 'pending')->exists()) {
+                Approval::query()->where('object_type', 'reservation')->where('object_id', $occurrence->reservation_id)->where('status', 'open')
+                    ->update(['status' => 'cancelled', 'reason' => 'Délai de validation dépassé', 'updated_at' => now()]);
+            }
         }
 
         $report['rappels'] = 0;

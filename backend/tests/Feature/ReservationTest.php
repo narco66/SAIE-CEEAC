@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\Approval;
 use App\Models\Reservation;
 use App\Models\ReservationOccurrence;
 use App\Models\Room;
@@ -125,6 +126,20 @@ class ReservationTest extends TestCase
         $this->actingAs($this->agent)->postJson("/api/v1/reservations/{$created->json('data.id')}/approve")->assertForbidden();
         $this->actingAs($manager)->postJson("/api/v1/reservations/{$created->json('data.id')}/approve")->assertOk();
         $this->assertSame('confirmed', ReservationOccurrence::query()->value('status'));
+    }
+
+    public function test_expired_pending_request_closes_its_approval_so_no_reminder_or_escalation_follows(): void
+    {
+        $manager = $this->userWith('gestionnaire_salle', 'MG');
+        $manual = $this->room(['approval_mode' => 'manual', 'manager_id' => $manager->id]);
+        $created = $this->actingAs($this->agent)->postJson('/api/v1/reservations', $this->payload('10:00', '11:00', ['room_id' => $manual->id]))->assertCreated();
+        $this->assertSame(1, Approval::query()->where('object_id', $created->json('data.id'))->where('status', 'open')->count());
+
+        ReservationOccurrence::query()->update(['hold_until' => now()->subMinute()]);
+        $this->artisan('saie:tick')->assertSuccessful();
+
+        $this->assertSame('refused', ReservationOccurrence::query()->value('status'));
+        $this->assertSame('cancelled', Approval::query()->where('object_id', $created->json('data.id'))->value('status'));
     }
 
     public function test_no_show_is_declared_by_manager_after_start_only(): void

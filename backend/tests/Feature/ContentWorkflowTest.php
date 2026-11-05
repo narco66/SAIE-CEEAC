@@ -44,7 +44,8 @@ class ContentWorkflowTest extends TestCase
         $this->actingAs($this->author)->postJson("/api/v1/contents/{$content->id}/submit", ['languages' => ['fr', 'en']])->assertOk();
 
         $this->grantRole($this->author, 'validateur', ['fr']);
-        $this->actingAs($this->author)->postJson("/api/v1/contents/{$content->id}/approve", ['lang' => 'fr', 'decision' => 'approve', 'expected_revision' => 1])->assertForbidden();
+        $this->actingAs($this->author)->postJson("/api/v1/contents/{$content->id}/approve", ['lang' => 'fr', 'decision' => 'approve', 'expected_revision' => 1])->assertForbidden()
+            ->assertJsonPath('message', 'Un auteur ne peut pas valider sa propre publication.');
         $this->assertDatabaseCount('content_versions', 0);
 
         $this->actingAs($this->validatorFr)->postJson("/api/v1/contents/{$content->id}/approve", ['lang' => 'fr', 'decision' => 'approve', 'expected_revision' => 1])->assertOk();

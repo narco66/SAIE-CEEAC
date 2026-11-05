@@ -10,6 +10,7 @@ use App\Models\Content;
 use App\Models\ContentVersion;
 use App\Models\User;
 use App\Models\WorkflowEvent;
+use App\Services\ContentAccess;
 use App\Services\ContentWorkflow;
 use App\Support\BusinessException;
 use App\Support\Present;
@@ -185,14 +186,7 @@ class ContentController extends Controller
      */
     private function visible(Builder $query): Builder
     {
-        $user = $this->user();
-        $scopes = collect(['contents.create', 'contents.validate', 'contents.view'])->map(fn ($p) => $this->access()->structureScope($user, $p));
-        if ($scopes->contains(fn ($s) => $s === null)) {
-            return $query;
-        }
-        $ids = $scopes->flatten()->filter()->unique()->values()->all();
-
-        return $query->where(fn ($q) => $q->whereIn('owner_structure_id', $ids ?: ['00000000-0000-0000-0000-000000000000'])->orWhere('author_id', $user->id));
+        return app(ContentAccess::class)->scope($query, $this->user());
     }
 
     private function assertVisible(Content $content): void

@@ -16,6 +16,7 @@ use App\Models\ReservationOccurrence;
 use App\Models\Room;
 use App\Models\Screen;
 use App\Models\ServiceRequest;
+use App\Services\ContentAccess;
 use App\Services\DocumentAccess;
 use App\Support\Present;
 use Carbon\Carbon;
@@ -128,7 +129,7 @@ class DashboardController extends Controller
         }
         $results = collect();
         if ($this->can('contents.view')) {
-            $results = $results->merge(Content::query()->where('title', 'ilike', "%$term%")->orWhere('reference', 'ilike', "%$term%")->limit(5)->get()->map(fn ($c) => ['type' => 'content', 'label' => $c->title, 'sub' => $c->reference, 'link' => "/affichage/contenus/{$c->id}/edition"]));
+            $results = $results->merge(app(ContentAccess::class)->scope(Content::query(), $this->user())->where(fn ($q) => $q->where('title', 'ilike', "%$term%")->orWhere('reference', 'ilike', "%$term%"))->limit(5)->get()->map(fn ($c) => ['type' => 'content', 'label' => $c->title, 'sub' => $c->reference, 'link' => "/affichage/contenus/{$c->id}/edition"]));
         }
         if ($this->can('documents.view')) {
             $results = $results->merge(app(DocumentAccess::class)->scope(Document::query(), $this->user())->whereRaw("search_vector @@ websearch_to_tsquery('french', ?)", [$term])->limit(5)->get()->map(fn ($d) => ['type' => 'document', 'label' => $d->title, 'sub' => $d->reference, 'link' => "/documents/{$d->id}"]));
@@ -137,7 +138,7 @@ class DashboardController extends Controller
             $results = $results->merge(Room::query()->where('name', 'ilike', "%$term%")->limit(5)->get()->map(fn ($r) => ['type' => 'room', 'label' => $r->name, 'sub' => $r->capacity.' places', 'link' => "/salles/{$r->id}"]));
         }
         if ($this->can('screens.view')) {
-            $results = $results->merge(Screen::query()->where('code', 'ilike', "%$term%")->orWhere('name', 'ilike', "%$term%")->limit(5)->get()->map(fn ($s) => ['type' => 'screen', 'label' => $s->code, 'sub' => $s->name, 'link' => "/affichage/ecrans/{$s->id}"]));
+            $results = $results->merge(Screen::query()->where(fn ($q) => $q->where('code', 'ilike', "%$term%")->orWhere('name', 'ilike', "%$term%"))->limit(5)->get()->map(fn ($s) => ['type' => 'screen', 'label' => $s->code, 'sub' => $s->name, 'link' => "/affichage/ecrans/{$s->id}"]));
         }
 
         return response()->json(['data' => $results->values()]);

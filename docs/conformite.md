@@ -55,7 +55,7 @@
 | SEC-06 réseau des lecteurs | Hors réalisation | flux sortants uniquement depuis le lecteur | infra DSI |
 | SEC-07 ASVS / test d’intrusion | Hors réalisation | — | à commander |
 | PERF-01, CONT-01, CONT-02 | Réalisé sur poste ; à confirmer sur l’environnement cible | séparation des téléchargements, procédure de sauvegarde, outillage `infra/loadtest/` et `infra/restore-drill.ps1` | R15 : 100 lecteurs, 0 erreur, p95 199 ms ; R14 : restauration complète vérifiée (empreintes, volumes, contraintes) |
-| INF-01, INF-02, QUAL-02, LIV-02 (manuels complets), EXP-01 à EXP-05 | Partiel / hors réalisation | supervision applicative ; procédures de déploiement, de mise en service, de publication du lecteur, de mise à jour, de retour arrière et liste de contrôle d’exploitation (`docs/exploitation/mise-en-service.md`) ; manuels par rôle et organisation à produire | — |
+| INF-01, INF-02, QUAL-02, LIV-02 (manuels complets), EXP-01 à EXP-05 | Partiel / hors réalisation | supervision applicative ; procédures de déploiement, de mise en service, de publication du lecteur, de mise à jour, de retour arrière et liste de contrôle d’exploitation (`docs/exploitation/mise-en-service.md`) ; manuels par rôle (`docs/manuels/` : premiers pas, agent, contributeur, validateur, diffuseur, gestionnaire de salle, administrateur, auditeur) ; procédure de pilotage des dalles (`docs/lecteur.md`) ; image système de référence du lecteur et inventaire matériel à produire au pilote | — |
 | LIV-01, LIV-03 | Réalisé | sources, migrations, OpenAPI, dictionnaire, comptes initiaux sécurisés | — |
 
 ## Exigences P1 / P2
