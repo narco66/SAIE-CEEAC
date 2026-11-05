@@ -119,7 +119,7 @@ export default function ReservationDetail() {
                       {presence.enabled && presence.codes[o.id] && !presence.checked_in[o.id] && ['pending', 'confirmed', 'in_progress'].includes(o.status) && <small className="muted">Code de présence : <span className="mono">{presence.codes[o.id]}</span></small>}
                     </td>
                     <td>{o.blocking_start ? `${fmtTime(o.blocking_start)}–${fmtTime(o.blocking_end)}` : '—'}<small className="muted">préparation incluse</small></td>
-                    <td>{o.services.length === 0 ? <span className="muted">—</span> : o.services.map((s) => <small key={s.id}>{s.type ?? 'Prestation'} : {(SERVICE_STATUS[s.status] ?? [s.status])[0]}{s.details ? ` (${s.details})` : ''}</small>)}</td>
+                    <td>{o.services.length === 0 ? <span className="muted">—</span> : o.services.map((s) => <small key={s.id}>{s.label ?? s.type ?? 'Prestation'} : {(SERVICE_STATUS[s.status] ?? [s.status])[0]}{s.details ? ` (${s.details})` : ''}</small>)}</td>
                     <td>
                       <div className="row-actions">
                         {canCheckIn(o) && <Button size="small" icon="check" onClick={() => setDialog({ kind: 'checkin', o })}>Confirmer la présence</Button>}
@@ -167,7 +167,7 @@ export default function ReservationDetail() {
           <div className="panel-body">
             {occurrences.every((o) => o.services.length === 0) ? <p className="muted small">Aucune prestation demandée.</p> : (
               <table><thead><tr><th>Prestation</th><th>Occurrence</th><th>Statut</th></tr></thead>
-                <tbody>{occurrences.flatMap((o) => o.services.map((s) => <tr key={s.id}><td>{s.type}<small className="muted">{s.details ?? ''}</small></td><td>{slotLabel(o.starts_at, o.ends_at)}</td><td><StatusOf map={SERVICE_STATUS} value={s.status} /></td></tr>))}</tbody></table>
+                <tbody>{occurrences.flatMap((o) => o.services.map((s) => <tr key={s.id}><td>{s.label ?? s.type}<small className="muted">{s.details ?? ''}</small></td><td>{slotLabel(o.starts_at, o.ends_at)}</td><td><StatusOf map={SERVICE_STATUS} value={s.status} /></td></tr>))}</tbody></table>
             )}
             <h3 className="small" style={{ fontWeight: 700, margin: '12px 0 6px' }}>Ressources mobiles</h3>
             {r.resources === undefined ? <p className="muted small">Non communiquées.</p> : r.resources.length === 0 ? <p className="muted small">Aucune ressource réservée.</p> : (

@@ -272,7 +272,7 @@ export function TemplatePreview({ layout, orientation, title, body, kicker, lang
 /* ===== Campagnes ===== */
 export interface CampaignTarget { type: 'screen' | 'group' | 'zone' | 'floor' | 'all'; id: string | null }
 export interface Campaign {
-  id: string; reference: string; name: string; status: string; priority: number; version: number
+  id: string; reference: string; name: string; kind?: 'standard' | 'event'; status: string; priority: number; version: number
   starts_at: string; ends_at: string; days: number[]; time_from: string | null; time_to: string | null; slide_duration_s: number | null; suspend_reason: string | null
   creator: UserRef | null; published_at: string | null
   languages: { lang: string; rank: number }[]

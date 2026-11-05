@@ -27,7 +27,7 @@ class ServiceRequestController extends Controller
             ->orderBy('due_at')->orderBy('id');
 
         return $this->paginated($query, $request, fn (ServiceRequest $s) => [
-            'id' => $s->id, 'type' => ['code' => $s->serviceType->code, 'name' => $s->serviceType->name], 'details' => $s->details, 'status' => $s->status,
+            'id' => $s->id, 'type' => ['code' => $s->serviceType->code, 'name' => $s->serviceType->name], 'label' => $s->label(), 'headcount' => $s->headcount, 'serve_time' => $s->serve_time, 'details' => $s->details, 'status' => $s->status,
             'due_at' => Present::date($s->due_at), 'assignee' => Present::userRef($s->assignee), 'response_note' => $s->response_note,
             'meeting' => [
                 'reference' => $s->occurrence->reservation->reference,

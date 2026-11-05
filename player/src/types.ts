@@ -27,6 +27,8 @@ export interface ScheduleEntry {
   lang: string
   auth_class: 'public' | 'interne'
   priority: number
+  /** Mode événement (PUB-12) : écarte le programme ordinaire pendant sa période. */
+  event?: boolean
   position: number
   rotation_rank: number
   from: string

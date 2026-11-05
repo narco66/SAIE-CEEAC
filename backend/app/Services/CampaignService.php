@@ -83,6 +83,23 @@ class CampaignService
         return ['screens' => $result->values(), 'effective' => $result->where('compatible', true)->count(), 'warnings' => $warnings];
     }
 
+    /** Durée maximale d'un mode événement (PUB-12). */
+    public const EVENT_MAX_DAYS = 31;
+
+    /**
+     * Mode événement (PUB-12) : date de fin obligatoire (déjà exigée pour toute campagne) et durée bornée,
+     * pour qu'un programme d'exception ne remplace jamais durablement le programme ordinaire.
+     */
+    public function assertEventRules(Campaign $campaign): void
+    {
+        if ($campaign->kind !== 'event' || ! $campaign->starts_at || ! $campaign->ends_at) {
+            return;
+        }
+        if ($campaign->ends_at->gt($campaign->starts_at->addDays(self::EVENT_MAX_DAYS))) {
+            throw new BusinessException('EVENT_TOO_LONG', 'Un mode événement dure au plus '.self::EVENT_MAX_DAYS.' jours : le programme ordinaire doit reprendre.', 422);
+        }
+    }
+
     public function publish(Campaign $campaign, User $user): Campaign
     {
         return DB::transaction(function () use ($campaign, $user): Campaign {
@@ -90,6 +107,7 @@ class CampaignService
             if (! in_array($campaign->status, ['draft', 'suspended'], true)) {
                 throw new BusinessException('INVALID_TRANSITION', 'Seule une campagne en brouillon ou suspendue peut être programmée.', 409);
             }
+            $this->assertEventRules($campaign);
             if ($campaign->ends_at->isPast()) {
                 throw new BusinessException('CAMPAIGN_EXPIRED', 'La date de fin de la campagne est dépassée.', 422);
             }

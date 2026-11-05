@@ -2,7 +2,8 @@ import type { Manifest, ManifestAlert, ScheduleEntry } from './types.ts'
 
 /**
  * Résolution déterministe du programme (PUB-05), identique à app/Services/ScheduleResolver.php :
- * alerte active d'abord ; sinon priorité décroissante, puis date de début, puis identifiant ; rotation ordonnée à priorité égale.
+ * alerte active d'abord ; sinon mode événement (PUB-12), qui écarte le programme ordinaire ; puis priorité décroissante,
+ * date de début, identifiant ; rotation ordonnée à priorité égale.
  * Les entrées dont l'autorisation de diffusion hors ligne a expiré sont retirées (PLY-05).
  */
 
@@ -55,7 +56,7 @@ export function resolve(manifest: Manifest, at: Date, isAssetReady: (id: string)
     return { mode: 'alert', alerts, reason: 'Alerte active prioritaire' }
   }
   const local = localClock(at, manifest.timezone)
-  const eligible = (manifest.schedule ?? []).filter((e) => {
+  const candidates = (manifest.schedule ?? []).filter((e) => {
     const until = manifest.authorization?.[e.auth_class]
     if (until && Date.parse(until) <= t) return false
     if (Date.parse(e.from) > t || Date.parse(e.to) <= t) return false
@@ -64,11 +65,13 @@ export function resolve(manifest: Manifest, at: Date, isAssetReady: (id: string)
     if (e.time_to && local.time >= e.time_to) return false
     return e.slide.media.every((m) => isAssetReady(m.asset))
   })
-  if (!eligible.length) return { mode: 'fallback', reason: 'Aucun programme valide : contenu de repli' }
+  if (!candidates.length) return { mode: 'fallback', reason: 'Aucun programme valide : contenu de repli' }
+  const events = candidates.filter((e) => e.event)
+  const eligible = events.length ? events : candidates
   eligible.sort((a, b) => cmp([-a.priority, a.from, a.campaign_id, a.position, a.rotation_rank], [-b.priority, b.from, b.campaign_id, b.position, b.rotation_rank]))
   const top = eligible[0].priority
   const playlist = eligible.filter((e) => e.priority === top)
-  return { mode: 'program', playlist, reason: `Priorité ${top} · rotation de ${playlist.length} diapositive(s)` }
+  return { mode: 'program', playlist, reason: `${events.length ? 'Mode événement · ' : ''}Priorité ${top} · rotation de ${playlist.length} diapositive(s)` }
 }
 
 /** Le contenu de repli expiré est remplacé par un repli institutionnel neutre (PUB-11). */

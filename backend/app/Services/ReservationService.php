@@ -10,6 +10,7 @@ use App\Models\ResourceBooking;
 use App\Models\Room;
 use App\Models\RoomBlock;
 use App\Models\ServiceRequest;
+use App\Models\ServiceType;
 use App\Models\User;
 use App\Support\BusinessException;
 use App\Support\Reference;
@@ -19,6 +20,7 @@ use Illuminate\Database\QueryException;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 
 /**
  * Règles de réservation : intervalles semi-ouverts [début, fin[, tampons de préparation, séries bornées « tout ou rien »,
@@ -45,6 +47,7 @@ class ReservationService
         foreach ($slots as [$s, $e]) {
             $this->checkRules($room, $s, $e, $user);
         }
+        $this->assertServicesValid($data['services'] ?? [], $slots);
         $mode = $data['recurrence_mode'] ?? 'all_or_nothing';
         $conflicts = $this->conflicts($room, $slots);
         if ($conflicts !== [] && $mode !== 'partial') {
@@ -84,7 +87,10 @@ class ReservationService
                 }
                 $this->attachResources($occurrence, $data['resource_ids'] ?? []);
                 foreach ($data['services'] ?? [] as $service) {
-                    ServiceRequest::query()->create(['occurrence_id' => $occurrence->id, 'service_type_id' => $service['service_type_id'], 'details' => $service['details'] ?? null, 'due_at' => $s->subHours(2)]);
+                    ServiceRequest::query()->create([
+                        'occurrence_id' => $occurrence->id, 'service_type_id' => $service['service_type_id'], 'details' => $service['details'] ?? null,
+                        'headcount' => $service['headcount'] ?? null, 'serve_time' => $service['serve_time'] ?? null, 'due_at' => $s->subHours(2),
+                    ]);
                 }
                 $created[] = $occurrence;
             }
@@ -196,6 +202,56 @@ class ReservationService
     /**
      * Annulation tracée d'une occurrence, des suivantes ou de toute la série (SAL-07).
      */
+    /**
+     * Prestations demandées (SAL-08, SAL-15) : type actif ; pour la restauration, nombre de couverts et heure de service
+     * obligatoires, l'heure (fuseau institutionnel) devant tomber pendant chaque occurrence.
+     *
+     * @param  list<array{service_type_id: string, details?: string|null, headcount?: int|null, serve_time?: string|null}>  $services
+     * @param  list<array{0: CarbonImmutable, 1: CarbonImmutable}>  $slots
+     *
+     * @throws ValidationException
+     */
+    public function assertServicesValid(array $services, array $slots): void
+    {
+        if ($services === []) {
+            return;
+        }
+        $types = ServiceType::query()->whereIn('id', array_column($services, 'service_type_id'))->get()->keyBy('id');
+        $timezone = (string) config('saie.timezone');
+        $errors = [];
+        foreach (array_values($services) as $index => $service) {
+            $type = $types->get($service['service_type_id']);
+            if (! $type || ! $type->is_active) {
+                $errors["services.$index.service_type_id"] = 'Ce type de prestation n’est pas disponible.';
+
+                continue;
+            }
+            if (! $type->requires_headcount) {
+                continue;
+            }
+            if (empty($service['headcount'])) {
+                $errors["services.$index.headcount"] = "Indiquez le nombre de couverts pour « {$type->name} ».";
+            }
+            if (empty($service['serve_time'])) {
+                $errors["services.$index.serve_time"] = "Indiquez l’heure de service pour « {$type->name} ».";
+
+                continue;
+            }
+            foreach ($slots as [$start, $end]) {
+                $localStart = $start->setTimezone($timezone);
+                $serveAt = $localStart->setTimeFromTimeString($service['serve_time']);
+                if ($serveAt->lt($localStart) || $serveAt->gte($end->setTimezone($timezone))) {
+                    $errors["services.$index.serve_time"] = 'L’heure de service doit se situer pendant la réunion ('.$localStart->format('H:i').'–'.$end->setTimezone($timezone)->format('H:i').').';
+
+                    break;
+                }
+            }
+        }
+        if ($errors !== []) {
+            throw ValidationException::withMessages($errors);
+        }
+    }
+
     public function cancel(ReservationOccurrence $occurrence, string $scope, User $user, ?string $reason): int
     {
         $reservation = $occurrence->reservation;

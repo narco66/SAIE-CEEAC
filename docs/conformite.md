@@ -1,6 +1,6 @@
 # Matrice de conformité fonctionnelle et visuelle
 
-> Mise à jour du 5 novembre 2026 : fonctions P1 achevées et suites rejouées (PHPUnit 55/55, Playwright 39/39, voir `docs/tests/rapport.md`).
+> Mise à jour du 5 novembre 2026 : fonctions P1 et exigences P2 (DOC-09, PUB-12, SAL-15) achevées, suites rejouées (voir `docs/tests/rapport.md`).
 
 État : **Réalisé** (implémenté et vérifié par test ou exécution), **Réalisé (non testé auto.)** (implémenté, vérifié manuellement ou par compilation seulement), **Partiel**, **Préparé** (structure, API ou interface présentes, fonction désactivée ou dépendante d’un accès externe), **Hors réalisation** (organisationnel ou matériel).
 
@@ -77,7 +77,9 @@
 | API-07 API d’intégration | Réalisé : comptes de service à portées (V39), jeton affiché une fois, renouvellement et révocation tracés, désactivée par défaut |
 | EXP-06, GOV-03 | Hors réalisation (organisationnel) |
 | ACC-03 (P2) | Réalisé pour la part attendue : API de lecture des réunions du jour (`/api/v1/integration/meetings`) ; gestion des visiteurs hors périmètre |
-| DOC-09, PUB-12, SAL-15 (P2) | Non réalisés (SAL-15 : type « restauration » présent et inactif) |
+| DOC-09 diffusion par courriel (P2) | Réalisé : depuis la fiche document (V14), vers des structures ; notification et courriel par la file NOT-02, lien authentifié, jamais de pièce jointe ; agents non habilités écartés et comptés ; document restreint annoncé sans son titre ; historique des diffusions ; `DocumentBroadcastTest` |
+| PUB-12 mode événement (P2) | Réalisé : type de campagne « événement » (V21) qui remplace le programme ordinaire des écrans ciblés quelle que soit sa priorité, alertes toujours prioritaires ; durée bornée à 31 jours (API et contrainte SQL) ; retour automatique au programme ordinaire à la date de fin ; même règle côté serveur et lecteur ; `EventModeTest`, `ScheduleResolverTest`, `schedule.test.ts` |
+| SAL-15 restauration (P2) | Réalisé : type « Pause-café et restauration » actif, nombre de couverts et heure de service obligatoires, heure contrôlée dans le créneau de chaque occurrence ; traité comme toute prestation (V32, PDF01, PDF03) ; `CateringServiceTest` |
 
 ## Conformité visuelle
 

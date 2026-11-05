@@ -73,6 +73,7 @@
 .service-row { display: grid; grid-template-columns: 220px 1fr; gap: 10px; align-items: center; padding: 6px 0; border-top: 1px solid #edf0f3; }
 .service-row label { display: flex !important; align-items: center; gap: 7px; }
 .service-row input[type="text"] { margin-top: 0 !important; }
+.service-extra { grid-column: 2; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
 .external-row { display: grid; grid-template-columns: 1fr 1fr auto; gap: 8px; align-items: end; margin-top: 6px; }
 .external-row input { margin-top: 0 !important; }
 .occ-preview { display: grid; gap: 6px; margin-top: 10px; max-height: 260px; overflow: auto; }
@@ -103,4 +104,5 @@
 td small, td .muted { display: block; }
 @media (max-width: 760px) {
   .service-row, .external-row, .agenda-edit-row, .checklist-item { grid-template-columns: 1fr; }
+  .service-extra { grid-column: 1; grid-template-columns: 1fr; }
 }

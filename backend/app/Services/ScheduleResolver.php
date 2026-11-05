@@ -6,7 +6,8 @@ use Carbon\CarbonImmutable;
 
 /**
  * Résolution déterministe du programme à un instant donné (PUB-05) — même algorithme que le lecteur (player/src/schedule.ts) :
- * 1. alerte active autorisée ; 2. priorité décroissante ; 3. date de début ; 4. identifiant ; rotation ordonnée à priorité égale.
+ * 1. alerte active autorisée ; 2. mode événement (PUB-12), qui écarte le programme ordinaire ; 3. priorité décroissante ;
+ * 4. date de début ; 5. identifiant ; rotation ordonnée à priorité égale.
  */
 class ScheduleResolver
 {
@@ -55,12 +56,16 @@ class ScheduleResolver
             return ['mode' => 'fallback', 'alerts' => [], 'playlist' => [], 'reason' => 'Aucun programme valide : contenu de repli'];
         }
 
+        $events = array_values(array_filter($eligible, fn (array $e): bool => ! empty($e['event'])));
+        if ($events !== []) {
+            $eligible = $events;
+        }
         usort($eligible, fn ($a, $b) => [-$a['priority'], $a['from'], $a['campaign_id'], $a['position'], $a['rotation_rank']]
             <=> [-$b['priority'], $b['from'], $b['campaign_id'], $b['position'], $b['rotation_rank']]);
         $top = $eligible[0]['priority'];
         $playlist = array_values(array_filter($eligible, fn (array $e): bool => $e['priority'] === $top));
 
-        return ['mode' => 'program', 'alerts' => [], 'playlist' => $playlist, 'reason' => 'Priorité '.$top.' · rotation de '.count($playlist).' diapositive(s)'];
+        return ['mode' => 'program', 'alerts' => [], 'playlist' => $playlist, 'reason' => ($events !== [] ? 'Mode événement · ' : '').'Priorité '.$top.' · rotation de '.count($playlist).' diapositive(s)'];
     }
 
     /**

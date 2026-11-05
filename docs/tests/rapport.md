@@ -6,18 +6,20 @@ Environnement : Windows 11, PHP 8.4.7, PostgreSQL **18.6** (instance Laragon, po
 
 | Suite | Commande | Résultat |
 | --- | --- | --- |
-| Backend unitaires + fonctionnels (PHPUnit 12, PostgreSQL réel) | `vendorin\phpunit` | **55 / 55 réussis** (295 assertions) |
-| Migrations depuis une base vierge, retour arrière complet, réapplication | `migrate`, `migrate:rollback`, `migrate` | 13 migrations appliquées, annulées puis réappliquées sans erreur |
-| Résolveur du lecteur (node:test) | `cd player; npm test` | **8 / 8 réussis** |
+| Backend unitaires + fonctionnels (PHPUnit 12, PostgreSQL réel) | `vendor\bin\phpunit` | **69 / 69 réussis** (358 assertions) |
+| Migrations depuis une base vierge, retour arrière complet, réapplication | `migrate`, `migrate:rollback`, `migrate` | 13 migrations appliquées, annulées puis réappliquées sans erreur ; les 3 migrations P2 ajoutées ensuite ont été annulées puis réappliquées sans erreur |
+| Résolveur du lecteur (node:test) | `cd player; npm test` | **10 / 10 réussis** |
 | Typage frontend et lecteur | `npx tsc --noEmit` | 0 erreur |
-| Build de production du frontend | `npm run build` | réussi |
-| Parcours de bout en bout (Playwright) | `cd frontend; npx playwright test` | **39 / 39 réussis** en une exécution complète (10,8 min), puis parcours V08 ajouté : fichier des fonctions P1 rejoué, 5 / 5 |
+| Builds de production (frontend, lecteur) | `npm run build` | réussis |
+| Parcours de bout en bout (Playwright) | `cd frontend; npx playwright test` | **43 / 43 réussis** en une exécution complète (10,9 min) |
 | dont audit d’accessibilité automatisé (axe-core, WCAG 2.2 AA) | `e2e/accessibility.spec.ts` | 17 pages, aucune violation « serious » ou « critical » |
 | Audit des dépendances | `composer audit`, `npm audit --omit=dev` (frontend, lecteur) | 0 vulnérabilité (après mise à jour de Symfony 8.1.10 → 8.1.11) |
-| Formatage PHP | `vendorin\pint --test` | conforme |
-| Contrat OpenAPI | `php artisan saie:openapi` | 145 chemins, à jour |
+| Formatage PHP | `vendor\bin\pint --test` | conforme |
+| Contrat OpenAPI | `php artisan saie:openapi` | 146 chemins, à jour |
 
-Répartition des parcours (40) : accessibilité 17, vues 3, interactions des vues 11, circuits éditoriaux et réservation 2, lecteur 1, captures 1, fonctions P1 (sources dynamiques, comptes de service, versions du lecteur, canal d’un lecteur, push, présence et iCalendar) 5.
+Répartition des parcours (43) : accessibilité 17, vues 3, interactions des vues 11, circuits éditoriaux et réservation 2, lecteur 1, captures 1, fonctions P1 (sources dynamiques, comptes de service, versions du lecteur, canal d’un lecteur, push, présence et iCalendar) 5, exigences P2 (mode événement, diffusion par courriel, restauration) 3.
+
+Exigences P2 ajoutées le 5 novembre et leurs preuves : DOC-09 `DocumentBroadcastTest` (5 tests) ; PUB-12 `EventModeTest` (3), `ScheduleResolverTest` (2 cas ajoutés) et `schedule.test.ts` (2 cas ajoutés, même règle côté lecteur) ; SAL-15 `CateringServiceTest` (4) ; parcours `e2e/p2.spec.ts`.
 
 ## Recette technique (R14, R15)
 

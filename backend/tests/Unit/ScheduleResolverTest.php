@@ -34,6 +34,32 @@ class ScheduleResolverTest extends TestCase
         $this->assertSame(['b-fr', 'b-en', 'a-fr'], array_column($result['playlist'], 'entry_id'));
     }
 
+    public function test_event_mode_replaces_ordinary_program_whatever_its_priority_then_hands_back_automatically(): void
+    {
+        $manifest = $this->manifest([
+            $this->entry(['entry_id' => 'ordinary-high', 'campaign_id' => 'ordinary', 'priority' => 90]),
+            $this->entry(['entry_id' => 'summit-fr', 'campaign_id' => 'summit', 'priority' => 20, 'event' => true, 'from' => '2026-11-04T07:00:00Z', 'to' => '2026-11-06T17:00:00Z']),
+            $this->entry(['entry_id' => 'summit-en', 'campaign_id' => 'summit', 'priority' => 20, 'event' => true, 'rotation_rank' => 2, 'from' => '2026-11-04T07:00:00Z', 'to' => '2026-11-06T17:00:00Z']),
+        ]);
+        $resolver = new ScheduleResolver;
+
+        $during = $resolver->resolve($manifest, CarbonImmutable::parse('2026-11-05T09:00:00Z'));
+        $this->assertSame(['summit-fr', 'summit-en'], array_column($during['playlist'], 'entry_id'));
+        $this->assertStringStartsWith('Mode événement', $during['reason']);
+
+        $after = $resolver->resolve($manifest, CarbonImmutable::parse('2026-11-09T09:00:00Z'));
+        $this->assertSame(['ordinary-high'], array_column($after['playlist'], 'entry_id'));
+    }
+
+    public function test_alert_still_preempts_event_mode(): void
+    {
+        $manifest = $this->manifest(
+            [$this->entry(['entry_id' => 'summit', 'event' => true])],
+            [['id' => 'a', 'severity' => 'critical', 'starts_at' => '2026-11-04T08:55:00Z', 'expires_at' => '2026-11-04T09:25:00Z']],
+        );
+        $this->assertSame('alert', (new ScheduleResolver)->resolve($manifest, CarbonImmutable::parse('2026-11-04T09:00:00Z'))['mode']);
+    }
+
     public function test_alert_preempts_and_expires(): void
     {
         $manifest = $this->manifest([$this->entry([])], [['id' => 'a', 'severity' => 'critical', 'starts_at' => '2026-11-04T08:55:00Z', 'expires_at' => '2026-11-04T09:25:00Z']]);

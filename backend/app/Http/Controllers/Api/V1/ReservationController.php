@@ -320,6 +320,7 @@ class ReservationController extends Controller
             'recurrence_mode' => ['nullable', 'in:all_or_nothing,partial'],
             'resource_ids' => ['nullable', 'array'], 'resource_ids.*' => ['uuid', 'exists:mobile_resources,id'],
             'services' => ['nullable', 'array'], 'services.*.service_type_id' => ['required', 'uuid', 'exists:service_types,id'], 'services.*.details' => ['nullable', 'string', 'max:500'],
+            'services.*.headcount' => ['nullable', 'integer', 'between:1,5000'], 'services.*.serve_time' => ['nullable', 'date_format:H:i'],
             'agenda' => ['nullable', 'array'], 'agenda.*.title' => ['required', 'string', 'max:200'], 'agenda.*.time_label' => ['nullable', 'string', 'max:20'], 'agenda.*.presenter' => ['nullable', 'string', 'max:120'],
             'capacity_override_reason' => ['nullable', 'string', 'max:300'],
         ]);

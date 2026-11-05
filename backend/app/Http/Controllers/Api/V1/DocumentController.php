@@ -6,11 +6,14 @@ use App\Http\Controllers\Controller;
 use App\Models\AccessLink;
 use App\Models\AssetVersion;
 use App\Models\Document;
+use App\Models\DocumentBroadcast;
 use App\Models\DocumentRead;
+use App\Models\Structure;
 use App\Models\User;
 use App\Models\WorkflowEvent;
 use App\Services\AssetService;
 use App\Services\DocumentAccess;
+use App\Services\Notifier;
 use App\Support\BusinessException;
 use App\Support\Present;
 use App\Support\Reference;
@@ -212,6 +215,67 @@ class DocumentController extends Controller
             $this->audit()->log('document.access_denied', $document, outcome: 'denied');
             abort(404);
         }
+    }
+
+    /**
+     * Historique des diffusions par courriel du document (DOC-09).
+     */
+    public function broadcasts(Document $document): JsonResponse
+    {
+        $this->assertManage($document);
+        $broadcasts = DocumentBroadcast::query()->with('creator')->where('document_id', $document->id)->orderByDesc('created_at')->limit(50)->get();
+
+        return response()->json(['data' => $broadcasts->map(fn (DocumentBroadcast $b) => $this->presentBroadcast($b))]);
+    }
+
+    /**
+     * Diffusion par courriel d'un document publié à des structures (DOC-09) : notification et courriel par la file NOT-02,
+     * lien authentifié vers la fiche, jamais de pièce jointe. Seuls les agents habilités à lire le document sont destinataires ;
+     * un document restreint est annoncé sans son titre.
+     */
+    public function broadcast(Request $request, Document $document, Notifier $notifier): JsonResponse
+    {
+        $this->assertManage($document);
+        $data = $request->validate([
+            'structure_ids' => ['required', 'array', 'min:1', 'max:50'], 'structure_ids.*' => ['uuid', 'distinct', 'exists:structures,id'],
+            'message' => ['nullable', 'string', 'max:1000'],
+        ]);
+        if ($document->status !== 'published') {
+            throw new BusinessException('DOCUMENT_NOT_PUBLISHED', 'Seul un document publié peut être diffusé par courriel.', 422);
+        }
+        $candidates = User::query()->whereIn('structure_id', $data['structure_ids'])->where('status', 'active')->get();
+        $recipients = $candidates->filter(fn (User $user) => $this->documents->canView($document, $user))->values();
+        if ($recipients->isEmpty()) {
+            throw new BusinessException('NO_AUTHORIZED_RECIPIENT', 'Aucun agent actif de ces structures n’est habilité à lire ce document.', 422);
+        }
+        $restricted = $document->classification === 'restreint';
+        $title = $restricted ? 'Un document à diffusion restreinte vous est adressé' : 'Document diffusé : '.$document->title;
+        $body = trim(($data['message'] ?? '')."\n\nRéférence : {$document->reference}. Consultation après authentification ; aucune pièce jointe n’est transmise.");
+
+        $broadcast = DB::transaction(function () use ($document, $data, $recipients, $candidates, $notifier, $title, $body): DocumentBroadcast {
+            $broadcast = DocumentBroadcast::query()->create([
+                'document_id' => $document->id, 'structure_ids' => $data['structure_ids'], 'message' => $data['message'] ?? null,
+                'recipients_count' => $recipients->count(), 'excluded_count' => $candidates->count() - $recipients->count(), 'created_by' => $this->user()->id,
+            ]);
+            $notifier->notify($recipients, 'document.broadcast', $title, $body, "/documents/{$document->id}", 'document', $document->id, 'broadcast-'.$broadcast->id);
+            $this->audit()->log('document.broadcast', $document, after: ['structures' => $data['structure_ids'], 'recipients' => $recipients->count()]);
+
+            return $broadcast;
+        });
+
+        return response()->json(['data' => $this->presentBroadcast($broadcast->load('creator'))], 201);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function presentBroadcast(DocumentBroadcast $broadcast): array
+    {
+        return [
+            'id' => $broadcast->id, 'created_at' => Present::date($broadcast->created_at), 'message' => $broadcast->message,
+            'structures' => Structure::query()->whereIn('id', $broadcast->structure_ids)->orderBy('name')->pluck('name')->all(),
+            'recipients_count' => $broadcast->recipients_count, 'excluded_count' => $broadcast->excluded_count, 'created_by' => Present::userRef($broadcast->creator),
+        ];
     }
 
     private function assertManage(Document $document): void

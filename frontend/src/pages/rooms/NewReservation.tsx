@@ -16,7 +16,7 @@ interface Form {
   subject: string; date: string; start: string; end: string; participants: string; confidential: boolean; description: string
   freq: Recurrence['freq']; interval: string; byweekday: number[]; endType: 'until' | 'count'; until: string; count: string
   mode: 'all_or_nothing' | 'partial'
-  services: Record<string, { on: boolean; details: string }>
+  services: Record<string, { on: boolean; details: string; headcount?: string; serve_time?: string }>
   resource_ids: string[]
   externals: { name: string; organization: string }[]
   room_id: string
@@ -117,7 +117,9 @@ export default function NewReservation() {
   const payload = (roomId = f.room_id) => ({
     room_id: roomId, start_at: from, end_at: to, confidentiality: f.confidential, subject: f.subject.trim(), participant_count: participants,
     description: f.description.trim() || null, recurrence: recurrence(), recurrence_mode: f.freq === 'none' ? null : f.mode,
-    services: Object.entries(f.services).filter(([, v]) => v.on).map(([service_type_id, v]) => ({ service_type_id, details: v.details.trim() || null })),
+    services: Object.entries(f.services).filter(([, v]) => v.on).map(([service_type_id, v]) => ({
+      service_type_id, details: v.details.trim() || null, headcount: v.headcount ? Number(v.headcount) : null, serve_time: v.serve_time || null,
+    })),
     resource_ids: f.resource_ids,
     external_participants: f.externals.filter((x) => x.name.trim()).map((x) => ({ name: x.name.trim(), organization: x.organization.trim() || null })),
   })
@@ -144,6 +146,14 @@ export default function NewReservation() {
       }
     }
     f.externals.forEach((x, i) => { if (!x.name.trim() && x.organization.trim()) e[`external_${i}`] = 'Le nom est obligatoire.' })
+    for (const type of serviceTypes.filter((s) => s.requires_headcount)) {
+      const v = f.services[type.id]
+      if (!v?.on) continue
+      const n = Number(v.headcount)
+      if (!n || n < 1 || n > 5000) e[`service_${type.id}_headcount`] = 'Indiquez le nombre de couverts.'
+      if (!v.serve_time) e[`service_${type.id}_time`] = 'Indiquez l’heure de service.'
+      else if (f.start && f.end && (v.serve_time < f.start || v.serve_time >= f.end)) e[`service_${type.id}_time`] = `L’heure doit se situer pendant la réunion (${f.start}–${f.end}).`
+    }
     setLocal(e)
     return Object.keys(e).length === 0
   }
@@ -345,8 +355,18 @@ export default function NewReservation() {
                     const v = f.services[s.id] ?? { on: false, details: '' }
                     return (
                       <div className="service-row" key={s.id}>
-                        <label><input type="checkbox" checked={v.on} onChange={(e) => upd('services', { ...f.services, [s.id]: { ...v, on: e.target.checked } })} /> {s.name}</label>
-                        {v.on && <input type="text" aria-label={`Précisions pour ${s.name}`} placeholder="Précisions (quantité, horaire, langue…)" maxLength={500} value={v.details} onChange={(e) => upd('services', { ...f.services, [s.id]: { ...v, details: e.target.value } })} />}
+                        <label><input type="checkbox" checked={v.on} onChange={(e) => upd('services', { ...f.services, [s.id]: { ...v, on: e.target.checked, ...(s.requires_headcount && !v.headcount && participants ? { headcount: String(participants) } : {}) } })} /> {s.name}</label>
+                        {v.on && <input type="text" aria-label={`Précisions pour ${s.name}`} placeholder={s.requires_headcount ? 'Précisions (régimes, allergies…)' : 'Précisions (quantité, horaire, langue…)'} maxLength={500} value={v.details} onChange={(e) => upd('services', { ...f.services, [s.id]: { ...v, details: e.target.value } })} />}
+                        {v.on && s.requires_headcount && (
+                          <div className="service-extra">
+                            <Field label="Nombre de couverts" required error={local[`service_${s.id}_headcount`]}>
+                              <input type="number" min={1} max={5000} value={v.headcount ?? ''} onChange={(e) => upd('services', { ...f.services, [s.id]: { ...v, headcount: e.target.value } })} />
+                            </Field>
+                            <Field label="Heure de service" required error={local[`service_${s.id}_time`]} help="Pendant la réunion, heure de Libreville">
+                              <input type="time" value={v.serve_time ?? ''} onChange={(e) => upd('services', { ...f.services, [s.id]: { ...v, serve_time: e.target.value } })} />
+                            </Field>
+                          </div>
+                        )}
                       </div>
                     )
                   })}

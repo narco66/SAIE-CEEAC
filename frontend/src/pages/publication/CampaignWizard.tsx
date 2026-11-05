@@ -13,7 +13,7 @@ import {
 
 interface Item { content_id: string; title: string; reference: string; classification: string; duration_s: number | null; approved: string[] }
 interface Form {
-  name: string; priority: number; start_date: string; start_time: string; end_date: string; end_time: string
+  name: string; kind: 'standard' | 'event'; priority: number; start_date: string; start_time: string; end_date: string; end_time: string
   days: number[]; time_from: string; time_to: string; slide_duration_s: number
   items: Item[]; languages: string[]; targets: { type: 'screen' | 'group' | 'zone' | 'floor'; id: string }[]
 }
@@ -23,13 +23,13 @@ interface GroupRow { id: string; code: string; name: string; screens_count: numb
 
 const STEPS = ['Version approuvée', 'Langues', 'Cibles', 'Calendrier', 'Vérification']
 const FIELD_STEP: [RegExp, number][] = [[/^(name|items)/, 0], [/^languages/, 1], [/^targets/, 2], [/^(starts_at|ends_at|days|time_|priority|slide_duration_s)/, 3]]
-const CODE_STEP: Record<string, number> = { NO_APPROVED_LANGUAGE: 1, CONTENT_NOT_DIFFUSABLE: 0, NO_COMPATIBLE_TARGET: 2, CAMPAIGN_EXPIRED: 3, CAMPAIGN_INCOMPLETE: 0 }
+const CODE_STEP: Record<string, number> = { EVENT_TOO_LONG: 3, NO_APPROVED_LANGUAGE: 1, CONTENT_NOT_DIFFUSABLE: 0, NO_COMPATIBLE_TARGET: 2, CAMPAIGN_EXPIRED: 3, CAMPAIGN_INCOMPLETE: 0 }
 const TARGET_LABEL = { screen: 'Écran', group: 'Groupe', zone: 'Zone', floor: 'Niveau' } as const
 
 function emptyForm(): Form {
   const start = todayLocal()
   return {
-    name: '', priority: 50, start_date: start, start_time: '08:00', end_date: addDays(start, 7), end_time: '18:00', days: [1, 2, 3, 4, 5, 6, 7], time_from: '', time_to: '',
+    name: '', kind: 'standard', priority: 50, start_date: start, start_time: '08:00', end_date: addDays(start, 7), end_time: '18:00', days: [1, 2, 3, 4, 5, 6, 7], time_from: '', time_to: '',
     slide_duration_s: 12, items: [], languages: [], targets: [],
   }
 }
@@ -38,7 +38,7 @@ function fromCampaign(c: CampaignDetail): Form {
   const s = splitLocal(c.starts_at)
   const e = splitLocal(c.ends_at)
   return {
-    name: c.name, priority: c.priority, start_date: s.date, start_time: s.time, end_date: e.date, end_time: e.time, days: c.days?.length ? c.days : [1, 2, 3, 4, 5, 6, 7],
+    name: c.name, kind: c.kind ?? 'standard', priority: c.priority, start_date: s.date, start_time: s.time, end_date: e.date, end_time: e.time, days: c.days?.length ? c.days : [1, 2, 3, 4, 5, 6, 7],
     time_from: c.time_from ?? '', time_to: c.time_to ?? '', slide_duration_s: c.slide_duration_s ?? 12,
     items: [...c.items].sort((a, b) => a.position - b.position).filter((i) => i.content).map((i) => ({
       content_id: i.content!.id, title: i.content!.title, reference: i.content!.reference, classification: i.content!.classification, duration_s: i.duration_s,
@@ -51,7 +51,7 @@ function fromCampaign(c: CampaignDetail): Form {
 
 function payload(f: Form) {
   return {
-    name: f.name.trim(), priority: f.priority, starts_at: toIsoFromLocal(f.start_date, f.start_time || '00:00'), ends_at: toIsoFromLocal(f.end_date, f.end_time || '23:59'),
+    name: f.name.trim(), kind: f.kind, priority: f.priority, starts_at: toIsoFromLocal(f.start_date, f.start_time || '00:00'), ends_at: toIsoFromLocal(f.end_date, f.end_time || '23:59'),
     days: f.days.length === 7 ? [] : [...f.days].sort(), time_from: f.time_from || null, time_to: f.time_to || null, slide_duration_s: f.slide_duration_s,
     items: f.items.map((i) => ({ content_id: i.content_id, duration_s: i.duration_s })), languages: f.languages, targets: f.targets,
   }
@@ -412,6 +412,16 @@ function StepSchedule({ form, set, error }: { form: Form; set: SetFn; error: Api
     <>
       <h3>Calendrier</h3>
       <p>Toutes les heures sont saisies et appliquées en heure de Libreville (Africa/Libreville, UTC+1, sans heure d’été).</p>
+      <fieldset style={{ border: 0, padding: 0, margin: '0 0 14px' }}>
+        <legend style={{ padding: 0, fontWeight: 600 }}>Type de programme</legend>
+        <div className="chip-row" style={{ marginTop: 6 }}>
+          <label className="check-label" style={{ padding: '6px 10px' }}><input type="radio" name="campaign-kind" checked={form.kind === 'standard'} onChange={() => set('kind', 'standard')} /> Campagne ordinaire</label>
+          <label className="check-label" style={{ padding: '6px 10px' }}><input type="radio" name="campaign-kind" checked={form.kind === 'event'} onChange={() => set('kind', 'event')} /> Mode événement (sommet, conseil des ministres, session statutaire)</label>
+        </div>
+        {form.kind === 'event' && (
+          <div style={{ marginTop: 8 }}><Notice tone="warning">Pendant sa période, ce programme remplace tout le programme ordinaire des écrans ciblés, quelle que soit sa priorité ; seules les alertes passent avant. Durée limitée à 31 jours : le programme ordinaire reprend automatiquement à la date de fin.</Notice></div>
+        )}
+      </fieldset>
       <div className="form-grid">
         <LocalDateTime label="Début" required date={form.start_date} time={form.start_time} onDate={(v) => set('start_date', v)} onTime={(v) => set('start_time', v)} error={error?.field('starts_at')} help="Heure de Libreville" />
         <LocalDateTime label="Fin" required date={form.end_date} time={form.end_time} onDate={(v) => set('end_date', v)} onTime={(v) => set('end_time', v)} error={error?.field('ends_at')} help="Heure de Libreville" />

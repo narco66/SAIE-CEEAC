@@ -39,6 +39,7 @@ const EVENTS: { code: string; label: string }[] = [
   { code: 'reservation.moved', label: 'Réservation déplacée' },
   { code: 'reservation.expired', label: 'Demande de réservation expirée' },
   { code: 'service.requested', label: 'Prestation demandée' },
+  { code: 'document.broadcast', label: 'Document diffusé par courriel' },
 ]
 
 /** V03 Mon compte : identité, préférences, mot de passe, sessions et second facteur. */

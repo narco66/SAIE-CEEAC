@@ -41,7 +41,7 @@ class ReferenceSeeder extends Seeder
         }
 
         foreach ([['INTERPRETATION', 'Interprétation'], ['VISIO', 'Visioconférence'], ['ASSISTANCE', 'Assistance technique'], ['SONO', 'Sonorisation'], ['RESTAURATION', 'Pause-café et restauration']] as [$code, $name]) {
-            ServiceType::query()->firstOrCreate(['code' => $code], ['name' => $name, 'is_active' => $code !== 'RESTAURATION']);
+            ServiceType::query()->firstOrCreate(['code' => $code], ['name' => $name, 'is_active' => true, 'requires_headcount' => $code === 'RESTAURATION']);
         }
 
         foreach ([['VISIO', 'Visioconférence'], ['ECRAN65', 'Écran 65"'], ['ECRAN85', 'Écran 85"'], ['INTERP', 'Cabines d’interprétation'], ['SONO', 'Sonorisation'], ['REGIE', 'Régie audiovisuelle'], ['TABLEAU', 'Tableau blanc']] as [$code, $name]) {

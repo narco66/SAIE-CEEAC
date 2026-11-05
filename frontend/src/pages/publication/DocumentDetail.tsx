@@ -9,6 +9,7 @@ import { Button, ConfirmDialog, ErrorState, Field, Icon, Kv, Loading, Modal, Not
 import { DOC_STATUS, errorText, HISTORY_LABEL, useExportRequest, useReferentials, type AssetVersion, type UserRef } from './shared'
 import { DOC_EXTENSIONS, type DocumentRow } from './Documents'
 import { checkFile } from './Media'
+import { BroadcastDialog, BroadcastHistory } from './DocumentBroadcast'
 
 interface DocumentDetailData extends DocumentRow {
   versions: { id: string; version: number; notes: string | null; created_at: string | null; creator: UserRef | null; file: AssetVersion | null }[]
@@ -28,7 +29,7 @@ export default function DocumentDetail() {
   const { me } = useAuth()
   const exporter = useExportRequest()
   const [inline, setInline] = useState(false)
-  const [modal, setModal] = useState<'version' | 'edit' | 'unpublish' | null>(null)
+  const [modal, setModal] = useState<'version' | 'edit' | 'unpublish' | 'broadcast' | null>(null)
   const [publishing, setPublishing] = useState(false)
   const [actionError, setActionError] = useState<string | null>(null)
   const query = useQuery({
@@ -78,6 +79,7 @@ export default function DocumentDetail() {
           {d.can_manage && <Button variant="secondary" icon="edit" onClick={() => setModal('edit')}>Modifier</Button>}
           {d.can_manage && <Button variant="secondary" icon="upload" onClick={() => setModal('version')}>Nouvelle version</Button>}
           {d.can_manage && d.status !== 'published' && <Button icon="check" onClick={publish} busy={publishing} disabled={!ready || expired} title={!ready ? 'Le fichier doit être déclaré sain' : expired ? 'Document expiré' : undefined}>Publier</Button>}
+          {d.can_manage && d.status === 'published' && <Button variant="secondary" icon="users" onClick={() => setModal('broadcast')}>Diffuser par courriel</Button>}
           {d.can_manage && d.status === 'published' && <Button variant="danger" icon="x" onClick={() => setModal('unpublish')}>Dépublier</Button>}
         </>}
       />
@@ -190,6 +192,7 @@ export default function DocumentDetail() {
               </div>
             </section>
           )}
+          {d.can_manage && <BroadcastHistory documentId={d.id} />}
           <section className="panel">
             <div className="panel-title"><div><h2>Historique</h2><p>Décisions et modifications</p></div></div>
             <div className="panel-body timeline-list">
@@ -200,6 +203,7 @@ export default function DocumentDetail() {
           </section>
         </aside>
       </div>
+      {modal === 'broadcast' && <BroadcastDialog document={d} onClose={() => setModal(null)} onDone={(b) => toast.success('Document diffusé', `${b.recipients_count} destinataire(s)${b.excluded_count ? ` · ${b.excluded_count} non habilité(s) écarté(s)` : ''}`)} />}
       {modal === 'version' && <NewVersion doc={d} onClose={() => setModal(null)} onDone={(x) => { update(x); setModal(null); toast.success('Nouvelle version déposée', 'Elle est en cours d’analyse.') }} />}
       {modal === 'edit' && <EditMetadata doc={d} onClose={() => setModal(null)} onDone={(x) => { update(x); setModal(null); toast.success('Métadonnées enregistrées') }} />}
       {modal === 'unpublish' && (

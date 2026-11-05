@@ -23,6 +23,7 @@ class ServiceType extends Model
     {
         return [
             'is_active' => 'boolean',
+            'requires_headcount' => 'boolean',
         ];
     }
 }

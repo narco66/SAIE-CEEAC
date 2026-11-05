@@ -24,7 +24,7 @@ class ActionLabel
         'reservation.presence_confirmed' => 'Présence confirmée', 'reservation.auto_released' => 'Salle libérée automatiquement',
         'device.paired' => 'Lecteur appairé', 'device.revoked' => 'Lecteur révoqué', 'device.screenshot_requested' => 'Capture demandée', 'device.asset_denied' => 'Ressource refusée au lecteur',
         'document.created' => 'Document déposé', 'document.published' => 'Document publié', 'document.unpublished' => 'Document dépublié', 'document.version_added' => 'Nouvelle version',
-        'document.downloaded' => 'Document téléchargé', 'document.access_denied' => 'Accès au document refusé',
+        'document.broadcast' => 'Document diffusé par courriel', 'document.downloaded' => 'Document téléchargé', 'document.access_denied' => 'Accès au document refusé',
         'asset.uploaded' => 'Média déposé', 'asset.ready' => 'Média déclaré sain', 'asset.rejected' => 'Média rejeté', 'asset.trashed' => 'Média mis à la corbeille',
         'user.created' => 'Compte créé', 'user.deactivated' => 'Compte désactivé', 'user.reactivated' => 'Compte réactivé', 'role.assigned' => 'Rôle attribué', 'role.revoked' => 'Rôle retiré',
         'power.granted' => 'Pouvoir étendu attribué', 'power.revoked' => 'Pouvoir étendu retiré', 'role.permissions_changed' => 'Permissions modifiées',

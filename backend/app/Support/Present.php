@@ -142,7 +142,7 @@ class Present
     public static function campaign(Campaign $c): array
     {
         return [
-            'id' => $c->id, 'reference' => $c->reference, 'name' => $c->name, 'status' => $c->status, 'priority' => $c->priority, 'version' => $c->version,
+            'id' => $c->id, 'reference' => $c->reference, 'name' => $c->name, 'kind' => $c->kind ?? 'standard', 'status' => $c->status, 'priority' => $c->priority, 'version' => $c->version,
             'starts_at' => self::date($c->starts_at), 'ends_at' => self::date($c->ends_at), 'days' => $c->days ?? [], 'time_from' => $c->time_from ? substr($c->time_from, 0, 5) : null,
             'time_to' => $c->time_to ? substr($c->time_to, 0, 5) : null, 'slide_duration_s' => $c->slide_duration_s, 'suspend_reason' => $c->suspend_reason,
             'creator' => self::userRef($c->creator), 'published_at' => self::date($c->published_at),
@@ -221,7 +221,7 @@ class Present
             'hold_until' => self::date($o->hold_until), 'decision_reason' => $o->decision_reason, 'cancel_reason' => $o->cancel_reason,
             'no_show_reason' => $o->no_show_reason, 'no_show_at' => self::date($o->no_show_at), 'checked_in_at' => self::date($o->checked_in_at),
             'room' => $o->relationLoaded('room') && $o->room ? ['id' => $o->room->id, 'code' => $o->room->code, 'name' => $o->room->name, 'floor' => $o->room->floor?->label, 'capacity' => $o->room->capacity] : ['id' => $o->room_id],
-            'services' => $o->relationLoaded('serviceRequests') ? $o->serviceRequests->map(fn ($s) => ['id' => $s->id, 'type' => $s->serviceType?->name, 'status' => $s->status, 'details' => $s->details])->values() : [],
+            'services' => $o->relationLoaded('serviceRequests') ? $o->serviceRequests->map(fn ($s) => ['id' => $s->id, 'type' => $s->serviceType?->name, 'label' => $s->label(), 'headcount' => $s->headcount, 'serve_time' => $s->serve_time, 'status' => $s->status, 'details' => $s->details])->values() : [],
         ];
     }
 }

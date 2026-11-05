@@ -5,7 +5,7 @@ import { api } from '../../lib/api'
 import { useAuth } from '../../lib/auth'
 import { useList } from '../../lib/hooks'
 import { addDays, CAMPAIGN_STATUS, DAYS, fmtDateTime, fmtDayShort, localParts, toIsoFromLocal, todayLocal } from '../../lib/format'
-import { Button, ConfirmDialog, EmptyState, ErrorState, Icon, Loading, PageHeading, Pagination, StatusOf, Tabs, Toolbar, useDebounced, useToast } from '../../components/ui'
+import { Button, ConfirmDialog, EmptyState, ErrorState, Icon, Loading, PageHeading, Pagination, Status, StatusOf, Tabs, Toolbar, useDebounced, useToast } from '../../components/ui'
 import { RowMenu, useExportRequest, type Campaign } from './shared'
 
 const STATUS_TABS = [
@@ -116,6 +116,7 @@ export default function Campaigns() {
                           <span className="doc-thumb"><Icon name="play" size={16} /></span>
                           <span>
                             <a className="link-text" href={`/affichage/diffusions/${c.id}`} onClick={(e) => { e.preventDefault(); navigate(`/affichage/diffusions/${c.id}`) }}>{c.name}</a>
+                            {c.kind === 'event' && <> <Status tone="warning">Mode événement</Status></>}
                             <small>{c.reference} · {c.items.length} contenu(s){c.creator ? ` · ${c.creator.name}` : ''}</small>
                           </span>
                         </div>

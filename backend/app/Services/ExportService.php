@@ -129,7 +129,7 @@ class ExportService
             ],
             'sections' => [
                 ['title' => 'Occurrences', 'table' => ['headers' => ['#', 'Début', 'Fin', 'Salle', 'Statut'], 'rows' => $r->occurrences->sortBy('starts_at')->map(fn ($o) => [$o->sequence, $fmt($o->starts_at), $fmt($o->ends_at), $o->room->name, $statusLabels[$o->status] ?? $o->status])->values()->all()]],
-                ['title' => 'Prestations et ressources', 'table' => ['headers' => ['Élément', 'Statut'], 'rows' => $r->occurrences->flatMap(fn ($o) => $o->serviceRequests->map(fn ($s) => [$s->serviceType->name, $s->status === 'ready' ? 'Confirmée' : 'En attente de confirmation'])->merge($o->resourceBookings->where('status', 'active')->map(fn ($b) => [$b->resource->name, 'Réservée'])))->unique(0)->values()->all()], 'empty' => 'Aucune prestation demandée.'],
+                ['title' => 'Prestations et ressources', 'table' => ['headers' => ['Élément', 'Statut'], 'rows' => $r->occurrences->flatMap(fn ($o) => $o->serviceRequests->map(fn ($s) => [$s->label(), $s->status === 'ready' ? 'Confirmée' : 'En attente de confirmation'])->merge($o->resourceBookings->where('status', 'active')->map(fn ($b) => [$b->resource->name, 'Réservée'])))->unique(0)->values()->all()], 'empty' => 'Aucune prestation demandée.'],
                 ['title' => 'Historique des validations', 'table' => ['headers' => ['Date', 'Acteur', 'Action', 'Motif'], 'rows' => $history->map(fn ($h) => [$fmt($h->occurred_at), $h->actor_label ?? 'Système', ActionLabel::for($h->action), $h->reason ?? ''])->all()]],
             ],
             'notes' => ['Les données des participants externes sont traitées selon les textes internes de la Commission de la CEEAC (GOV-02).', 'Le QR code ouvre la fiche authentifiée ; il ne donne accès à aucune donnée sans connexion.'],
@@ -165,7 +165,7 @@ class ExportService
                 ['Montage', $fmt($o->blocking_start)], ['Remise en état jusqu’à', $fmt($o->blocking_end)], ['Participants attendus', (string) $o->reservation->participant_count], ['Matériel de la salle', $o->room->equipment->pluck('name')->implode(', ') ?: '—'],
                 ['Ressources mobiles', $o->resourceBookings->where('status', 'active')->map(fn ($b) => $b->resource->name)->implode(', ') ?: '—']],
             'sections' => [
-                ['title' => 'Prestations', 'table' => ['headers' => ['Prestation', 'Responsable', 'Échéance', 'Statut', 'Note'], 'rows' => $o->serviceRequests->map(fn ($s) => [$s->serviceType->name, $s->assignee?->name ?? 'À attribuer', $fmt($s->due_at), $s->status, $s->response_note ?? ''])->all()], 'empty' => 'Aucune prestation.'],
+                ['title' => 'Prestations', 'table' => ['headers' => ['Prestation', 'Responsable', 'Échéance', 'Statut', 'Note'], 'rows' => $o->serviceRequests->map(fn ($s) => [$s->label(), $s->assignee?->name ?? 'À attribuer', $fmt($s->due_at), $s->status, $s->response_note ?? ''])->all()], 'empty' => 'Aucune prestation.'],
                 ['title' => 'Liste de contrôle', 'table' => ['headers' => ['Phase', 'Point', 'Constat'], 'rows' => $o->checklistItems->map(fn ($c) => [$c->phase === 'opening' ? 'Ouverture' : 'Remise en état', $c->label, $c->done_at ? 'Fait le '.$fmt($c->done_at) : '☐'])->all()], 'empty' => 'Liste de contrôle non renseignée (SAL-14, P1).'],
             ],
             'notes' => ['Aucun lien de réunion privé ne figure sur ce document.'],

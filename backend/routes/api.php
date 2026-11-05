@@ -139,6 +139,8 @@ Route::middleware(['auth:sanctum', 'human', 'idempotent'])->group(function (): v
     Route::post('documents/{document}/unpublish', [DocumentController::class, 'unpublish']);
     Route::get('documents/{document}/versions/{version}/download', [DocumentController::class, 'download']);
     Route::get('documents/{document}/reads', [DocumentController::class, 'reads']);
+    Route::get('documents/{document}/broadcasts', [DocumentController::class, 'broadcasts']);
+    Route::post('documents/{document}/broadcasts', [DocumentController::class, 'broadcast']);
 
     // Publication (PUB-01 à PUB-11)
     Route::get('templates', [TemplateController::class, 'index']);

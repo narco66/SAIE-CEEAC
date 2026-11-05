@@ -25,7 +25,7 @@ export interface Busy {
   starts_at: string; ends_at: string; blocking_start: string; blocking_end: string; label: string; confidential: boolean
 }
 export interface CalendarRow { room: { id: string; name: string; capacity: number; floor: string; open_from: string; open_to: string }; busy: Busy[] }
-export interface ServiceItem { id: string; type: string | null; status: string; details: string | null }
+export interface ServiceItem { id: string; type: string | null; label?: string; headcount?: number | null; serve_time?: string | null; status: string; details: string | null }
 export interface Occurrence {
   id: string; sequence: number; status: string; version: number; starts_at: string; ends_at: string
   blocking_start: string | null; blocking_end: string | null; hold_until: string | null
@@ -56,7 +56,7 @@ export interface Referentials {
   floors: { id: string; code: string; label: string; level: number; is_active?: boolean }[]
   structures: { id: string; code: string; name: string; floor_id?: string | null; is_active?: boolean }[]
   equipment: { id: string; code: string; name: string; is_active?: boolean }[]
-  service_types: { id: string; code: string; name: string; is_active?: boolean }[]
+  service_types: { id: string; code: string; name: string; is_active?: boolean; requires_headcount?: boolean }[]
   users: { id: string; name: string; structure_id: string | null }[]
 }
 

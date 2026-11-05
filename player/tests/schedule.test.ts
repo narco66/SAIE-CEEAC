@@ -50,6 +50,23 @@ test('priorité décroissante puis date de début puis identifiant, rotation à 
   assert.deepEqual(r.mode === 'program' && r.playlist.map((e) => e.entry_id), ['b-fr', 'b-en', 'a-fr'])
 })
 
+test('mode événement : remplace le programme ordinaire quelle que soit sa priorité, puis le rend seul (PUB-12)', () => {
+  const m = manifest({ schedule: [
+    entry({ entry_id: 'ordinary-high', campaign_id: 'ordinary', priority: 90 }),
+    entry({ entry_id: 'summit-fr', campaign_id: 'summit', priority: 20, event: true, from: '2026-11-04T07:00:00Z', to: '2026-11-06T17:00:00Z' }),
+    entry({ entry_id: 'summit-en', campaign_id: 'summit', priority: 20, event: true, rotation_rank: 2, from: '2026-11-04T07:00:00Z', to: '2026-11-06T17:00:00Z' }),
+  ] })
+  const during = resolve(m, new Date('2026-11-05T09:00:00Z'))
+  assert.deepEqual(during.playlist?.map((e) => e.entry_id), ['summit-fr', 'summit-en'])
+  assert.match(during.reason, /^Mode événement/)
+  assert.deepEqual(resolve(m, new Date('2026-11-09T09:00:00Z')).playlist?.map((e) => e.entry_id), ['ordinary-high'])
+})
+
+test('mode événement : une alerte active passe toujours avant', () => {
+  const m = manifest({ schedule: [entry({ event: true })], alerts: [{ id: 'a', severity: 'critical', starts_at: '2026-11-04T08:55:00Z', expires_at: '2026-11-04T09:25:00Z' } as Manifest['alerts'][number]] })
+  assert.equal(resolve(m, at).mode, 'alert')
+})
+
 test('campagne expirée exclue, créneau horaire et jours respectés', () => {
   const r = resolve(manifest({ schedule: [
     entry({ entry_id: 'expired', to: '2026-11-04T08:00:00Z' }),

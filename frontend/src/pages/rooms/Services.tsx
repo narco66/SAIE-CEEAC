@@ -9,7 +9,7 @@ import { slotLabel, TZ_LABEL, useExportPdf, type UserRef } from './shared'
 
 interface ChecklistRow { id: string; phase: 'opening' | 'closing'; label: string; done_at: string | null; note: string | null }
 interface ServiceRequest {
-  id: string; type: { code: string; name: string }; details: string | null; status: string; due_at: string | null; assignee: UserRef | null; response_note: string | null
+  id: string; type: { code: string; name: string }; headcount?: number | null; serve_time?: string | null; details: string | null; status: string; due_at: string | null; assignee: UserRef | null; response_note: string | null
   meeting: { reference: string; subject: string; room: string; floor: string; participants: number; starts_at: string; ends_at: string; occurrence_id: string }
   checklist: ChecklistRow[]
 }
@@ -49,7 +49,7 @@ export default function Services() {
                   return (
                     <tr key={s.id}>
                       <td><strong>{s.meeting.subject}</strong><small className="muted">{s.meeting.reference} · {s.meeting.room} ({s.meeting.floor}) · {s.meeting.participants} pers.</small><small className="muted">{slotLabel(s.meeting.starts_at, s.meeting.ends_at)}</small></td>
-                      <td>{s.type.name}</td>
+                      <td>{s.type.name}{(s.headcount || s.serve_time) && <small><strong>{[s.headcount ? `${s.headcount} couvert${s.headcount > 1 ? 's' : ''}` : null, s.serve_time ? `service à ${s.serve_time}` : null].filter(Boolean).join(' · ')}</strong></small>}</td>
                       <td>{s.details || <span className="muted">—</span>}{s.response_note && <small className="muted">Note : {s.response_note}</small>}</td>
                       <td>{s.due_at ? <>{fmtDateTime(s.due_at)}<small className={late ? '' : 'muted'} style={late ? { color: 'var(--red)' } : undefined}>{late ? 'En retard · ' : ''}{fmtRelative(s.due_at)}</small></> : '—'}</td>
                       <td>{s.assignee?.name ?? <span className="muted">Non attribuée</span>}</td>

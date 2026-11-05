@@ -150,6 +150,7 @@ Conservation : durée de vie de l’objet métier
 | created_by | uuid | oui |  | M |
 | created_at | timestamp without time zone | oui |  | M |
 | updated_at | timestamp without time zone | oui |  | M |
+| derivatives | jsonb | oui |  | M |
 
 - Contrainte `asset_versions_scan_check` : `CHECK (((scan_status)::text = ANY ((ARRAY['quarantine'::character varying, 'scanning'::character varying, 'ready'::character varying, 'rejected'::character varying])::text[])))`
 - Contrainte `asset_versions_size_check` : `CHECK ((size > 0))`
@@ -288,6 +289,7 @@ Conservation : durée de vie de l’objet métier
 | is_demo | boolean | non | false | M |
 | created_at | timestamp without time zone | oui |  | M |
 | updated_at | timestamp without time zone | oui |  | M |
+| kind | character varying | non | 'standard'::character varying | M |
 
 - Contrainte `campaigns_duration_check` : `CHECK ((slide_duration_s >= 5))`
 - Contrainte `campaigns_period_check` : `CHECK ((ends_at > starts_at))`
@@ -501,6 +503,7 @@ Conservation : durée de vie de l’objet métier
 | is_demo | boolean | non | false | M |
 | created_at | timestamp without time zone | oui |  | M |
 | updated_at | timestamp without time zone | oui |  | M |
+| release_channel | character varying | non | 'stable'::character varying | M |
 
 - Contrainte `devices_network_check` : `CHECK (((network_status)::text = ANY ((ARRAY['unknown'::character varying, 'online'::character varying, 'suspect'::character varying, 'unavailable'::character varying])::text[])))`
 - Contrainte `devices_status_check` : `CHECK (((status)::text = ANY ((ARRAY['active'::character varying, 'revoked'::character varying])::text[])))`
@@ -533,6 +536,21 @@ Conservation : durée de vie de l’objet métier
 | document_id | uuid | non |  | M |
 | structure_id | uuid | non |  | M |
 
+
+## `document_broadcasts`
+
+Conservation : 12 mois (traçabilité DOC-09, à valider GOV-02)
+
+| Colonne | Type | Null | Défaut | Classe |
+| --- | --- | --- | --- | --- |
+| id | uuid | non |  | M |
+| document_id | uuid | non |  | M |
+| structure_ids | jsonb | non |  | M |
+| message | text | oui |  | M |
+| recipients_count | integer | non |  | M |
+| excluded_count | integer | non |  | M |
+| created_by | uuid | oui |  | M |
+| created_at | timestamp with time zone | non |  | M |
 
 ## `document_reads`
 
@@ -942,6 +960,23 @@ Conservation : durée de vie de l’objet métier
 | updated_at | timestamp without time zone | oui |  | M |
 
 
+## `player_releases`
+
+Conservation : durée de vie de l’objet métier
+
+| Colonne | Type | Null | Défaut | Classe |
+| --- | --- | --- | --- | --- |
+| id | uuid | non |  | M |
+| version | character varying | non |  | M |
+| channel | character varying | non |  | M |
+| base_url | character varying | non |  | M |
+| sha256 | character | non |  | M |
+| notes | text | oui |  | M |
+| status | character varying | non | 'active'::character varying | M |
+| created_by | uuid | oui |  | M |
+| created_at | timestamp without time zone | oui |  | M |
+| updated_at | timestamp without time zone | oui |  | M |
+
 ## `push_subscriptions`
 
 Conservation : durée de vie de l’objet métier
@@ -994,6 +1029,9 @@ Conservation : durée de vie de l’objet métier
 | version | integer | non | 1 | M |
 | created_at | timestamp without time zone | oui |  | M |
 | updated_at | timestamp without time zone | oui |  | M |
+| checked_in_at | timestamp with time zone | oui |  | M |
+| checked_in_by | uuid | oui |  | M |
+| check_in_code | character varying | oui |  | S |
 
 - Contrainte `occurrences_no_overlap` : `EXCLUDE USING gist (room_id WITH =, tstzrange(blocking_start, blocking_end, '[)'::text) WITH &&) WHERE (((status)::text = ANY ((ARRAY['pending'::character varying, 'confirmed'::character varying, 'in_progress'::character varying])::text[])))`
 - Contrainte `occurrences_period_check` : `CHECK (((ends_at > starts_at) AND (blocking_start <= starts_at) AND (blocking_end >= ends_at)))`
@@ -1212,6 +1250,22 @@ Conservation : durée de vie de l’objet métier
 - Contrainte `screens_orientation_check` : `CHECK (((orientation)::text = ANY ((ARRAY['landscape'::character varying, 'portrait'::character varying])::text[])))`
 - Contrainte `screens_status_check` : `CHECK (((status)::text = ANY ((ARRAY['active'::character varying, 'inactive'::character varying])::text[])))`
 
+## `service_accounts`
+
+Conservation : durée de vie de l’objet métier
+
+| Colonne | Type | Null | Défaut | Classe |
+| --- | --- | --- | --- | --- |
+| id | uuid | non |  | M |
+| name | character varying | non |  | M |
+| description | character varying | oui |  | M |
+| scopes | jsonb | non |  | M |
+| status | character varying | non | 'active'::character varying | M |
+| created_by | uuid | oui |  | M |
+| last_used_at | timestamp with time zone | oui |  | M |
+| created_at | timestamp without time zone | oui |  | M |
+| updated_at | timestamp without time zone | oui |  | M |
+
 ## `service_requests`
 
 Conservation : durée de vie de l’objet métier
@@ -1229,6 +1283,8 @@ Conservation : durée de vie de l’objet métier
 | updated_by | uuid | oui |  | M |
 | created_at | timestamp without time zone | oui |  | M |
 | updated_at | timestamp without time zone | oui |  | M |
+| headcount | integer | oui |  | M |
+| serve_time | character varying | oui |  | M |
 
 - Contrainte `service_requests_status_check` : `CHECK (((status)::text = ANY ((ARRAY['requested'::character varying, 'accepted'::character varying, 'clarification'::character varying, 'ready'::character varying, 'impossible'::character varying, 'cancelled'::character varying])::text[])))`
 
@@ -1244,6 +1300,7 @@ Conservation : durée de vie de l’objet métier
 | is_active | boolean | non | true | M |
 | created_at | timestamp without time zone | oui |  | M |
 | updated_at | timestamp without time zone | oui |  | M |
+| requires_headcount | boolean | non | false | M |
 
 
 ## `sessions`

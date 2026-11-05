@@ -215,6 +215,7 @@ class ManifestBuilder
                         'lang' => $language->lang,
                         'auth_class' => $version->classification,
                         'priority' => (int) $campaign->priority,
+                        'event' => $campaign->kind === 'event',
                         'position' => (int) $item->position,
                         'rotation_rank' => (int) $language->rank,
                         'from' => $campaign->starts_at->utc()->toIso8601ZuluString(),

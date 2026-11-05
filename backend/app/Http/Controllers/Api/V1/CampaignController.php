@@ -62,7 +62,9 @@ class CampaignController extends Controller
         $this->authorizePermission('campaigns.manage');
         $data = $this->validated($request, true);
         $campaign = DB::transaction(function () use ($data): Campaign {
-            $campaign = Campaign::query()->create(collect($data)->except(['items', 'languages', 'targets', 'publish'])->all() + ['reference' => Reference::next('CMP'), 'status' => 'draft', 'created_by' => $this->user()->id]);
+            $campaign = new Campaign(collect($data)->except(['items', 'languages', 'targets', 'publish'])->all() + ['reference' => Reference::next('CMP'), 'status' => 'draft', 'created_by' => $this->user()->id]);
+            $this->campaigns->assertEventRules($campaign);
+            $campaign->save();
             $this->sync($campaign, $data);
             $this->audit()->log('campaign.created', $campaign);
             if (! empty($data['publish'])) {
@@ -85,6 +87,7 @@ class CampaignController extends Controller
         $data = $this->validated($request, false);
         DB::transaction(function () use ($campaign, $data): void {
             $campaign->fill(collect($data)->except(['items', 'languages', 'targets', 'publish'])->all());
+            $this->campaigns->assertEventRules($campaign);
             $campaign->version++;
             $campaign->save();
             $this->sync($campaign, $data);
@@ -276,7 +279,7 @@ class CampaignController extends Controller
         $req = $creating ? 'required' : 'sometimes';
 
         return $request->validate([
-            'name' => [$req, 'string', 'max:160'], 'priority' => [$req, 'integer', 'between:1,99'],
+            'name' => [$req, 'string', 'max:160'], 'kind' => ['sometimes', 'in:standard,event'], 'priority' => [$req, 'integer', 'between:1,99'],
             'starts_at' => [$req, 'date'], 'ends_at' => [$req, 'date', 'after:starts_at'],
             'days' => ['nullable', 'array'], 'days.*' => ['integer', 'between:1,7'],
             'time_from' => ['nullable', 'date_format:H:i'], 'time_to' => ['nullable', 'date_format:H:i', 'after:time_from'],
