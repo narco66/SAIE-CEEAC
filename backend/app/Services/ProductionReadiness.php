@@ -140,7 +140,12 @@ class ProductionReadiness
      */
     private function push(): array
     {
-        $enabled = (bool) Setting::get('channels.push_enabled', false);
+        // Le paramètre est lu en base : une base injoignable ne doit pas faire planter le contrôle (rapport toujours produit).
+        try {
+            $enabled = (bool) Setting::get('channels.push_enabled', false);
+        } catch (Throwable $e) {
+            return $this->check('Notifications push', false, 'Contrôle impossible : base injoignable');
+        }
         $keys = filled(config('saie.push.public_key')) && filled(config('saie.push.private_key'));
         if (! $enabled) {
             return $this->warnUnless('Notifications push', true, 'Canal désactivé (V39)');
