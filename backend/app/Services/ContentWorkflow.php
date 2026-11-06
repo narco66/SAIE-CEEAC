@@ -14,6 +14,7 @@ use App\Support\BusinessCalendar;
 use App\Support\BusinessException;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -121,14 +122,17 @@ class ContentWorkflow
                 }
                 $this->assertLanguageComplete($content, $line);
 
-                $validator = $this->pickValidator($content, $lang, $user);
+                $validator = $this->pickValidator($content, $lang);
                 $line->forceFill(['status' => 'submitted', 'submitted_at' => now(), 'submitted_by' => $user->id])->save();
                 $approval = Approval::query()->create([
                     'object_type' => 'content', 'object_id' => $content->id, 'lang' => $lang, 'revision' => $line->revision,
-                    'title' => $content->title, 'requested_by' => $user->id, 'assignee_id' => $validator?->id, 'backup_id' => $validator?->backup_user_id,
+                    'title' => $content->title, 'requested_by' => $user->id, 'assignee_id' => $validator?->id, 'backup_id' => $this->eligibleBackup($validator, $content, $lang),
                     'due_at' => BusinessCalendar::addBusinessDays(now(), (int) config('saie.workflow.content_due_business_days')),
                 ]);
                 $this->event($content, 'submitted', 'draft', 'submitted', $user, null, $lang, $line->revision);
+                if (! $validator) {
+                    $this->notifier->notify($this->functionalAdmins(), 'approval.unassigned', 'Validation sans validateur habilité', $content->title.' · version '.strtoupper($lang), '/mes-taches', 'content', $content->id, "unassigned{$line->revision}-$lang");
+                }
                 $this->notifier->notify($validator, 'content.submitted', 'Nouvelle validation assignée', $content->title.' · version '.strtoupper($lang), "/affichage/contenus/{$content->id}/validation?lang=$lang", 'content', $content->id, "rev{$line->revision}-$lang");
                 $this->audit->log('content.submitted', $content, lang: $lang, version: $line->revision, after: ['approval_id' => $approval->id]);
             }
@@ -154,10 +158,10 @@ class ContentWorkflow
             $approval = Approval::query()->where('object_type', 'content')->where('object_id', $content->id)->where('lang', $lang)->where('status', 'open')->latest()->first();
 
             if ($decision === 'reassign') {
-                if (! $reassignTo || $reassignTo->id === $content->author_id || ! in_array($lang, $this->access->validationLanguages($reassignTo), true)) {
-                    throw new BusinessException('INVALID_ASSIGNEE', 'Le validateur choisi n’est pas habilité pour cette langue.', 422);
+                if (! $reassignTo || ! $this->eligibleValidators($content, $lang)->contains('id', $reassignTo->id)) {
+                    throw new BusinessException('INVALID_ASSIGNEE', 'Le validateur choisi n’est pas habilité pour cette langue ou ce contenu.', 422);
                 }
-                $approval?->forceFill(['assignee_id' => $reassignTo->id, 'backup_id' => $reassignTo->backup_user_id])->save();
+                $approval?->forceFill(['assignee_id' => $reassignTo->id, 'backup_id' => $this->eligibleBackup($reassignTo, $content, $lang)])->save();
                 $this->event($content, 'reassigned', 'submitted', 'submitted', $user, $reason, $lang, $line->revision);
                 $this->notifier->notify($reassignTo, 'content.reassigned', 'Validation réaffectée', $content->title, "/affichage/contenus/{$content->id}/validation?lang=$lang", 'content', $content->id, "reassign{$line->revision}-$lang-".now()->timestamp);
                 $this->audit->log('content.reassigned', $content, $reason, lang: $lang, version: $line->revision, after: ['assignee' => $reassignTo->id]);
@@ -294,22 +298,73 @@ class ContentWorkflow
         }
     }
 
-    private function pickValidator(Content $content, string $lang, User $author): ?User
+    /**
+     * Validateurs éligibles pour une version : rôle validateur en vigueur, habilité pour la langue, contenu dans son périmètre, distinct de l'auteur.
+     *
+     * @return Collection<int, User>
+     */
+    public function eligibleValidators(Content $content, string $lang): Collection
     {
-        $candidates = User::query()->where('status', 'active')->where('id', '!=', $author->id)
+        $candidates = User::query()->where('status', 'active')->where('id', '!=', $content->author_id)
             ->whereHas('roleAssignments', fn ($q) => $q->whereNull('revoked_at')->where('starts_at', '<=', now())
                 ->where(fn ($q) => $q->whereNull('ends_at')->orWhere('ends_at', '>', now()))
                 ->whereHas('role', fn ($r) => $r->where('code', 'validateur')))
             ->orderBy('name')->get();
 
-        $eligible = $candidates->filter(function (User $candidate) use ($content, $lang): bool {
+        return $candidates->filter(function (User $candidate) use ($content, $lang): bool {
             $scope = $this->access->structureScope($candidate, 'contents.validate');
 
             return in_array($lang, $this->access->validationLanguages($candidate), true)
                 && ($scope === null || in_array($content->owner_structure_id, $scope, true));
-        });
+        })->values();
+    }
 
-        return $eligible->sortBy(fn (User $candidate): array => $this->validatorRank($candidate, $content, $lang))->first();
+    private function pickValidator(Content $content, string $lang): ?User
+    {
+        return $this->eligibleValidators($content, $lang)->sortBy(fn (User $candidate): array => $this->validatorRank($candidate, $content, $lang))->first();
+    }
+
+    /**
+     * Suppléant retenu pour une validation : celui du validateur, seulement s'il est lui-même éligible (langue, périmètre, hors auteur).
+     */
+    private function eligibleBackup(?User $validator, Content $content, string $lang): ?string
+    {
+        $backupId = $validator?->backup_user_id;
+
+        return $backupId && $this->eligibleValidators($content, $lang)->contains('id', $backupId) ? $backupId : null;
+    }
+
+    /**
+     * Affecte les validations restées sans validateur dès qu'un validateur éligible existe (habilitation accordée entre-temps).
+     */
+    public function assignPending(): int
+    {
+        $assigned = 0;
+        foreach (Approval::query()->where('object_type', 'content')->where('status', 'open')->whereNull('assignee_id')->get() as $approval) {
+            $content = Content::query()->find($approval->object_id);
+            $validator = $content ? $this->pickValidator($content, (string) $approval->lang) : null;
+            if (! $validator) {
+                continue;
+            }
+            $approval->forceFill(['assignee_id' => $validator->id, 'backup_id' => $this->eligibleBackup($validator, $content, (string) $approval->lang)])->save();
+            $this->notifier->notify($validator, 'content.submitted', 'Nouvelle validation assignée', $content->title.' · version '.strtoupper((string) $approval->lang), "/affichage/contenus/{$content->id}/validation?lang={$approval->lang}", 'content', $content->id, "assign-{$approval->id}");
+            $this->audit->log('content.assigned', $content, 'Validateur habilité disponible', lang: $approval->lang, version: $approval->revision, after: ['assignee' => $validator->id], actor: null);
+            $assigned++;
+        }
+
+        return $assigned;
+    }
+
+    /**
+     * Administrateurs fonctionnels en fonction, destinataires des validations qu'aucun validateur ne peut prendre.
+     *
+     * @return Collection<int, User>
+     */
+    public function functionalAdmins(): Collection
+    {
+        return User::query()->where('status', 'active')->whereHas('roleAssignments', fn ($q) => $q->whereNull('revoked_at')->where('starts_at', '<=', now())
+            ->where(fn ($w) => $w->whereNull('ends_at')->orWhere('ends_at', '>', now()))
+            ->whereHas('role', fn ($r) => $r->where('code', 'admin_fonc')))->get();
     }
 
     /**

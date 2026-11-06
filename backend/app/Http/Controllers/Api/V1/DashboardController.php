@@ -145,14 +145,18 @@ class DashboardController extends Controller
     }
 
     /**
-     * Tâches ouvertes de l'utilisateur, y compris celles escaladées vers lui en tant que suppléant (HAB-04).
+     * Tâches ouvertes de l'utilisateur, y compris celles escaladées vers lui en tant que suppléant (HAB-04) ;
+     * l'administrateur fonctionnel voit aussi les validations qu'aucun validateur habilité ne peut prendre.
      */
     private function taskQuery()
     {
         $id = $this->user()->id;
 
+        $admin = $this->access()->hasRole($this->user(), 'admin_fonc');
+
         return Approval::query()->with(['requester', 'assignee'])->where('status', 'open')
-            ->where(fn ($q) => $q->where('assignee_id', $id)->orWhere(fn ($w) => $w->where('backup_id', $id)->whereNotNull('escalated_at')))
+            ->where(fn ($q) => $q->where('assignee_id', $id)->orWhere(fn ($w) => $w->where('backup_id', $id)->whereNotNull('escalated_at'))
+                ->when($admin, fn ($w) => $w->orWhere(fn ($u) => $u->where('object_type', 'content')->whereNull('assignee_id'))))
             ->orderBy('due_at');
     }
 
@@ -162,6 +166,13 @@ class DashboardController extends Controller
     private function presentTask(Approval $a): array
     {
         $isContent = $a->object_type === 'content';
+        if ($isContent && $a->assignee_id === null) {
+            return [
+                'id' => $a->id, 'type' => 'content_unassigned', 'object' => $a->title, 'lang' => $a->lang, 'revision' => $a->revision,
+                'action' => 'Habiliter un validateur pour la version '.strtoupper((string) $a->lang), 'emitter' => $a->requester?->name, 'due_at' => Present::date($a->due_at),
+                'escalated_at' => Present::date($a->escalated_at), 'state' => 'unassigned', 'as_backup' => false, 'link' => '/administration/utilisateurs',
+            ];
+        }
 
         return [
             'id' => $a->id, 'type' => $isContent ? 'content_validation' : 'reservation_approval', 'object' => $a->title, 'lang' => $a->lang, 'revision' => $a->revision,

@@ -73,6 +73,11 @@ class ContentController extends Controller
             'validate_languages' => $content->author_id === $this->user()->id ? [] : array_values(array_intersect($this->access()->validationLanguages($this->user()), $content->languages->pluck('lang')->all())),
             'archive' => $this->can('contents.archive') || $content->author_id === $this->user()->id,
         ];
+        // Réaffectation : seuls les validateurs éligibles (langue, périmètre, hors auteur), sauf soi-même.
+        $data['reassign_candidates'] = (object) collect($data['permissions']['validate_languages'])
+            ->filter(fn (string $lang) => $content->languages->firstWhere('lang', $lang)?->status === 'submitted')
+            ->mapWithKeys(fn (string $lang) => [$lang => $this->workflow->eligibleValidators($content, $lang)->where('id', '!=', $this->user()->id)
+                ->map(fn ($u) => ['id' => $u->id, 'name' => $u->name])->values()])->all();
         $data['campaigns'] = DB::table('campaign_items')->join('campaigns', 'campaigns.id', '=', 'campaign_items.campaign_id')->where('content_id', $content->id)->get(['campaigns.id', 'campaigns.reference', 'campaigns.name', 'campaigns.status']);
 
         return response()->json(['data' => $data]);

@@ -123,7 +123,9 @@ Sur une salle où la **Libération automatique (SAL-10)** est activée :
 - la confirmation est possible de 15 minutes avant le début jusqu’à la fin de la réunion ;
 - l’organisateur reçoit un rappel 15 minutes avant le début ;
 - sans confirmation 15 minutes après le début, la salle est libérée automatiquement : l’occurrence passe à **Non honorée** avec le motif « Libération automatique : présence non confirmée 15 minutes après le début », et l’organisateur reçoit « Salle libérée automatiquement » ;
-- les réunions prioritaires (fiche de réservation : **Priorité institutionnelle** « Oui ») ne sont jamais libérées automatiquement.
+- les réunions prioritaires ne sont jamais libérées automatiquement.
+
+Vous seul, gestionnaire de la salle, déclarez une réunion prioritaire : sur la fiche de la réservation, ligne **Réunion prioritaire**, choisissez **Déclarer prioritaire**, saisissez le **Motif**, puis confirmez. **Retirer la priorité** fonctionne de la même façon. Chaque changement est inscrit au journal et à l’historique de la réservation. L’organisateur ne peut pas déclarer sa propre réunion prioritaire.
 
 Si la règle est désactivée, la non-présentation se déclare uniquement à la main.
 

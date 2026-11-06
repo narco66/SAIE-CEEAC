@@ -50,7 +50,9 @@ Aucun mot de passe n’est saisi ni affiché : un lien personnel de définition 
 1. Ouvrez le compte par **Détail**, puis **Modifier**.
 2. Choisissez le **Suppléant (HAB-04)**, puis **Enregistrer**.
 
-Désignez un suppléant pour chaque validateur et chaque gestionnaire de salle. Une validation non traitée à son échéance (2 jours ouvrés pour un contenu, 24 heures pour une réservation) est escaladée au suppléant. Sans suppléant, les administrateurs fonctionnels reçoivent la notification « Tâche escaladée sans suppléant » et le **Tableau de bord** affiche le nombre de tâches sans suppléant.
+Désignez un suppléant pour chaque validateur et chaque gestionnaire de salle. Une validation non traitée à son échéance (2 jours ouvrés pour un contenu, 24 heures pour une réservation) est escaladée au suppléant. Sans suppléant, les administrateurs fonctionnels reçoivent la notification « Tâche escaladée sans suppléant » et le **Tableau de bord** affiche le nombre de tâches sans suppléant. Un suppléant n’est retenu que s’il est lui-même habilité pour la langue et la structure du contenu.
+
+Si aucun validateur n’est habilité pour la langue ou la structure d’un contenu soumis, vous recevez « Validation sans validateur habilité » et la tâche apparaît dans **Tâches & validations** avec l’état « Sans validateur ». Attribuez le rôle « Validateur éditorial » pour cette langue et cette structure : la validation est alors affectée automatiquement, dans la minute, au validateur habilité, qui en est notifié.
 
 ### Attribuer un rôle daté et motivé
 
@@ -137,7 +139,7 @@ Points d’attention :
 - chaque emplacement est rattaché à une **Zone de diffusion** ; la **Classification maximale** de la zone (**Public** ou **Interne**) borne ce qui peut y être diffusé, et **Audio autorisé** et **Volume maximal (0–100)** encadrent le son ;
 - dans **Langues**, activer le portugais ou l’espagnol suffit à les proposer dans la saisie et la diffusion ;
 - les **Jours non ouvrés** sont exclus des calculs de disponibilité des salles et des délais ;
-- le type de prestation **Pause-café et restauration**, installé d’office, demande en plus au demandeur le nombre de couverts et l’heure de service. Un type que vous créez ne pose pas ces questions.
+- dans **Types de prestation**, l’option **Couverts et heure exigés** impose au demandeur le nombre de couverts et l’heure de service (elle est active d’office pour **Pause-café et restauration**). Le **Code** d’un type ne se modifie plus après sa création, car les périmètres du pouvoir « prestations » y font référence.
 
 ### Désactiver plutôt que supprimer
 
@@ -277,7 +279,19 @@ La section **Versions du lecteur** indique, pour les canaux **Pilote** et **Stab
 
 *Concerne : les deux rôles pour les paramètres fonctionnels ; l’Administrateur technique DSI seul pour les paramètres marqués **Technique**, les sources dynamiques et les comptes de service.*
 
-Menu **Administration › Paramètres**. Onglets : **Identité**, **Diffusion**, **Fonctionnement et audio**, **Salles**, **Conservation**, **Canaux**, **Sources dynamiques (P1)**, **Intégrations**. Le panneau **Environnement** rappelle, en lecture seule, la configuration du serveur.
+Menu **Administration › Paramètres**. Onglets : **Identité**, **Diffusion**, **Fonctionnement et audio**, **Salles**, **Canaux**, **Sources dynamiques**, **Intégrations**. Le panneau **Environnement** rappelle, en lecture seule, la configuration du serveur.
+
+Effet de chaque paramètre :
+
+- **Nom de l’institution** et **Mention institutionnelle** : en-tête des écrans.
+- **Durée par défaut d’une diapositive** (10 à 300 s) : valeur proposée à la création d’une campagne.
+- **Plage de fonctionnement par défaut** : écrans sans plage propre.
+- **Volume audio maximal** (0 à 100 %) : plafond général ; le plafond de la zone s’applique s’il est plus bas.
+- **Durée de maintien d’une demande en attente** (1 à 168 h) et **Libération automatique des salles sans confirmation de présence** : valeurs données aux nouvelles salles, réglables ensuite salle par salle.
+- **Envoi de courriels** : désactivé, aucun courriel ne part ; les notifications restent visibles dans l’application.
+- **Notifications push** et **API d’intégration externe** : activation des canaux correspondants.
+
+Les bornes sont contrôlées par le serveur : une valeur hors bornes est refusée.
 
 ### Modifier un paramètre
 
@@ -289,13 +303,13 @@ L’ancienne et la nouvelle valeur sont inscrites au journal avec le motif. Une 
 
 ### Activer les notifications push
 
-Onglet **Canaux**, paramètre **Notifications push (P1)** : passez-le à **Activé**. Le canal ne fonctionne que si la DSI a aussi installé les clés du serveur (voir [Mise en service et exploitation](../exploitation/mise-en-service.md)). Chaque utilisateur s’abonne ensuite depuis **Mon compte**.
+Onglet **Canaux**, paramètre **Notifications push** : passez-le à **Activé**. Le canal ne fonctionne que si la DSI a aussi installé les clés du serveur (voir [Mise en service et exploitation](../exploitation/mise-en-service.md)). Chaque utilisateur s’abonne ensuite depuis **Mon compte**.
 
 ### Déclarer une source dynamique
 
 Les sources dynamiques (horloge, compte à rebours, flux RSS, flux JSON, météo) sont collectées par le serveur, mises en cache, puis transmises aux écrans : les lecteurs ne contactent jamais ces adresses.
 
-1. Onglet **Sources dynamiques (P1)**, choisissez **Déclarer une source**.
+1. Onglet **Sources dynamiques**, choisissez **Déclarer une source**.
 2. Renseignez **Code** (minuscules, chiffres, tiret ou souligné ; non modifiable ensuite), **Nom**, **Type** et **Fréquence de collecte (minutes)** (entre 5 et 1 440).
 3. Pour un flux RSS, JSON ou météo, saisissez l’**Adresse HTTPS** : seules les adresses HTTPS publiques sont acceptées, les adresses internes ou réservées sont refusées. Complétez les champs propres au type.
 4. Laissez **Source active (collectée et diffusée)** décochée pour l’instant, puis **Enregistrer**.

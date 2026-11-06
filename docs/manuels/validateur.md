@@ -73,7 +73,7 @@ La version passe « À corriger » ; l’auteur reçoit la notification « Versi
 ## Réaffecter la décision
 
 1. Dans **Votre décision**, choisissez **Réaffecter**.
-2. Choisissez le **Nouveau validateur** : il doit être habilité pour la langue et distinct de l’auteur.
+2. Choisissez le **Nouveau validateur**. La liste ne propose que les validateurs habilités pour la langue, compétents pour la structure du contenu et distincts de l’auteur. Si elle est vide (« Aucun autre validateur habilité »), personne d’autre ne peut prendre la décision.
 3. Ajoutez si besoin un **Commentaire** (facultatif).
 4. Cliquez sur **Réaffecter**.
 
@@ -84,7 +84,7 @@ Le nouveau validateur est notifié (« Validation réaffectée ») et l’éché
 - **Échéance** : chaque demande doit être traitée dans un délai de 2 jours ouvrés après la soumission. Les week-ends et les jours non ouvrés du référentiel ne comptent pas.
 - **Rappel** : à la moitié du délai, si la demande est toujours ouverte, le validateur désigné reçoit « Rappel : validation en attente ».
 - **Escalade** : à l’échéance, la demande est escaladée ; le validateur désigné et son suppléant reçoivent « Validation escaladée au suppléant ». La tâche apparaît alors aussi chez le suppléant, avec la mention « en tant que suppléant », et passe à l’état « Escaladée ».
-- **Sans suppléant** : si aucun suppléant n’est désigné, les administrateurs fonctionnels reçoivent « Tâche escaladée sans suppléant ».
+- **Sans suppléant** : si aucun suppléant n’est désigné, les administrateurs fonctionnels reçoivent « Tâche escaladée sans suppléant ». Un suppléant qui n’est pas lui-même habilité pour la langue ou la structure du contenu n’est pas retenu.
 
 Tant que la demande est ouverte, la décision reste possible, même après l’échéance. Votre suppléant figure dans **Mon compte** (ligne **Suppléant**). Pour le désigner ou le changer, adressez-vous à l’administrateur chargé des comptes utilisateurs.
 

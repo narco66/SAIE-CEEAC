@@ -32,6 +32,7 @@ const EVENTS: { code: string; label: string }[] = [
   { code: 'content.reassigned', label: 'Validation réassignée' },
   { code: 'approval.reminder', label: 'Relance d’échéance' },
   { code: 'approval.no_backup', label: 'Tâche sans suppléant' },
+  { code: 'approval.unassigned', label: 'Validation sans validateur habilité' },
   { code: 'reservation.pending', label: 'Réservation en attente' },
   { code: 'reservation.confirmed', label: 'Réservation confirmée' },
   { code: 'reservation.refused', label: 'Réservation refusée' },

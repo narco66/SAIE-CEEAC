@@ -48,10 +48,12 @@ export interface ContentDetail extends Content {
   template_layout: TemplateLayout | null
   approvals: Approval[]; history: HistoryEvent[]
   permissions: { edit: boolean; validate_languages: string[]; archive: boolean }
+  reassign_candidates?: Record<string, { id: string; name: string }[]>
   campaigns: { id: string; reference: string; name: string; status: string }[]
 }
 
 export interface Referentials {
+  defaults?: { slide_duration_s: number }
   categories: { id: string; code: string; name: string; default_duration_s: number; is_active: boolean }[]
   structures: { id: string; name: string; code?: string; is_active?: boolean }[]
   zones: { id: string; code: string; name: string; max_classification: string; is_active: boolean }[]

@@ -72,6 +72,6 @@ class Notifier
     {
         $preferences = $user->notification_preferences ?? [];
 
-        return ($preferences['email'] ?? true) && ! in_array($event, $preferences['muted_events'] ?? [], true);
+        return (bool) Setting::effective('channels.smtp_enabled') && ($preferences['email'] ?? true) && ! in_array($event, $preferences['muted_events'] ?? [], true);
     }
 }

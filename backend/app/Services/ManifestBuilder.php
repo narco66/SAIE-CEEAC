@@ -122,7 +122,7 @@ class ManifestBuilder
         $alerts = $this->alertsFor($screen);
         $fallback = $this->fallbackFor($zone->id, $assets);
 
-        $window = $screen->operating_window ?: config('saie.operating_window');
+        $window = $screen->operating_window ?: Setting::effective('operating.default_window');
         $audioAllowed = $screen->audio_enabled && $zone->audio_allowed;
 
         $manifest = [
@@ -136,12 +136,12 @@ class ManifestBuilder
                 'wake_before_min' => (int) ($window['wake_before_min'] ?? 5), 'override_reason' => $screen->window_override_reason,
             ],
             'non_working_days' => Holiday::query()->whereBetween('date', [now($tz)->subDay()->toDateString(), now($tz)->addDays(60)->toDateString()])->orderBy('date')->pluck('date')->map(fn ($d) => $d->format('Y-m-d'))->all(),
-            'audio_policy' => ['enabled' => $audioAllowed, 'max_volume' => $audioAllowed ? (int) $zone->audio_max_volume : 0, 'hours' => ['on' => '08:00', 'off' => '18:00']],
+            'audio_policy' => ['enabled' => $audioAllowed, 'max_volume' => $audioAllowed ? min((int) $zone->audio_max_volume, (int) Setting::effective('operating.audio_max_volume')) : 0, 'hours' => ['on' => '08:00', 'off' => '18:00']],
             'schedule' => $schedule,
             'alerts' => $alerts,
             'agenda' => $this->agendaFor($floor),
             'fallback' => $fallback,
-            'institution' => ['name' => 'Commission de la CEEAC', 'tagline' => (string) Setting::get('display.tagline', 'Communauté Économique des États de l’Afrique Centrale')],
+            'institution' => ['name' => (string) Setting::effective('identity.institution_name'), 'tagline' => (string) Setting::effective('display.tagline')],
             'dynamic' => (object) app(DynamicSources::class)->forManifest(),
         ];
         if ($screen->kind === 'room_panel' && $screen->room) {

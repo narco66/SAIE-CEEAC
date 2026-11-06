@@ -8,7 +8,6 @@ use App\Models\Content;
 use App\Models\Device;
 use App\Models\Incident;
 use App\Models\ReservationOccurrence;
-use App\Models\User;
 use App\Services\Audit;
 use App\Services\CampaignService;
 use App\Services\ContentWorkflow;
@@ -62,6 +61,7 @@ class SaieTick extends Command
             }
         }
 
+        $report['validations_affectées'] = $workflow->assignPending();
         $report['rappels'] = 0;
         $report['escalades'] = 0;
         foreach (Approval::query()->with(['assignee', 'backup'])->where('status', 'open')->get() as $approval) {
@@ -76,9 +76,7 @@ class SaieTick extends Command
                 $notifier->notify([$approval->assignee, $approval->backup], 'approval.escalated', 'Validation escaladée au suppléant', $approval->title, $this->link($approval), $approval->object_type, $approval->object_id, 'escalation-'.$approval->id);
                 if (! $approval->backup) {
                     // Seules les affectations en cours (non révoquées, commencées, non échues) désignent un administrateur fonctionnel.
-                    $admins = User::query()->where('status', 'active')->whereHas('roleAssignments', fn ($q) => $q->whereNull('revoked_at')->where('starts_at', '<=', now())
-                        ->where(fn ($w) => $w->whereNull('ends_at')->orWhere('ends_at', '>', now()))
-                        ->whereHas('role', fn ($r) => $r->where('code', 'admin_fonc')))->get();
+                    $admins = $workflow->functionalAdmins();
                     $notifier->notify($admins, 'approval.no_backup', 'Tâche escaladée sans suppléant', $approval->title, '/mes-taches', $approval->object_type, $approval->object_id, 'nobackup-'.$approval->id);
                 }
                 $audit->log('approval.escalated', $approval->object_type, $approval->backup ? 'Escalade au suppléant' : 'Aucun suppléant désigné', actor: null, objectLabel: $approval->title);

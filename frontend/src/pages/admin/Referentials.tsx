@@ -45,7 +45,10 @@ const DEFS: Record<RefType, { label: string; singular: string; fields: FieldDef[
     { name: 'code', label: 'Code', kind: 'select', required: true, createOnly: true, options: () => ['fr', 'en', 'pt', 'es'].map((v) => ({ value: v, label: v.toUpperCase() })) },
     { name: 'name', label: 'Nom', kind: 'text', required: true }, { name: 'sort', label: 'Ordre', kind: 'number' }] },
   equipment: { label: 'Équipements', singular: 'équipement', activable: true, fields: [{ name: 'code', label: 'Code', kind: 'text', required: true }, { name: 'name', label: 'Nom', kind: 'text', required: true }] },
-  service_types: { label: 'Types de prestation', singular: 'type de prestation', activable: true, fields: [{ name: 'code', label: 'Code', kind: 'text', required: true }, { name: 'name', label: 'Nom', kind: 'text', required: true }] },
+  service_types: { label: 'Types de prestation', singular: 'type de prestation', activable: true, fields: [
+    { name: 'code', label: 'Code', kind: 'text', required: true, createOnly: true, help: 'Non modifiable ensuite : les périmètres du pouvoir « prestations » y font référence.' },
+    { name: 'name', label: 'Nom', kind: 'text', required: true },
+    { name: 'requires_headcount', label: 'Couverts et heure exigés', kind: 'bool', help: 'La demande de prestation exige le nombre de couverts et l’heure de service (restauration).' }] },
   holidays: { label: 'Jours non ouvrés', singular: 'jour non ouvré', activable: false, fields: [{ name: 'date', label: 'Date', kind: 'date', required: true }, { name: 'label', label: 'Libellé', kind: 'text', required: true }] },
 }
 const STRUCT_TYPE: Record<string, string> = { cabinet: 'Cabinet', departement: 'Département', direction: 'Direction', service: 'Service', autre: 'Autre' }

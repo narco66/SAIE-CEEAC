@@ -7,16 +7,16 @@ import { Button, EmptyState, ErrorState, Icon, Loading, PageHeading, Status, Too
 import './account.css'
 
 interface Task {
-  id: string; type: 'content_validation' | 'reservation_approval' | 'content_return' | 'service'; object: string; reference?: string | null; lang: string | null
-  action: string; emitter: string | null; due_at: string | null; escalated_at?: string | null; state: 'open' | 'overdue' | 'escalated' | 'to_correct'
+  id: string; type: 'content_validation' | 'content_unassigned' | 'reservation_approval' | 'content_return' | 'service'; object: string; reference?: string | null; lang: string | null
+  action: string; emitter: string | null; due_at: string | null; escalated_at?: string | null; state: 'open' | 'overdue' | 'escalated' | 'to_correct' | 'unassigned'
   as_backup?: boolean; link: string; reason?: string | null
 }
 interface TasksResponse { data: Task[]; meta: { counts: { open: number; overdue: number; escalated: number; done_this_month: number } } }
 type Filter = 'open' | 'overdue' | 'escalated'
 
-const STATE: Record<Task['state'], [string, string]> = { open: ['À traiter', 'warning'], overdue: ['En retard', 'danger'], escalated: ['Escaladée', 'danger'], to_correct: ['À corriger', 'blue'] }
+const STATE: Record<Task['state'], [string, string]> = { open: ['À traiter', 'warning'], overdue: ['En retard', 'danger'], escalated: ['Escaladée', 'danger'], to_correct: ['À corriger', 'blue'], unassigned: ['Sans validateur', 'danger'] }
 const TYPE: Record<Task['type'], [string, 'file' | 'door' | 'edit' | 'settings']> = {
-  content_validation: ['Contenu', 'file'], reservation_approval: ['Réservation', 'door'], content_return: ['Correction', 'edit'], service: ['Prestation', 'settings'],
+  content_validation: ['Contenu', 'file'], content_unassigned: ['Validation à affecter', 'settings'], reservation_approval: ['Réservation', 'door'], content_return: ['Correction', 'edit'], service: ['Prestation', 'settings'],
 }
 
 /** V05 Tâches et validations : y compris celles reçues en tant que suppléant (HAB-04). */

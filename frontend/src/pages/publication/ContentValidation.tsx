@@ -5,7 +5,7 @@ import { api, ApiError, fileUrl } from '../../lib/api'
 import { useAuth } from '../../lib/auth'
 import { CLASS_LABEL, CLASS_TONE, fmtDateTime, fmtRelative, LANG_STATUS } from '../../lib/format'
 import { Button, ErrorState, Field, Icon, Loading, Notice, PageHeading, Status, StatusOf, useToast } from '../../components/ui'
-import { errorText, HISTORY_LABEL, langLabel, TemplatePreview, useReferentials, type ContentDetail } from './shared'
+import { errorText, HISTORY_LABEL, langLabel, TemplatePreview, type ContentDetail } from './shared'
 
 type Decision = 'approve' | 'return' | 'reassign'
 
@@ -27,7 +27,6 @@ export default function ContentValidation() {
   const client = useQueryClient()
   const toast = useToast()
   const { me } = useAuth()
-  const refs = useReferentials()
   const query = useQuery({
     queryKey: ['content', id, 'validation'],
     queryFn: ({ signal }) => api.get<{ data: ContentDetail }>(`/contents/${id}`, undefined, signal).then((r) => r.data),
@@ -57,7 +56,7 @@ export default function ContentValidation() {
   const image = (c.media ?? []).find((m) => m.role !== 'logo')
   const reasonInvalid = decision === 'return' && reason.trim().length < 5
   const reassignInvalid = decision === 'reassign' && !reassignTo
-  const candidates = (refs.data?.users ?? []).filter((u) => u.id !== me.id && u.id !== c.author?.id)
+  const candidates = c.reassign_candidates?.[lang] ?? []
 
   const decide = async () => {
     if (!line || !decision) return
@@ -163,7 +162,7 @@ export default function ContentValidation() {
                   {decision === 'reassign' && (
                     <Field label="Nouveau validateur" required error={error?.field('reassign_to')} help={`Il doit être habilité pour la langue ${langLabel(lang).toLowerCase()} et distinct de l’auteur.`}>
                       <select value={reassignTo} onChange={(e) => setReassignTo(e.target.value)} aria-invalid={!!error?.field('reassign_to')}>
-                        <option value="">— Choisir —</option>
+                        <option value="">{candidates.length ? '— Choisir —' : 'Aucun autre validateur habilité'}</option>
                         {candidates.map((u) => <option key={u.id} value={u.id}>{u.name}</option>)}
                       </select>
                     </Field>

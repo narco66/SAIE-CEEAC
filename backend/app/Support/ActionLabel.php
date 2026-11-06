@@ -20,7 +20,7 @@ class ActionLabel
         'alert.published' => 'Alerte publiée', 'alert.extended' => 'Alerte prolongée', 'alert.revoked' => 'Alerte levée',
         'reservation.created' => 'Réservation créée', 'reservation.approved' => 'Réservation approuvée', 'reservation.refused' => 'Réservation refusée',
         'reservation.modified' => 'Réservation modifiée', 'reservation.cancelled' => 'Réservation annulée', 'reservation.no_show' => 'Non-présentation déclarée',
-        'reservation.hold_expired' => 'Délai de validation dépassé', 'reservation.agenda_updated' => 'Ordre du jour modifié', 'reservation.series_partial' => 'Série créée en mode partiel',
+        'reservation.hold_expired' => 'Délai de validation dépassé', 'reservation.agenda_updated' => 'Ordre du jour modifié', 'reservation.priority_changed' => 'Priorité de la réunion modifiée', 'reservation.series_partial' => 'Série créée en mode partiel',
         'reservation.presence_confirmed' => 'Présence confirmée', 'reservation.auto_released' => 'Salle libérée automatiquement',
         'device.paired' => 'Lecteur appairé', 'device.revoked' => 'Lecteur révoqué', 'device.screenshot_requested' => 'Capture demandée', 'device.asset_denied' => 'Ressource refusée au lecteur',
         'document.created' => 'Document déposé', 'document.published' => 'Document publié', 'document.unpublished' => 'Document dépublié', 'document.version_added' => 'Nouvelle version',

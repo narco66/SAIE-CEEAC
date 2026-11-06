@@ -15,6 +15,7 @@ use App\Models\ServiceType;
 use App\Models\Site;
 use App\Models\Structure;
 use App\Support\BusinessException;
+use Closure;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Validation\Rule;
 
@@ -52,8 +53,9 @@ class Referentials
                 'default_duration_s' => ['sometimes', 'integer', 'between:10,120'], 'is_active' => ['sometimes', 'boolean']]],
             'languages' => ['model' => Language::class, 'key' => 'code', 'csv' => ['code', 'name', 'is_active', 'sort'], 'rules' => fn (?Model $m) => [
                 'code' => [$m ? 'prohibited' : 'required', 'in:fr,en,pt,es'], 'name' => [$m ? 'sometimes' : 'required', 'string', 'max:40'], 'is_active' => ['sometimes', 'boolean'], 'sort' => ['sometimes', 'integer']]],
-            'service_types' => ['model' => ServiceType::class, 'key' => 'code', 'csv' => ['code', 'name', 'is_active'], 'rules' => fn (?Model $m) => [
-                'code' => [$m ? 'sometimes' : 'required', 'string', 'max:40', Rule::unique('service_types', 'code')->ignore($m?->getKey())], 'name' => [$m ? 'sometimes' : 'required', 'string', 'max:120'], 'is_active' => ['sometimes', 'boolean']]],
+            'service_types' => ['model' => ServiceType::class, 'key' => 'code', 'csv' => ['code', 'name', 'requires_headcount', 'is_active'], 'rules' => fn (?Model $m) => [
+                'code' => $m ? ['sometimes', self::unchangedCode($m)] : ['required', 'string', 'max:40', Rule::unique('service_types', 'code')], 'name' => [$m ? 'sometimes' : 'required', 'string', 'max:120'],
+                'requires_headcount' => ['sometimes', 'boolean'], 'is_active' => ['sometimes', 'boolean']]],
             'holidays' => ['model' => Holiday::class, 'key' => 'date', 'csv' => ['date', 'label'], 'rules' => fn (?Model $m) => [
                 'date' => [$m ? 'sometimes' : 'required', 'date', Rule::unique('holidays', 'date')->ignore($m?->getKey())], 'label' => [$m ? 'sometimes' : 'required', 'string', 'max:120']]],
             'equipment' => ['model' => Equipment::class, 'key' => 'code', 'csv' => ['code', 'name', 'is_active'], 'rules' => fn (?Model $m) => [
@@ -74,6 +76,18 @@ class Referentials
     }
 
     /**
+     * Code figé après création : les périmètres du pouvoir « prestations » désignent les types par leur code.
+     */
+    private static function unchangedCode(Model $model): Closure
+    {
+        return function (string $attribute, mixed $value, Closure $fail) use ($model): void {
+            if ($value !== $model->getAttribute('code')) {
+                $fail('Le code d’un type de prestation ne se modifie pas : les périmètres du pouvoir « prestations » y font référence.');
+            }
+        };
+    }
+
+    /**
      * Traduit les colonnes « *_code » d'une ligne CSV en identifiants internes.
      *
      * @param  array<string, string>  $row
@@ -89,7 +103,7 @@ class Referentials
                 unset($row[$column]);
             }
         }
-        foreach (['is_active', 'audio_allowed'] as $flag) {
+        foreach (['is_active', 'audio_allowed', 'requires_headcount'] as $flag) {
             if (array_key_exists($flag, $row)) {
                 $row[$flag] = in_array(strtolower(trim((string) $row[$flag])), ['1', 'oui', 'true', 'yes', 'o'], true);
             }

@@ -200,6 +200,7 @@ Route::middleware(['auth:sanctum', 'human', 'idempotent'])->group(function (): v
     Route::post('reservations/{reservation}/approve', [ReservationController::class, 'approve']);
     Route::post('reservations/{reservation}/refuse', [ReservationController::class, 'refuse']);
     Route::put('reservations/{reservation}/agenda', [ReservationController::class, 'agenda']);
+    Route::post('reservations/{reservation}/priority', [ReservationController::class, 'priority']);
     Route::post('reservations/{reservation}/welcome', [ReservationController::class, 'welcome']);
     Route::patch('occurrences/{occurrence}', [ReservationController::class, 'modify']);
     Route::post('occurrences/{occurrence}/cancel', [ReservationController::class, 'cancel']);

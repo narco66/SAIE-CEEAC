@@ -13,6 +13,7 @@ use App\Models\Language;
 use App\Models\Location;
 use App\Models\Room;
 use App\Models\ServiceType;
+use App\Models\Setting;
 use App\Models\Site;
 use App\Models\Structure;
 use App\Models\User;
@@ -42,6 +43,7 @@ class ReferentialController extends Controller
             'equipment' => Equipment::query()->orderBy('name')->get(),
             'users' => User::query()->where('status', 'active')->orderBy('name')->get(['id', 'name', 'structure_id']),
             'rooms' => Room::query()->orderBy('name')->get(['id', 'code', 'name', 'floor_id', 'capacity', 'status', 'approval_mode', 'prep_minutes', 'cleanup_minutes', 'open_from', 'open_to']),
+            'defaults' => ['slide_duration_s' => (int) Setting::effective('display.default_slide_s')],
         ]]);
     }
 

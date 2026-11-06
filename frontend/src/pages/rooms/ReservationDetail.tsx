@@ -12,7 +12,7 @@ import { CancelOccurrenceDialog, ensureArray, MEMBER_STATES, recurrenceLabel, Se
 const CHECK_IN_LEAD_MS = 15 * 60_000
 type Dialog =
   | { kind: 'edit'; o: Occurrence } | { kind: 'cancel'; o: Occurrence } | { kind: 'noshow'; o: Occurrence } | { kind: 'checkin'; o: Occurrence }
-  | { kind: 'approve' } | { kind: 'refuse' } | { kind: 'welcome' } | { kind: 'agenda' }
+  | { kind: 'approve' } | { kind: 'refuse' } | { kind: 'welcome' } | { kind: 'agenda' } | { kind: 'priority' }
 
 /** V28 Détail réservation. N'affiche jamais plus que ce que renvoie l'API (masquage confidentiel côté serveur). */
 export default function ReservationDetail() {
@@ -29,7 +29,7 @@ export default function ReservationDetail() {
   if (query.isLoading) return <Loading />
   if (query.isError || !query.data) return <ErrorState error={query.error} onRetry={() => query.refetch()} />
   const r = query.data
-  const perms = r.permissions ?? { modify: false, approve: false, no_show: false, welcome: false }
+  const perms = r.permissions ?? { modify: false, approve: false, no_show: false, priority: false, welcome: false }
   const update = (next: Reservation) => {
     client.setQueryData(['reservation', id], next)
     client.invalidateQueries({ queryKey: ['reservations'] })
@@ -76,7 +76,10 @@ export default function ReservationDetail() {
                 ? `${checkedCount} occurrence(s) sur ${occurrences.length} confirmée(s) · libération automatique 15 min après le début sans confirmation`
                 : <span className="muted">Présence non mesurée</span>],
               ['Récurrence', recurrenceLabel(r.recurrence)],
-              ['Priorité institutionnelle', r.is_priority ? 'Oui' : 'Non'],
+              ['Réunion prioritaire', <span className="row-actions">
+                {r.is_priority ? 'Oui · exemptée de la libération automatique' : 'Non'}
+                {perms.priority && <Button size="small" variant="secondary" onClick={() => setDialog({ kind: 'priority' })}>{r.is_priority ? 'Retirer la priorité' : 'Déclarer prioritaire'}</Button>}
+              </span>],
               ['Description', r.description || '—'],
             ]} />
           </div>
@@ -217,6 +220,12 @@ export default function ReservationDetail() {
           consequence="La réunion est marquée comme tenue : la salle n’est pas libérée automatiquement. La confirmation est inscrite au journal."
           confirmLabel="Confirmer la présence" onClose={() => setDialog(null)}
           onConfirm={async () => { const res = await api.post<{ data: Reservation }>(`/occurrences/${dialog.o.id}/check-in`, {}); update(res.data); toast.success('Présence confirmée') }} />
+      )}
+      {dialog?.kind === 'priority' && (
+        <ConfirmDialog title={r.is_priority ? 'Retirer la priorité' : 'Déclarer la réunion prioritaire'} object={`${r.reference} · ${r.subject}`}
+          consequence={r.is_priority ? 'La salle pourra de nouveau être libérée automatiquement si la présence n’est pas confirmée.' : 'La salle ne sera jamais libérée automatiquement, même sans confirmation de présence.'}
+          confirmLabel={r.is_priority ? 'Retirer la priorité' : 'Déclarer prioritaire'} reasonLabel="Motif" reasonRequired onClose={() => setDialog(null)}
+          onConfirm={async (reason) => { const res = await api.post<{ data: Reservation }>(`/reservations/${r.id}/priority`, { is_priority: !r.is_priority, reason }); update(res.data); toast.success(r.is_priority ? 'Priorité retirée' : 'Réunion déclarée prioritaire') }} />
       )}
       {dialog?.kind === 'approve' && (
         <ConfirmDialog title="Approuver la réservation" object={`${r.reference} · ${r.subject}`} consequence="Les occurrences en attente sont confirmées et l’organisateur est notifié."

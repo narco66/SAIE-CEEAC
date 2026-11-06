@@ -47,6 +47,12 @@ Défauts corrigés, chacun prouvé par un test qui échouait avant le correctif 
   - l’annulation d’une série archive tous ses messages de bienvenue ;
   - déplacer une réunion recale l’échéance de ses prestations ;
   - la notification « expiration prochaine » part une fois, dans les deux jours précédant l’échéance.
+- **6 novembre, priorité 2 (deuxième lot)** :
+  - les paramètres sans effet ont été retirés de la page Paramètres (V39) ; les dix restants agissent réellement (en-tête des écrans, plage et volume par défaut, durée de diapositive proposée, valeurs initiales des nouvelles salles, canal courriel, push, API), et leurs bornes sont contrôlées par le serveur ;
+  - le gestionnaire de la salle déclare ou retire la priorité d’une réunion depuis sa fiche (motif obligatoire, journalisé) ; l’organisateur ne peut plus se l’attribuer ;
+  - types de prestation : l’option « couverts et heure exigés » se règle, et le code est figé après création ;
+  - une validation sans validateur éligible est signalée aux administrateurs fonctionnels, apparaît dans leurs tâches, puis est affectée automatiquement dès qu’un validateur est habilité ;
+  - la liste « nouveau validateur » et le suppléant retenu sont limités aux validateurs habilités pour la langue et la structure, hors auteur.
 
 ### Priorité 1 — décisions à prendre (aucune correction faite)
 
@@ -56,14 +62,6 @@ Défauts corrigés, chacun prouvé par un test qui échouait avant le correctif 
 
 ### Priorité 2 — fonctions qui ne se comportent pas comme annoncé
 
-- **Validations**
-  - Une validation éditoriale sans validateur éligible est créée « non assignée » et n’apparaît dans les tâches de personne.
-  - La liste « nouveau validateur » n’est pas filtrée par habilitation, et le suppléant n’est pas contrôlé (langue, auteur).
-- **Paramètres et données**
-  - 12 des 15 paramètres de la page Paramètres (V39) sont enregistrés mais sans effet. Seuls la mention institutionnelle, le canal push et l’API d’intégration sont lus. Exemples : durée de maintien d’une demande, durée de diapositive par défaut, nom de l’institution.
-  - Aucun écran ne permet de marquer une réunion « prioritaire ». Cette donnée protège pourtant de la libération automatique.
-  - Référentiel des types de prestation : l’option « couverts et heure exigés » ne se règle pas, et le code reste modifiable alors que les périmètres du pouvoir « prestations » s’y réfèrent.
-  - Les bornes des paramètres numériques ne sont contrôlées que dans le navigateur.
 - **Réservations et visites**
   - Le code de présence ne peut être saisi nulle part.
   - Le statut d’une visite ne quitte jamais « Message à valider ».
@@ -81,7 +79,6 @@ Défauts corrigés, chacun prouvé par un test qui échouait avant le correctif 
   - codes d’exigence (« (PLY-12) », « Échéance HAB-04 », « (P1) ») ;
   - termes techniques (« Manifeste reçu », « heartbeat », « index.html ») ;
   - commandes de développeur dans la section « Versions du lecteur ».
-- **Libellés P1 périmés** : « Sources dynamiques (P1) », « fonction désactivée par défaut ».
 - **Valeurs brutes affichées** :
   - statuts en anglais dans le PDF03 ;
   - gravité « major » sur le tableau de bord ;

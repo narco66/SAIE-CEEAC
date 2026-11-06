@@ -7,6 +7,7 @@ use App\Models\MobileResource;
 use App\Models\ReservationOccurrence;
 use App\Models\Room;
 use App\Models\RoomBlock;
+use App\Models\Setting;
 use App\Services\ReservationService;
 use App\Support\BusinessException;
 use App\Support\Present;
@@ -65,7 +66,9 @@ class RoomController extends Controller
             $this->deny('Création de salle réservée à l’administrateur fonctionnel');
         }
         $data = $this->validated($request);
-        $room = Room::query()->create(collect($data)->except(['equipment', 'confirm_affected'])->all());
+        $room = Room::query()->create(collect($data)->except(['equipment', 'confirm_affected'])->all() + [
+            'pending_hold_hours' => (int) Setting::effective('rooms.pending_hold_hours'), 'auto_release_enabled' => (bool) Setting::effective('rooms.no_show_auto'),
+        ]);
         $room->equipment()->sync(collect($data['equipment'] ?? [])->mapWithKeys(fn ($e) => [$e['id'] => ['quantity' => $e['quantity'] ?? 1]]));
         $this->audit()->log('room.created', $room);
 

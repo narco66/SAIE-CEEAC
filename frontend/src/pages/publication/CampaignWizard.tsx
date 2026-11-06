@@ -82,6 +82,16 @@ export default function CampaignWizard() {
   const [showErrors, setShowErrors] = useState(false)
   const [saving, setSaving] = useState<'draft' | 'publish' | null>(null)
 
+  // Nouvelle campagne : la durée de diapositive proposée est celle des paramètres (V39), tant que rien n'a été saisi.
+  useEffect(() => {
+    const preset = refs.data?.defaults?.slide_duration_s
+    if (!id && preset && JSON.stringify(form) === baseline && form.slide_duration_s !== preset) {
+      const f = { ...form, slide_duration_s: preset }
+      setForm(f)
+      setBaseline(JSON.stringify(f))
+    }
+  }, [id, refs.data, form, baseline])
+
   useEffect(() => {
     if (detail && loaded === null) {
       const f = fromCampaign(detail)

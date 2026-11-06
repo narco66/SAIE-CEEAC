@@ -96,6 +96,9 @@ class ReservationController extends Controller
     {
         $this->authorizePermission('reservations.create');
         $data = $this->validated($request);
+        if (($data['is_priority'] ?? false) && ! $this->service->manages(Room::query()->findOrFail($data['room_id']), $this->user())) {
+            $this->deny('Seul le gestionnaire de la salle peut déclarer une réunion prioritaire');
+        }
         $result = $this->service->create($data, $this->user());
         $reservation = $result['reservation']->load(['organizer', 'structure', 'occurrences.room.floor', 'occurrences.serviceRequests.serviceType', 'agendaItems']);
 
@@ -119,6 +122,7 @@ class ReservationController extends Controller
             'modify' => $reservation->organizer_id === $this->user()->id || $this->managesAny($reservation),
             'approve' => ($this->managesAny($reservation) || $this->service->isEscalatedBackup($reservation, $this->user())) && $reservation->occurrences->contains('status', 'pending'),
             'no_show' => $this->managesAny($reservation),
+            'priority' => $this->managesAny($reservation),
             'welcome' => $this->can('visits.manage') && ! $reservation->confidential,
         ];
         $data['presence'] = [
@@ -265,6 +269,22 @@ class ReservationController extends Controller
         return response($this->service->ics($occurrences, $this->user(), $reservation->reference), 200, [
             'Content-Type' => 'text/calendar; charset=utf-8', 'Content-Disposition' => 'attachment; filename="'.$reservation->reference.'.ics"', 'Cache-Control' => 'private, no-store',
         ]);
+    }
+
+    /**
+     * Réunion prioritaire (SAL-10) : exemptée de la libération automatique ; décision du gestionnaire de la salle, motivée et tracée.
+     */
+    public function priority(Request $request, Reservation $reservation): JsonResponse
+    {
+        $data = $request->validate(['is_priority' => ['required', 'boolean'], 'reason' => ['required', 'string', 'min:5', 'max:300']]);
+        if (! $this->managesAny($reservation)) {
+            $this->deny('Seul le gestionnaire de la salle peut modifier la priorité d’une réunion');
+        }
+        $before = (bool) $reservation->is_priority;
+        $reservation->forceFill(['is_priority' => $data['is_priority']])->save();
+        $this->audit()->log('reservation.priority_changed', $reservation, $data['reason'], before: ['is_priority' => $before], after: ['is_priority' => $data['is_priority']]);
+
+        return $this->show($reservation->refresh());
     }
 
     public function noShow(Request $request, ReservationOccurrence $occurrence): JsonResponse

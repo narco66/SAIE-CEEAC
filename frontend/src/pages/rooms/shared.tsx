@@ -47,7 +47,7 @@ export interface Reservation {
   resources?: { occurrence_id: string; name: string }[]
   welcome?: { id: string; reference: string; title: string; status: string }[]
   history?: { occurred_at: string; actor_label: string | null; action: string; label?: string; reason: string | null }[]
-  permissions?: { modify: boolean; approve: boolean; no_show: boolean; welcome: boolean }
+  permissions?: { modify: boolean; approve: boolean; no_show: boolean; priority: boolean; welcome: boolean }
   /** Confirmation de présence (SAL-10) : codes communiqués à l'organisateur seul. */
   presence?: { enabled: boolean; codes: Record<string, string | null>; checked_in: Record<string, string | null> }
   external_notice?: string
