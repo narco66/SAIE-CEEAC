@@ -9,7 +9,9 @@ use App\Support\Present;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Mail\Message;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
@@ -67,8 +69,20 @@ class UserController extends Controller
         if ($user->source !== 'local' && (isset($data['name']) || isset($data['email']))) {
             throw new BusinessException('IDENTITY_MANAGED_BY_DIRECTORY', 'Identité gérée par l’annuaire : modification impossible ici.', 422);
         }
+        $emailChanged = isset($data['email']) && mb_strtolower($data['email']) !== $user->email;
+        if ($emailChanged) {
+            $this->assertMayAdminister($user, 'modifier l’adresse de connexion');
+            $data['email'] = mb_strtolower($data['email']);
+        }
+        $previousEmail = $user->email;
         $before = $user->only(array_keys($data));
         $user->update($data);
+        if ($emailChanged) {
+            // L'ancienne adresse est prévenue et les sessions fermées : un changement d'adresse ne permet pas une prise de compte silencieuse.
+            $user->forceFill(['remember_token' => null])->save();
+            DB::table('sessions')->where('user_id', $user->id)->delete();
+            $this->warnAccountHolder($previousEmail, 'L’adresse de connexion de votre compte SAIE-CEEAC a été remplacée par un administrateur.');
+        }
         $this->audit()->log('user.updated', $user, before: $before, after: $data);
 
         return $this->show($user);
@@ -89,11 +103,13 @@ class UserController extends Controller
         return $this->show($user);
     }
 
-    public function reactivate(User $user): JsonResponse
+    public function reactivate(Request $request, User $user): JsonResponse
     {
         $this->authorizePermission('users.manage');
+        $data = $request->validate(['reason' => ['required', 'string', 'min:5', 'max:300']]);
+        $this->refuseOwnAccount($user);
         $user->forceFill(['status' => 'active', 'failed_logins' => 0, 'locked_until' => null])->save();
-        $this->audit()->log('user.reactivated', $user);
+        $this->audit()->log('user.reactivated', $user, $data['reason']);
 
         return $this->show($user);
     }
@@ -124,8 +140,37 @@ class UserController extends Controller
         $user->forceFill(['mfa_secret' => null, 'mfa_enabled_at' => null, 'mfa_recovery_codes' => null, 'remember_token' => null])->save();
         $sessions = DB::table('sessions')->where('user_id', $user->id)->delete();
         $this->audit()->log('user.mfa_reset', $user, $data['reason'], after: ['sessions_closed' => $sessions]);
+        $this->warnAccountHolder($user->email, 'Le second facteur de votre compte SAIE-CEEAC a été réinitialisé par un administrateur.');
 
         return $this->show($user);
+    }
+
+    /**
+     * Permissions dont la détention interdit qu'un administrateur qui ne les a pas change l'adresse de connexion du compte :
+     * ce changement suivi d'un « mot de passe oublié » vaudrait prise de contrôle (HAB-02).
+     *
+     * @var list<string>
+     */
+    private const PRIVILEGED = ['users.manage', 'roles.manage', 'settings.manage', 'settings.technical', 'audit.view', 'contents.validate', 'reservations.approve',
+        'alerts.manage', 'campaigns.manage', 'referentials.manage', 'templates.manage', 'devices.revoke', 'incidents.manage'];
+
+    /**
+     * HAB-02 : pas de prise de contrôle d'un compte de rang supérieur ; refus journalisé.
+     */
+    private function assertMayAdminister(User $target, string $action): void
+    {
+        $actor = $this->user();
+        $beyond = array_values(array_diff(array_intersect($this->access()->permissions($target), self::PRIVILEGED), $this->access()->permissions($actor)));
+        $powers = $this->access()->powers($target)->pluck('power')->diff($this->access()->powers($actor)->pluck('power'))->values()->all();
+        if ($beyond !== [] || $powers !== []) {
+            $this->audit()->log('access.denied', $target, "Tentative de $action d’un compte détenant des droits supérieurs", after: ['permissions' => $beyond, 'powers' => $powers], outcome: 'denied');
+            throw new AuthorizationException("Ce compte détient des droits que vous n’avez pas : seul un administrateur disposant de ces droits peut $action.");
+        }
+    }
+
+    private function warnAccountHolder(string $email, string $what): void
+    {
+        Mail::raw("$what\n\nSi vous n’êtes pas à l’origine de cette demande, prévenez immédiatement la DSI.", fn (Message $m) => $m->to($email)->subject('[SAIE-CEEAC] Sécurité de votre compte'));
     }
 
     private function refuseOwnAccount(User $user): void

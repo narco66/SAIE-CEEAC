@@ -22,7 +22,7 @@ Votre compte est créé par un administrateur. Vous recevez à votre adresse pro
 
 Si une **Action de sécurité requise** s’affiche, vous devez d’abord :
 - définir un nouveau mot de passe, si l’administrateur l’a demandé ;
-- activer le second facteur, obligatoire pour les **administrateurs** (technique et fonctionnel) et les **validateurs**.
+- activer le second facteur, obligatoire pour les **administrateurs** (technique et fonctionnel), les **validateurs** et les titulaires d’un **pouvoir étendu** en cours.
 
 Les autres pages restent inaccessibles tant que ce n’est pas fait.
 

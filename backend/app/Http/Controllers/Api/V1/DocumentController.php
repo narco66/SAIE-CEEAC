@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
 use App\Models\AccessLink;
+use App\Models\Asset;
 use App\Models\AssetVersion;
 use App\Models\Document;
 use App\Models\DocumentBroadcast;
@@ -108,6 +109,11 @@ class DocumentController extends Controller
         $data = $this->validated($request, false);
         $before = $document->only(array_keys($data));
         $document->update(collect($data)->except('audience_ids')->all());
+        if (isset($data['classification'])) {
+            // DOC-04 : le fichier suit la classification du document ; un document reclassé « restreint » ne peut plus être diffusé.
+            Asset::query()->whereIn('id', AssetVersion::query()->whereIn('id', $document->versions()->select('asset_version_id'))->select('asset_id'))
+                ->update(['classification' => $data['classification'], 'updated_at' => now()]);
+        }
         if (array_key_exists('audience_ids', $data)) {
             $document->audiences()->sync($data['audience_ids']);
         }

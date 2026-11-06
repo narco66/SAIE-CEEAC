@@ -120,8 +120,7 @@ class AuthController extends Controller
         $request->session()->regenerate();
         $user->forceFill(['failed_logins' => 0, 'locked_until' => null, 'last_login_at' => now(), 'last_activity_at' => now()])->save();
         $audit->log('auth.login', $user, actor: $user);
-        $mustEnroll = config('saie.security.mfa_enforced') && ! $user->mfa_enabled_at
-            && array_intersect($access->roleCodes($user), config('saie.security.mfa_roles')) !== [];
+        $mustEnroll = $access->requiresMfaEnrollment($user);
 
         return response()->json(['authenticated' => true, 'mfa_enrollment_required' => $mustEnroll, 'must_change_password' => $user->must_change_password]);
     }

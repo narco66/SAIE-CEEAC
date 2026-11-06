@@ -146,13 +146,30 @@ class AssetController extends Controller
      * @param  Builder<Asset>  $query
      * @return Builder<Asset>
      */
+    /**
+     * Médias visibles (DOC-04, DOC-07) :
+     * - public et interne : tout titulaire de la consultation de la médiathèque ;
+     * - restreint : son déposant, ou un gestionnaire de médias dont le périmètre couvre la structure propriétaire
+     *   (la simple consultation ne suffit pas) ;
+     * - fichier d'un document : seulement ses gestionnaires ; les lecteurs passent par le téléchargement documentaire,
+     *   qui applique audience, statut, version courante et accusé de lecture.
+     */
     private function visible(Builder $query): Builder
     {
-        $scope = $this->access()->structureScope($this->user(), 'media.view');
+        $user = $this->user();
+        $managed = $this->access()->can($user, 'media.upload') ? $this->access()->structureScope($user, 'media.upload') : [];
+        $documentManaged = $this->access()->can($user, 'documents.manage') ? $this->access()->structureScope($user, 'documents.manage') : [];
+        $none = ['00000000-0000-0000-0000-000000000000'];
 
-        return $query->where(fn ($q) => $q->whereIn('classification', ['public', 'interne'])
-            ->orWhere('created_by', $this->user()->id)
-            ->when($scope === null, fn ($w) => $w->orWhereRaw('true'), fn ($w) => $w->orWhereIn('owner_structure_id', $scope ?: ['00000000-0000-0000-0000-000000000000'])));
+        return $query
+            ->where(fn ($q) => $q->whereIn('classification', ['public', 'interne'])
+                ->orWhere('created_by', $user->id)
+                ->when($managed === null, fn ($w) => $w->orWhereRaw('true'), fn ($w) => $w->orWhereIn('owner_structure_id', $managed ?: $none)))
+            ->where(fn ($q) => $q->whereNotExists(fn ($d) => $d->select(DB::raw(1))->from('document_versions')->join('asset_versions', 'asset_versions.id', '=', 'document_versions.asset_version_id')->whereColumn('asset_versions.asset_id', 'assets.id'))
+                ->orWhere('created_by', $user->id)
+                ->when($documentManaged === null, fn ($w) => $w->orWhereRaw('true'), fn ($w) => $w->orWhereExists(fn ($d) => $d->select(DB::raw(1))->from('document_versions')
+                    ->join('asset_versions', 'asset_versions.id', '=', 'document_versions.asset_version_id')->join('documents', 'documents.id', '=', 'document_versions.document_id')
+                    ->whereColumn('asset_versions.asset_id', 'assets.id')->where(fn ($o) => $o->whereIn('documents.owner_structure_id', $documentManaged ?: $none)->orWhere('documents.author_id', $user->id)))));
     }
 
     private function assertVisible(Asset $asset): void

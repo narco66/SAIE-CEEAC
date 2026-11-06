@@ -39,7 +39,7 @@ class MeController extends Controller
             'powers' => $access->powers($user)->map(fn (RoleExtension $e) => ['power' => $e->power, 'scope' => $e->scope, 'ends_at' => Present::date($e->ends_at), 'active' => $access->hasPower($user, $e->power)])->values(),
             'validation_languages' => $access->validationLanguages($user),
             'mfa_enabled' => (bool) $user->mfa_enabled_at,
-            'mfa_enrollment_required' => config('saie.security.mfa_enforced') && ! $user->mfa_enabled_at && array_intersect($access->roleCodes($user), config('saie.security.mfa_roles')) !== [],
+            'mfa_enrollment_required' => $access->requiresMfaEnrollment($user),
             'must_change_password' => $user->must_change_password,
             'notification_preferences' => $user->notification_preferences ?? ['email' => true, 'push' => false, 'muted_events' => []],
             'last_login_at' => Present::date($user->last_login_at),

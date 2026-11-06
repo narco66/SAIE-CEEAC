@@ -114,6 +114,10 @@ export async function request<T>(method: string, path: string, options: RequestO
   if (!response.ok) {
     const error = new ApiError(response.status, typeof payload === 'object' ? payload : { message: String(payload).slice(0, 200) })
     if (response.status === 401 && onUnauthenticated && !path.startsWith('/auth/')) onUnauthenticated()
+    // Second facteur ou mot de passe à régulariser (SEC-01) : seul « Mon compte » reste accessible.
+    if (response.status === 403 && ['MFA_ENROLLMENT_REQUIRED', 'PASSWORD_CHANGE_REQUIRED'].includes(error.code ?? '') && !window.location.pathname.startsWith('/mon-compte')) {
+      window.location.assign('/mon-compte?securite=1')
+    }
     throw error
   }
   return payload as T

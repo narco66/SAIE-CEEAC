@@ -29,7 +29,7 @@ L’administration des salles (fermetures, équipements, validation) est décrit
 
 Voir [Premiers pas](premiers-pas.md) pour la connexion, le second facteur, le compte et les notifications.
 
-Le second facteur est obligatoire pour les deux rôles d’administration (ainsi que pour le Validateur éditorial) lorsque le serveur l’impose : la ligne **Second facteur imposé** du panneau **Environnement**, dans **Paramètres**, l’indique. Tant qu’il n’est pas activé, seule la page **Mon compte** est accessible.
+Le second facteur est obligatoire pour les deux rôles d’administration, pour le Validateur éditorial et pour tout titulaire d’un pouvoir étendu en cours (urgence, modèles, prestations) lorsque le serveur l’impose : la ligne **Second facteur imposé** du panneau **Environnement**, dans **Paramètres**, l’indique. Tant qu’il n’est pas activé, ou tant qu’un mot de passe provisoire n’a pas été changé, le serveur refuse toute autre action : seule la page **Mon compte** est accessible.
 
 ## Gérer les utilisateurs
 
@@ -44,6 +44,8 @@ Menu **Administration › Utilisateurs**. La liste se filtre par **Statut**, **R
 3. Validez par **Créer le compte**.
 
 Aucun mot de passe n’est saisi ni affiché : un lien personnel de définition du mot de passe est envoyé à l’adresse professionnelle. Une adresse déjà utilisée est refusée. Un compte issu de l’annuaire garde un nom et une adresse non modifiables ici.
+
+Vous ne pouvez pas modifier l’adresse de connexion d’un compte qui détient des droits d’administration, de validation, de diffusion ou un pouvoir étendu que vous n’avez pas : le refus est inscrit au journal. Lorsqu’une adresse est modifiée, l’ancienne adresse est prévenue et les sessions du compte sont fermées.
 
 ### Désigner un suppléant
 
@@ -93,9 +95,9 @@ Onglet **Droits effectifs** : rôles actifs, pouvoirs en vigueur, langues de val
 2. Choisissez l’action :
    - **Révoquer les sessions** puis **Révoquer toutes les sessions** : l’utilisateur est déconnecté partout et doit se reconnecter ;
    - **Désactiver**, **Motif**, puis **Désactiver et couper les sessions** : les sessions sont fermées et l’utilisateur ne peut plus se connecter ; ses actions passées restent au journal ;
-   - **Réactiver** puis **Réactiver** : l’utilisateur peut de nouveau se connecter, ses rôles encore valides s’appliquent aussitôt et un verrouillage éventuel est levé.
+   - **Réactiver**, saisissez le **Motif**, puis **Réactiver** : l’utilisateur peut de nouveau se connecter, ses rôles encore valides s’appliquent aussitôt et un verrouillage éventuel est levé.
    - **Débloquer** (proposé quand la fiche indique « Verrouillé jusqu’au … ») : saisissez le **Motif** après avoir vérifié l’identité de la personne. Le compteur d’échecs est remis à zéro et la personne peut se reconnecter immédiatement.
-   - **Réinitialiser le second facteur** (proposé quand il est activé) : à utiliser quand la personne a perdu son téléphone et ses codes de secours. Vérifiez d’abord son identité, puis saisissez le **Motif**. Son application et ses codes cessent de fonctionner et ses sessions sont fermées ; elle configure un nouveau second facteur à sa prochaine connexion.
+   - **Réinitialiser le second facteur** (proposé quand il est activé) : à utiliser quand la personne a perdu son téléphone et ses codes de secours. Vérifiez d’abord son identité, puis saisissez le **Motif**. Son application et ses codes cessent de fonctionner et ses sessions sont fermées et elle est prévenue par courriel ; elle configure un nouveau second facteur à sa prochaine connexion.
 
 Un compte ne se supprime pas : il se désactive. Vous ne pouvez ni désactiver, ni débloquer, ni réinitialiser votre propre compte, et vous ne pouvez pas vous attribuer à vous-même un rôle, un pouvoir étendu ou des permissions supplémentaires sur un rôle que vous détenez : un autre administrateur doit le faire.
 

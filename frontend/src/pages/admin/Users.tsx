@@ -247,9 +247,9 @@ function UserDetail({ id, onClose }: { id: string; onClose: () => void }) {
           onClose={() => setConfirm(null)} onConfirm={async (reason) => { await api.post(`/users/${u.id}/deactivate`, { reason }); toast.success('Compte désactivé'); await refresh() }} />
       )}
       {confirm === 'reactivate' && u && (
-        <ConfirmDialog title="Réactiver le compte" object={u.name} confirmLabel="Réactiver"
+        <ConfirmDialog title="Réactiver le compte" object={u.name} confirmLabel="Réactiver" reasonLabel="Motif" reasonRequired
           consequence="L’utilisateur pourra de nouveau se connecter ; ses rôles encore valides s’appliquent aussitôt. Le verrouillage éventuel est levé."
-          onClose={() => setConfirm(null)} onConfirm={async () => { await api.post(`/users/${u.id}/reactivate`, undefined, false); toast.success('Compte réactivé'); await refresh() }} />
+          onClose={() => setConfirm(null)} onConfirm={async (reason) => { await api.post(`/users/${u.id}/reactivate`, { reason }, false); toast.success('Compte réactivé'); await refresh() }} />
       )}
       {confirm === 'unlock' && u && (
         <ConfirmDialog title="Débloquer le compte" object={u.name} confirmLabel="Débloquer" reasonLabel="Motif (vérification d’identité effectuée)" reasonRequired

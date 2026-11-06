@@ -59,6 +59,11 @@ Défauts corrigés, chacun prouvé par un test qui échouait avant le correctif 
   - l’extrait PDF09/CSV reprend tous les filtres du journal, et le filtre « type d’objet » ne dépend plus de la casse ;
   - la conservation des captures de rendu est annoncée à 7 jours, comme le serveur l’applique.
 
+- **6 novembre, audit — lot R1 (défauts bloquants de sécurité)** :
+  - le serveur impose le second facteur (rôles sensibles et titulaires d’un pouvoir étendu) et le changement du mot de passe provisoire : seul « Mon compte » reste accessible d’ici là ;
+  - l’adresse de connexion d’un compte qui détient des droits privilégiés que l’on n’a pas ne peut plus être changée ; tout changement d’adresse ou réinitialisation du second facteur prévient le titulaire ; la réactivation exige un motif ;
+  - un média restreint n’est plus visible des seuls titulaires de la consultation de la médiathèque ; le fichier d’un document n’est servi par la médiathèque qu’à ses gestionnaires ; reclasser un document reclasse son fichier.
+
 ### Priorité 1 — décisions à prendre (aucune correction faite)
 
 - **Participants des réunions standard** (nom, organisation) : visibles de tout agent qui peut voir les salles. À arbitrer au titre de GOV-02 : restreindre à l’organisateur, aux participants et aux gestionnaires ?

@@ -62,6 +62,18 @@ class Access
         return $this->assignments($user)->pluck('role.code')->unique()->values()->all();
     }
 
+    /**
+     * SEC-01 : second facteur obligatoire pour les rôles sensibles et pour tout titulaire d'un pouvoir étendu en cours.
+     */
+    public function requiresMfaEnrollment(User $user): bool
+    {
+        if (! config('saie.security.mfa_enforced') || $user->mfa_enabled_at) {
+            return false;
+        }
+
+        return array_intersect($this->roleCodes($user), config('saie.security.mfa_roles')) !== [] || $this->powers($user)->isNotEmpty();
+    }
+
     public function hasRole(User $user, string $role): bool
     {
         return in_array($role, $this->roleCodes($user), true);
