@@ -43,11 +43,11 @@ export default function ReservationDetail() {
   const presence = r.presence ?? { enabled: false, codes: {}, checked_in: {} }
   const isOrganizer = Object.keys(presence.codes).length > 0
   const checkedCount = occurrences.filter((o) => presence.checked_in[o.id]).length
-  const inCheckInWindow = (o: Occurrence) => presence.enabled && !presence.checked_in[o.id] && ['confirmed', 'in_progress'].includes(o.status)
+  const inCheckInWindow = (o: Occurrence) => !presence.checked_in[o.id] && ['confirmed', 'in_progress'].includes(o.status)
     && new Date(o.starts_at).getTime() - CHECK_IN_LEAD_MS <= now && now < new Date(o.ends_at).getTime()
   const canCheckIn = (o: Occurrence) => (isOrganizer || perms.no_show) && inCheckInWindow(o)
-  // SAL-10 : un participant qui a reçu le code temporaire de l'organisateur confirme la présence avec ce code.
-  const canCheckInWithCode = (o: Occurrence) => !isOrganizer && !perms.no_show && inCheckInWindow(o)
+  // SAL-10 : dans une salle où la libération automatique est active, un participant muni du code temporaire confirme la présence.
+  const canCheckInWithCode = (o: Occurrence) => presence.enabled && !isOrganizer && !perms.no_show && inCheckInWindow(o)
 
   return (
     <>

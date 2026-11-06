@@ -6,8 +6,10 @@ Mini-PC administré (8 Go RAM, SSD 64 Go, décodage matériel H.264), Ethernet s
 
 ```
 chrome --kiosk --noerrdialogs --disable-session-crashed-bubble --disable-infobars --autoplay-policy=no-user-gesture-required \
-       --check-for-update-interval=31536000 --overscroll-history-navigation=0 --disable-pinch https://saie.ceeac.local/player/
+       --overscroll-history-navigation=0 --disable-pinch https://saie.ceeac.local/player/
 ```
+
+- **Mises à jour du navigateur** (EXP-02) : ne jamais les bloquer. Chrome reste sur le canal stable et se met à jour par la stratégie de la DSI (GPO Windows, ou politique `/etc/opt/chrome/policies` sous Linux). Un groupe pilote de deux ou trois lecteurs reçoit chaque version une semaine avant le parc. Le poste redémarre chaque nuit hors plage de diffusion, ce qui applique la mise à jour sans interrompre l'affichage.
 
 - **Autoplay** : les vidéos sont lancées muettes (autorisé par tous les navigateurs) ; l’audio n’est activé qu’à l’accueil, de 8 h à 18 h, avec le volume plafond de la zone (PLY-10). Le drapeau `--autoplay-policy` est requis pour le son.
 - **Codecs** : H.264/AAC (MP4) et WebM VP9 ; tester chaque famille de matériel au pilote. Le transcodage côté serveur n’a lieu que si ffmpeg est installé et déclaré (`SAIE_FFMPEG_PATH`) ; sinon, déposer les vidéos en H.264/AAC.

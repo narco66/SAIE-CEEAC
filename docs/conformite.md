@@ -1,5 +1,13 @@
 # Matrice de conformité fonctionnelle et visuelle
 
+> **Requalification du 6 novembre 2026 — à lire avant le tableau ci-dessous.** L'audit indépendant du 6 novembre
+> (`docs/audit/2026-11-06/`) a montré que plusieurs états « Réalisé » de ce tableau étaient inexacts : sur 104 exigences
+> applicables, 12 étaient entièrement conformes et 14 non conformes (dont HAB-01, HAB-02, DOC-04, SEC-01, SEC-05, SAL-07).
+> **La référence est désormais `docs/audit/2026-11-06/MATRICE_CONFORMITE.csv`**, établie sous-critère par sous-critère avec preuve.
+> Les corrections faites depuis (lots R1 à R7, listés dans `docs/limites.md`, chacune prouvée par un test qui échouait avant)
+> n'ont pas encore été réévaluées par un audit de clôture : aucune exigence ne doit être déclarée « Réalisée » sur la seule foi
+> de ce tableau. Règle adoptée : un état « Réalisé » cite un test présent dans le dépôt et vert dans la CI.
+>
 > Mise à jour du 5 novembre 2026 : fonctions P1 et exigences P2 (DOC-09, PUB-12, SAL-15) achevées, suites rejouées (voir `docs/tests/rapport.md`).
 
 État : **Réalisé** (implémenté et vérifié par test ou exécution), **Réalisé (non testé auto.)** (implémenté, vérifié manuellement ou par compilation seulement), **Partiel**, **Préparé** (structure, API ou interface présentes, fonction désactivée ou dépendante d’un accès externe), **Hors réalisation** (organisationnel ou matériel).

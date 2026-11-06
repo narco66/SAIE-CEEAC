@@ -1,4 +1,21 @@
-# Rapport de tests — 5 novembre 2026
+# Rapport de tests
+
+## Exécution du 6 novembre 2026 (après les lots de correction de l'audit)
+
+Même poste. Résultats observés :
+
+| Suite | Commande | Résultat |
+| --- | --- | --- |
+| Backend (PHPUnit 12, PostgreSQL 18.6 réel) | `vendor\bin\phpunit` | **144 / 144 réussis** |
+| Lecteur (node:test) | `cd player; npm test` | **14 / 14 réussis** |
+| Typage frontend et lecteur, build frontend | `npx tsc --noEmit`, `npm run build` | 0 erreur, build réussi |
+| Parcours de bout en bout (Playwright) | `cd frontend; npx playwright test` | **42 / 43** en exécution complète (16,1 min). L'échec, V28 « Confirmer la présence », était une régression du lot R3 (bouton masqué hors libération automatique) : corrigée, puis V28 rejoué seul et **réussi**. La suite complète est à rejouer en CI. |
+
+La précédente exécution complète connue (5 novembre, 16 h 34) s'était terminée **en échec** (V28, conflit de réservation avec des données d'une exécution antérieure) alors que ce rapport affichait 43/43 : le tableau ci-dessous en est l'état antérieur, conservé pour mémoire.
+
+---
+
+## Exécution du 5 novembre 2026
 
 Environnement : Windows 11, PHP 8.4.7, PostgreSQL **18.6** (instance Laragon, port 5433, rôle `saie`), Node 22.21, Chrome stable (Playwright 1.64.1, canal `chrome`). Tous les tests ci-dessous ont été **exécutés** ; aucun n’est simulé.
 
