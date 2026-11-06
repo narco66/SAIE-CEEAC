@@ -107,7 +107,8 @@ class ContentController extends Controller
             WorkflowEvent::query()->create(['object_type' => 'content', 'object_id' => $content->id, 'action' => 'created', 'to_status' => 'draft', 'actor_id' => $this->user()->id, 'created_at' => now()]);
             $this->audit()->log('content.created', $content);
 
-            return $content;
+            // Valeurs par défaut de la base (priorité, permanence, version) reflétées dans la réponse.
+            return $content->refresh();
         });
 
         return $this->show($content)->setStatusCode(201);

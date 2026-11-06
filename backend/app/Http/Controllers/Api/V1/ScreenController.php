@@ -207,7 +207,7 @@ class ScreenController extends Controller
         $group->screens()->sync($data['screen_ids'] ?? []);
         $this->audit()->log('group.created', $group);
 
-        return response()->json(['data' => $group], 201);
+        return response()->json(['data' => $group->refresh()], 201);
     }
 
     public function updateGroup(Request $request, ScreenGroup $group): JsonResponse

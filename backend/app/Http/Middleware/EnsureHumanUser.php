@@ -4,6 +4,7 @@ namespace App\Http\Middleware;
 
 use App\Models\User;
 use App\Services\Access;
+use App\Support\BusinessException;
 use Closure;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Http\Request;
@@ -40,7 +41,7 @@ class EnsureHumanUser
         };
         // Seul le compte personnel reste accessible : changement de mot de passe et activation du second facteur.
         if ($pending && ! $request->is('api/v1/me', 'api/v1/me/*')) {
-            return response()->json(['code' => $pending[0], 'message' => $pending[1], 'errors' => (object) []], 403);
+            throw new BusinessException($pending[0], $pending[1], 403);
         }
 
         return $next($request);

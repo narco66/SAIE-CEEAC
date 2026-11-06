@@ -40,7 +40,7 @@ class MeController extends Controller
             'validation_languages' => $access->validationLanguages($user),
             'mfa_enabled' => (bool) $user->mfa_enabled_at,
             'mfa_enrollment_required' => $access->requiresMfaEnrollment($user),
-            'must_change_password' => $user->must_change_password,
+            'must_change_password' => (bool) $user->must_change_password,
             'notification_preferences' => $user->notification_preferences ?? ['email' => true, 'push' => false, 'muted_events' => []],
             'last_login_at' => Present::date($user->last_login_at),
             'server_time' => now()->toIso8601String(), 'timezone_institution' => config('saie.timezone'),

@@ -68,7 +68,7 @@ class RoomController extends Controller
         $data = $this->validated($request);
         $room = Room::query()->create(collect($data)->except(['equipment', 'confirm_affected'])->all() + [
             'pending_hold_hours' => (int) Setting::effective('rooms.pending_hold_hours'), 'auto_release_enabled' => (bool) Setting::effective('rooms.no_show_auto'),
-        ]);
+        ])->refresh();
         $room->equipment()->sync(collect($data['equipment'] ?? [])->mapWithKeys(fn ($e) => [$e['id'] => ['quantity' => $e['quantity'] ?? 1]]));
         $this->audit()->log('room.created', $room);
 

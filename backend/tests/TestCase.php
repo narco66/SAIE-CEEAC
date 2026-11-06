@@ -22,6 +22,8 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Illuminate\Testing\TestResponse;
+use Tests\Contract\OpenApiContract;
 
 abstract class TestCase extends BaseTestCase
 {
@@ -39,6 +41,28 @@ abstract class TestCase extends BaseTestCase
         parent::setUp();
         Storage::fake('local');
         $this->withHeader('Accept', 'application/json');
+    }
+
+    /**
+     * Chaque réponse de l'API est confrontée au contrat OpenAPI livré (API-02, API-06).
+     *
+     * @param  array<string, mixed>  $parameters
+     * @param  array<string, mixed>  $cookies
+     * @param  array<string, mixed>  $files
+     * @param  array<string, mixed>  $server
+     */
+    public function call($method, $uri, $parameters = [], $cookies = [], $files = [], $server = [], $content = null): TestResponse
+    {
+        $response = parent::call($method, $uri, $parameters, $cookies, $files, $server, $content);
+        $body = is_string($content) && $content !== '' ? json_decode($content, true) : $parameters;
+        $violations = OpenApiContract::check($method, $body, $response);
+        if ($violations !== [] && ($report = getenv('SAIE_CONTRACT_REPORT'))) {
+            file_put_contents($report, implode("\n", $violations)."\n", FILE_APPEND);
+        } elseif ($violations !== []) {
+            $this->fail("Réponse hors contrat OpenAPI (docs/api/openapi.json) :\n".implode("\n", $violations));
+        }
+
+        return $response;
     }
 
     protected function structure(string $code = 'COM'): Structure

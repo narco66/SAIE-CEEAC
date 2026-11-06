@@ -45,6 +45,15 @@ class ReservationTest extends TestCase
         ], $extra);
     }
 
+    /**
+     * API-04 : la réponse de création porte la version initiale, que le client renverra pour modifier.
+     */
+    public function test_new_reservation_response_exposes_its_initial_versions(): void
+    {
+        $this->actingAs($this->agent)->postJson('/api/v1/reservations', $this->payload('10:00', '11:00'))->assertCreated()
+            ->assertJsonPath('data.version', 1)->assertJsonPath('data.occurrences.0.version', 1);
+    }
+
     public function test_database_constraint_rejects_overlapping_active_occurrences_even_without_application_check(): void
     {
         $this->actingAs($this->agent)->postJson('/api/v1/reservations', $this->payload('10:00', '11:00'))->assertCreated();

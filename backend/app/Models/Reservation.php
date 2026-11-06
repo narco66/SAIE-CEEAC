@@ -20,6 +20,13 @@ class Reservation extends Model
     protected $guarded = ['id'];
 
     /**
+     * Version initiale (API-04) : identique au défaut de la colonne, présente dès la réponse de création.
+     *
+     * @var array<string, int>
+     */
+    protected $attributes = ['version' => 1];
+
+    /**
      * @return array<string, string>
      */
     protected function casts(): array

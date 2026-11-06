@@ -18,7 +18,7 @@
 ## Vérifications restant à exécuter
 
 - Images de production (`infra/php.Dockerfile`, `infra/web.Dockerfile`) et `infra/docker-compose.yml` : jamais construits ni lancés sur ce poste (Docker absent). La configuration Nginx a été validée et essayée sur Nginx 1.28 ; la construction des images, leur contenu et le preflight dans le conteneur sont contrôlés par le job `infra` de la CI, à son premier passage.
-- Premier passage de la chaîne CI : le dépôt git ne contient pas encore le code (un seul fichier versionné).
+- Chaîne CI : exécutée et verte sur GitHub Actions (6 novembre).
 - Charge (R15) et restauration (R14) mesurées sur ce poste (voir `docs/tests/rapport.md`) : à refaire sur l’environnement cible avec les volumes réels, l’archivage WAL et 10 lecteurs physiques.
 - Mesures non réalisables sur ce poste : arrêt du SMTP institutionnel, audit d’accessibilité avec lecteur d’écran, ASVS niveau 2 et test d’intrusion, coupure électrique réelle.
 
@@ -118,7 +118,16 @@ Défauts corrigés, chacun prouvé par un test qui échouait avant le correctif 
   - lecteurs : jetons à durée de vie de 90 jours, renouvelés automatiquement ; rotation de la clé de signature sans réappairage ; intégrité de toute la version publiée (SRI) ;
   - Policies Laravel pour les documents, médias, contenus et réservations (SEC-02), appliquées par les contrôleurs ;
   - sources dynamiques protégées du rebinding DNS, taille limitée pendant le transfert ;
-  - vingt anomalies mineures de l'audit corrigées (voir l'historique Git).
+  - vingt anomalies mineures de l'audit corrigées (voir l'historique Git) ;
+  - accessibilité : contraste du texte ambre et taille des boutons de pagination conformes (axe WCAG 2.2 AA sur les 17 pages contrôlées).
+
+- **6 novembre — contrat OpenAPI (C-38, E-07, API-02, API-06)** :
+  - corps de requête des opérations d’écriture générés depuis les règles de validation du serveur (`saie:openapi`, lecture statique des contrôleurs) ; référentiels décrits type par type ;
+  - schémas de réponse pour toutes les routes du tableau du chapitre 17 (`App\Support\OpenApi\ResourceSchemas`), pouvoir étendu en `x-power`, codes d’erreur métier en `x-error-codes`, codes HTTP propres à chaque action (304, 410, 428…) ;
+  - test de contrat : chaque réponse de `/api/v1` produite par la suite PHPUnit est validée contre `docs/api/openapi.json` (code déclaré et schéma), et le contrat versionné doit correspondre aux routes ;
+  - exemples réels anonymisés (`docs/api/examples.json`, régénérés par `SAIE_CONTRACT_RECORD=1 php artisan test`) ;
+  - écarts révélés et corrigés : erreurs sans `request_id` (QR, compte en attente de MFA ou de changement de mot de passe) ; réponses de création sans les valeurs par défaut de la base (version initiale nulle d’une réservation, mode de validation et durées d’une salle, priorité d’un contenu, plage d’un groupe).
+- **Restent ouverts sur le contrat** : 87 des 185 opérations n’ont pas d’exemple (non exercées par la suite) ; les opérations hors chapitre 17 ont un schéma de réponse générique (enveloppe `data` ou `data` + `meta`) ; une règle de validation dynamique (objet `Rule`, closure) n’est pas traduite et laisse le schéma permissif ; le frontend n’est pas généré depuis le contrat. Annulation et non-présentation portent sur une occurrence (`/occurrences/{id}/cancel`, `/no-show`), et non sur la réservation comme l’écrit le tableau du chapitre 17.
 
 ### Priorité 1 — décisions à prendre (aucune correction faite)
 
