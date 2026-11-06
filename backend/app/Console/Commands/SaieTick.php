@@ -8,6 +8,7 @@ use App\Models\Content;
 use App\Models\Device;
 use App\Models\Incident;
 use App\Models\ReservationOccurrence;
+use App\Models\User;
 use App\Models\Visit;
 use App\Services\Audit;
 use App\Services\CampaignService;
@@ -19,6 +20,7 @@ use App\Support\Reference;
 use Illuminate\Console\Attributes\Description;
 use Illuminate\Console\Attributes\Signature;
 use Illuminate\Console\Command;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Throwable;
@@ -97,9 +99,11 @@ class SaieTick extends Command
             }
             $open = Incident::query()->where('device_id', $device->id)->where('kind', 'device_unavailable')->whereIn('status', ['open', 'acknowledged'])->first();
             if ($status === 'unavailable' && ! $open && $device->last_seen_at) {
-                Incident::query()->create(['reference' => Reference::next('INC'), 'screen_id' => $device->screen_id, 'device_id' => $device->id, 'kind' => 'device_unavailable', 'severity' => 'major',
+                $incident = Incident::query()->create(['reference' => Reference::next('INC'), 'screen_id' => $device->screen_id, 'device_id' => $device->id, 'kind' => 'device_unavailable', 'severity' => 'major',
                     'title' => 'Lecteur indisponible '.($device->screen?->code ?? $device->code), 'impact' => 'Diffusion non garantie sur cet écran', 'status' => 'open', 'detected_at' => $device->last_seen_at->addSeconds((int) config('saie.device.unavailable_after_s')), 'is_automatic' => true,
                     'events' => [['at' => now()->toAtomString(), 'by' => 'Système', 'action' => 'Détection automatique (aucun contact depuis 5 min)']]]);
+                // NOT-01 : l'incident est notifié aux gestionnaires des incidents, sans attendre l'ouverture de la supervision.
+                $notifier->notify($this->incidentManagers(), 'incident.opened', 'Incident : '.$incident->title, $incident->impact, '/supervision', 'incident', $incident->id);
                 $report['incidents_lecteurs']++;
             } elseif ($status === 'online' && $open) {
                 $events = $open->events ?? [];
@@ -151,6 +155,19 @@ class SaieTick extends Command
 
             return $fallback;
         }
+    }
+
+    /**
+     * Utilisateurs actifs dont un rôle en vigueur donne la gestion des incidents.
+     *
+     * @return Collection<int, User>
+     */
+    private function incidentManagers(): Collection
+    {
+        $roleIds = DB::table('permission_role')->join('permissions', 'permissions.id', '=', 'permission_role.permission_id')->where('permissions.code', 'incidents.manage')->pluck('role_id');
+
+        return User::query()->where('status', 'active')->whereHas('roleAssignments', fn ($q) => $q->whereIn('role_id', $roleIds)->whereNull('revoked_at')
+            ->where('starts_at', '<=', now())->where(fn ($w) => $w->whereNull('ends_at')->orWhere('ends_at', '>', now())))->get();
     }
 
     private function link(Approval $approval): string

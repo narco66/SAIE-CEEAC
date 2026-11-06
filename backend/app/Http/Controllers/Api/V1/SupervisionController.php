@@ -8,9 +8,11 @@ use App\Models\Incident;
 use App\Support\BusinessException;
 use App\Support\Present;
 use App\Support\Reference;
+use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
 use Throwable;
 
@@ -30,13 +32,21 @@ class SupervisionController extends Controller
 
             return ['ok' => true, 'detail' => strtok($version, ',')." · $connections connexion(s)"];
         });
+        // EXP-01 : mesure sur le pilote réel des files (Redis en production, base sur un poste local), jamais sur une table inutilisée.
         $checks[] = $this->check('Files de traitement', function () {
-            $pending = DB::table('jobs')->count();
-            $oldest = DB::table('jobs')->min('available_at');
+            $connection = Queue::connection();
+            $pending = 0;
+            $oldest = null;
+            foreach (['default', 'notifications', 'media', 'exports'] as $name) {
+                $pending += method_exists($connection, 'pendingSize') ? (int) $connection->pendingSize($name) : (int) $connection->size($name);
+                $created = method_exists($connection, 'creationTimeOfOldestPendingJob') ? $connection->creationTimeOfOldestPendingJob($name) : null;
+                $oldest = $created ? min($oldest ?? PHP_INT_MAX, (int) $created) : $oldest;
+            }
             $failed = DB::table('failed_jobs')->count();
-            $lag = $oldest ? time() - (int) $oldest : 0;
+            $lag = $oldest ? time() - $oldest : 0;
+            $driver = config('queue.default');
 
-            return ['ok' => $lag < 300 && $failed === 0, 'detail' => "$pending en attente · retard ".gmdate('i:s', max(0, $lag))." · $failed en échec", 'warn' => $lag >= 300 || $failed > 0];
+            return ['ok' => $lag < 300 && $failed === 0, 'detail' => "$pending en attente · retard ".gmdate('i:s', max(0, $lag))." · $failed en échec · pilote $driver", 'warn' => $lag >= 300 || $failed > 0];
         });
         $checks[] = $this->check('Conversions et analyses', function () {
             $failed = DB::table('asset_versions')->where('scan_status', 'rejected')->where('processed_at', '>', now()->subDay())->count();
@@ -57,7 +67,7 @@ class SupervisionController extends Controller
         $checks[] = ['name' => 'Lecteurs', 'ok' => ($statuses['unavailable'] ?? 0) === 0, 'warn' => ($statuses['suspect'] ?? 0) > 0, 'detail' => ($statuses['online'] ?? 0).' en ligne · '.($statuses['suspect'] ?? 0).' suspect(s) · '.($statuses['unavailable'] ?? 0).' indisponible(s)', 'checked_at' => now()->toAtomString()];
         $measured = $devices->filter(fn ($d) => $d->screen && $d->screen->control_channel !== 'none')->count();
         $checks[] = ['name' => 'Dalles', 'ok' => true, 'warn' => false, 'detail' => $measured === 0 ? 'Non mesuré : aucun canal de pilotage déclaré (PLY-09, P1)' : "$measured dalle(s) avec retour d’état", 'checked_at' => now()->toAtomString()];
-        $checks[] = ['name' => 'Sauvegardes', 'ok' => false, 'warn' => true, 'detail' => 'Non mesuré par l’application : fraîcheur à remonter par l’outil de sauvegarde (voir docs/exploitation/sauvegarde-restauration.md)', 'checked_at' => null];
+        $checks[] = $this->backupCheck();
         $checks[] = ['name' => 'Collecte des sources dynamiques', 'ok' => true, 'warn' => false, 'detail' => DB::table('dynamic_sources')->where('is_active', true)->count() === 0 ? 'Aucune source active (PUB-10, P1)' : 'Sources actives', 'checked_at' => now()->toAtomString()];
 
         return response()->json(['data' => [
@@ -121,6 +131,25 @@ class SupervisionController extends Controller
      * @param  callable(): array<string, mixed>  $probe
      * @return array<string, mixed>
      */
+    /**
+     * CONT-01 : fraîcheur de la dernière sauvegarde, écrite par le service « backup » (infra/backup/backup.sh) dans
+     * storage/app/backup-status.json. Absente : « Non mesuré », jamais une valeur présumée.
+     *
+     * @return array<string, mixed>
+     */
+    private function backupCheck(): array
+    {
+        $file = storage_path('app/backup-status.json');
+        $status = is_file($file) ? json_decode((string) file_get_contents($file), true) : null;
+        if (! is_array($status) || empty($status['last_success_at'])) {
+            return ['name' => 'Sauvegardes', 'ok' => false, 'warn' => true, 'detail' => 'Non mesuré : aucun état écrit par le service de sauvegarde (infra/backup)', 'checked_at' => null];
+        }
+        $age = now()->diffInHours(Carbon::parse($status['last_success_at']), true);
+        $wal = isset($status['last_wal_at']) ? ' · dernier WAL archivé '.Carbon::parse($status['last_wal_at'])->setTimezone(config('saie.timezone'))->format('d/m H:i') : '';
+
+        return ['name' => 'Sauvegardes', 'ok' => $age <= 26, 'warn' => $age > 26, 'detail' => 'Dernière sauvegarde complète il y a '.round($age).' h'.$wal, 'checked_at' => $status['last_success_at']];
+    }
+
     private function check(string $name, callable $probe): array
     {
         try {

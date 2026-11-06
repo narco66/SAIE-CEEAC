@@ -1,6 +1,6 @@
 # Image applicative Laravel 13 / PHP 8.4 (TECH-01 : la construction échoue si une extension obligatoire manque).
 # Construction depuis la racine du dépôt : docker build -f infra/php.Dockerfile .   (liste blanche : php.Dockerfile.dockerignore)
-FROM php:8.4-fpm-bookworm
+FROM php:8.4-fpm-bookworm AS app
 RUN apt-get update && apt-get install -y --no-install-recommends libpq-dev libicu-dev libzip-dev libpng-dev libjpeg-dev libwebp-dev unzip git \
  && docker-php-ext-configure gd --with-jpeg --with-webp \
  && docker-php-ext-install -j"$(nproc)" pdo_pgsql intl zip gd opcache bcmath \
@@ -26,3 +26,11 @@ RUN composer dump-autoload --optimize --classmap-authoritative --no-dev \
 USER www-data
 ENTRYPOINT ["saie-entrypoint"]
 CMD ["php-fpm"]
+
+# Worker de conversion (DOC-01, SEC-03) : mêmes sources, avec LibreOffice sans interface et ffmpeg. Exécuté isolé
+# (réseau interne sans sortie, ressources plafonnées) par le service « worker-media » de docker-compose.yml.
+FROM app AS media
+USER root
+RUN apt-get update && apt-get install -y --no-install-recommends libreoffice-writer-nogui libreoffice-calc-nogui libreoffice-impress-nogui ffmpeg fonts-dejavu-core  && rm -rf /var/lib/apt/lists/*
+USER www-data
+

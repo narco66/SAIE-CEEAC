@@ -99,6 +99,14 @@ Défauts corrigés, chacun prouvé par un test qui échouait avant le correctif 
   - clé d’idempotence liée à l’intention : un double clic ne crée plus de doublon ;
   - PDF : corps et tableaux à 10 pt au moins ; la confirmation d’une réunion confidentielle est classée « restreint ».
 
+- **6 novembre, audit — lot R5 (exploitation et continuité)** :
+  - pile Docker : archivage continu des WAL (RPO ≤ 1 h), sauvegarde nocturne de la base et du stockage avec empreintes, état affiché dans la supervision ;
+  - supervision des files mesurée sur le pilote réel (Redis en production) ;
+  - un lecteur indisponible ouvre un incident notifié aux gestionnaires des incidents ;
+  - conversions exécutées dans un worker dédié, sans accès à Internet, mémoire et processus plafonnés, LibreOffice et ffmpeg installés ;
+  - mots de passe du superutilisateur et du propriétaire de la base en secrets Docker, jamais transmis aux conteneurs applicatifs.
+- **Restent à faire en exploitation** : figer les images Docker par version et empreinte au moment de la publication ; copie hors site chiffrée des volumes de sauvegarde par l’outil de la DSI ; premier exercice de restauration sur la pile Docker (chemin du répertoire de données et RTO à consigner) ; politique de mise à jour du navigateur des kiosques.
+
 ### Priorité 1 — décisions à prendre (aucune correction faite)
 
 - **Participants des réunions standard** (nom, organisation) : visibles de tout agent qui peut voir les salles. À arbitrer au titre de GOV-02 : restreindre à l’organisateur, aux participants et aux gestionnaires ?

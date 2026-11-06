@@ -5,7 +5,7 @@
 #             ni modification ni suppression du journal d'audit (retirées par la migration revoke_audit_write_from_app_role).
 set -eu
 psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" \
-  -v owner_password="$SAIE_OWNER_PASSWORD" -v app_password="$SAIE_APP_PASSWORD" <<'SQL'
+  -v owner_password="$(cat /run/secrets/db_owner_password)" -v app_password="$SAIE_APP_PASSWORD" <<'SQL'
 CREATE ROLE saie LOGIN NOSUPERUSER NOCREATEROLE NOCREATEDB PASSWORD :'owner_password';
 CREATE ROLE saie_app LOGIN NOSUPERUSER NOCREATEROLE NOCREATEDB PASSWORD :'app_password';
 ALTER DATABASE saie_ceeac OWNER TO saie;
@@ -16,3 +16,6 @@ GRANT USAGE ON SCHEMA public TO saie_app;
 ALTER DEFAULT PRIVILEGES FOR ROLE saie IN SCHEMA public GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO saie_app;
 ALTER DEFAULT PRIVILEGES FOR ROLE saie IN SCHEMA public GRANT USAGE, SELECT ON SEQUENCES TO saie_app;
 SQL
+
+# Sauvegarde de base (service « backup ») : connexion de réplication du superutilisateur d'administration seulement.
+echo "host replication saie_admin all scram-sha-256" >> "$PGDATA/pg_hba.conf"

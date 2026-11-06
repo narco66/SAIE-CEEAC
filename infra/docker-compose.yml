@@ -41,26 +41,50 @@ x-app: &app
 services:
   postgres:
     image: postgres:18
+    # Archivage continu des WAL (CONT-01) : bascule au moins toutes les heures pour un RPO ≤ 1 h.
+    command: ["postgres", "-c", "wal_level=replica", "-c", "archive_mode=on", "-c", "archive_timeout=3600",
+              "-c", "archive_command=test ! -f /wal/%f && cp %p /wal/%f"]
     environment:
       POSTGRES_DB: saie_ceeac
       # Superutilisateur réservé à l'administration de la base ; jamais utilisé par l'application.
       POSTGRES_USER: saie_admin
-      POSTGRES_PASSWORD: ${DB_ADMIN_PASSWORD:?définir DB_ADMIN_PASSWORD dans infra/.env}
-      SAIE_OWNER_PASSWORD: ${DB_PASSWORD:?définir DB_PASSWORD dans infra/.env}
+      # Mots de passe du superutilisateur et du propriétaire : secrets Docker, jamais transmis aux conteneurs applicatifs.
+      POSTGRES_PASSWORD_FILE: /run/secrets/db_admin_password
       SAIE_APP_PASSWORD: ${SAIE_APP_PASSWORD:?définir SAIE_APP_PASSWORD dans infra/.env}
+    secrets: [db_admin_password, db_owner_password]
+    networks: [internal, default]
     volumes:
       - pgdata:/var/lib/postgresql
+      - walarchive:/wal
       - ./postgres/10-roles.sh:/docker-entrypoint-initdb.d/10-roles.sh:ro
     healthcheck: { test: ["CMD-SHELL", "pg_isready -U saie_admin -d saie_ceeac"], interval: 5s, retries: 20 }
     restart: unless-stopped
+  # Sauvegarde nocturne (CONT-01, CONT-02) : base complète, stockage applicatif, empreintes, rétention 14 jours ;
+  # état lu par la supervision. Copie hors site chiffrée du volume « backups » par l'outil de la DSI.
+  backup:
+    image: postgres:18
+    entrypoint: ["/bin/sh", "/backup.sh"]
+    secrets: [db_admin_password]
+    networks: [internal]
+    volumes:
+      - ./backup/backup.sh:/backup.sh:ro
+      - backups:/backups
+      - walarchive:/wal
+      - storage:/storage
+    depends_on:
+      postgres: { condition: service_healthy }
+    restart: unless-stopped
+
   redis:
     image: redis:7-alpine
     command: ["redis-server", "--appendonly", "yes", "--maxmemory-policy", "noeviction"]
     volumes: [redisdata:/data]
+    networks: [internal, default]
     restart: unless-stopped
   clamav:
     image: clamav/clamav:stable
     volumes: [clamdb:/var/lib/clamav]
+    networks: [internal, default]
     restart: unless-stopped
   mailpit:
     image: axllent/mailpit:latest
@@ -72,7 +96,34 @@ services:
     command: ["php-fpm"]
   worker:
     <<: *app
-    command: ["php", "artisan", "queue:work", "--queue=default,notifications,media,exports", "--tries=3", "--max-time=3600"]
+    command: ["php", "artisan", "queue:work", "--queue=default,notifications,exports", "--tries=3", "--max-time=3600"]
+  # Conversions et analyses (DOC-01, SEC-03) : file « media » seule, réseau interne sans accès Internet,
+  # sans clé de signature, mémoire et processus plafonnés.
+  worker-media:
+    <<: *app
+    image: saie-ceeac/php-media:${SAIE_VERSION:-latest}
+    build: { context: .., dockerfile: infra/php.Dockerfile, target: media }
+    command: ["php", "artisan", "queue:work", "--queue=media", "--tries=2", "--max-time=3600", "--memory=1024"]
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USERNAME: saie_app
+      DB_PASSWORD: ${SAIE_APP_PASSWORD:?définir SAIE_APP_PASSWORD dans infra/.env}
+      REDIS_HOST: redis
+      SAIE_AV_DRIVER: clamd
+      SAIE_CLAMD_HOST: clamav
+      SAIE_CLAMD_PORT: 3310
+      QUEUE_CONNECTION: redis
+      CACHE_STORE: redis
+      SAIE_SOFFICE_PATH: /usr/bin/soffice
+      SAIE_FFMPEG_PATH: /usr/bin/ffmpeg
+      SAIE_FFPROBE_PATH: /usr/bin/ffprobe
+    volumes:
+      - storage:/var/www/html/storage
+    networks: [internal]
+    mem_limit: 2g
+    cpus: 2
+    pids_limit: 256
   scheduler:
     <<: *app
     command: ["php", "artisan", "schedule:work"]
@@ -86,10 +137,11 @@ services:
       DB_HOST: postgres
       DB_PORT: 5432
       DB_USERNAME: saie
-      DB_PASSWORD: ${DB_PASSWORD:?définir DB_PASSWORD dans infra/.env}
       REDIS_HOST: redis
       SAIE_MANIFEST_KEY_PATH: /run/secrets/saie/manifest-ed25519.pem
-    command: ["php", "artisan", "migrate", "--force", "--no-interaction"]
+    secrets: [db_owner_password]
+    # Le mot de passe du propriétaire est lu dans le secret Docker au moment de la migration, jamais dans infra/.env.
+    command: ["sh", "-c", "DB_PASSWORD=$$(cat /run/secrets/db_owner_password) php artisan migrate --force --no-interaction"]
   preflight:
     <<: *app
     profiles: [deploy]
@@ -108,8 +160,20 @@ services:
     depends_on: [api]
     restart: unless-stopped
 
+secrets:
+  db_admin_password: { file: ./secrets/db-admin-password }
+  db_owner_password: { file: ./secrets/db-owner-password }
+
+networks:
+  # Réseau sans sortie vers l'extérieur : base, Redis, antivirus et worker de conversion.
+  internal:
+    internal: true
+  default: {}
+
 volumes:
   pgdata: {}
+  walarchive: {}
+  backups: {}
   redisdata: {}
   clamdb: {}
   storage: {}

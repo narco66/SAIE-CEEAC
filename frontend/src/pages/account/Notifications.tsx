@@ -11,7 +11,7 @@ interface NotificationRow { id: string; event: string; title: string; body: stri
 
 const EVENT_LABEL: Record<string, string> = {
   'content.submitted': 'Soumission', 'content.approved': 'Approbation', 'content.returned': 'Retour pour correction', 'content.expiring': 'Expiration proche',
-  'content.reassigned': 'Réassignation', 'approval.reminder': 'Relance', 'approval.no_backup': 'Sans suppléant', 'approval.unassigned': 'Sans validateur', 'reservation.pending': 'Réservation en attente',
+  'content.reassigned': 'Réassignation', 'approval.reminder': 'Relance', 'approval.no_backup': 'Sans suppléant', 'incident.opened': 'Incident', 'approval.unassigned': 'Sans validateur', 'reservation.pending': 'Réservation en attente',
   'reservation.confirmed': 'Réservation confirmée', 'reservation.refused': 'Réservation refusée', 'reservation.cancelled': 'Réservation annulée',
   'reservation.moved': 'Réservation déplacée', 'reservation.expired': 'Demande expirée', 'reservation.no_show': 'Réunion non honorée', 'service.requested': 'Prestation demandée',
 }
