@@ -30,6 +30,10 @@ return [
         'manifest_validity_internal_h' => (int) env('SAIE_OFFLINE_INTERNAL_H', 1),
         'signing_key_path' => env('SAIE_MANIFEST_KEY_PATH', storage_path('app/private/keys/manifest-ed25519.pem')),
         'signing_key_id' => env('SAIE_MANIFEST_KEY_ID', 'mk-local'),
+        // Rotation de la clé de signature (PLY-03) : clé publique suivante (32 octets en base64) annoncée dans les manifestes
+        // signés par la clé courante, avant la bascule ; les lecteurs n'ont pas à être réappairés.
+        'next_signing_key_id' => env('SAIE_MANIFEST_NEXT_KEY_ID'),
+        'next_signing_key_public' => env('SAIE_MANIFEST_NEXT_KEY_PUBLIC'),
         'screenshot_retention_days' => 7,
     ],
 

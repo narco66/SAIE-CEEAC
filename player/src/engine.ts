@@ -1,5 +1,5 @@
 import nacl from 'tweetnacl'
-import { acceptManifest, liveData, withinWindow, type LiveData } from './schedule.ts'
+import { acceptManifest, liveData, verificationKey, withinWindow, type LiveData } from './schedule.ts'
 import {
   ackEvents, cachedIds, clearIdentity, downloadAsset, enqueue, evictUnreferenced, getActive, getIdentity, hasAsset, kv, peekEvents,
   requestPersistence, setActive, setIdentity, storageEstimate, type ActiveState,
@@ -175,6 +175,17 @@ export class Engine {
     return response
   }
 
+  /** Clés annoncées par un manifeste dont la signature vient d'être vérifiée : elles serviront après la bascule de clé. */
+  private async rememberTrustedKeys(manifest: Manifest): Promise<void> {
+    const identity = this.state.identity
+    if (!identity || !manifest.trusted_keys?.length) return
+    const trustedKeys = Object.fromEntries(manifest.trusted_keys.map((k) => [k.key_id, k.public_key]))
+    if (JSON.stringify(trustedKeys) === JSON.stringify(identity.trustedKeys ?? {})) return
+    const updated = { ...identity, trustedKeys }
+    await setIdentity(updated)
+    this.set({ identity: updated })
+  }
+
   /** PLY-02 : renouvellement du jeton après 30 jours (durée de vie serveur : 90 jours) ; l'ancien jeton est révoqué par le serveur. */
   private async rotateTokenIfDue(): Promise<void> {
     const identity = this.state.identity
@@ -236,6 +247,7 @@ export class Engine {
         return
       }
       if (verdict !== 'accept') throw new Error(verdict)
+      await this.rememberTrustedKeys(manifest)
       await enqueue({ kind: 'manifest_received', manifest_version: manifest.version })
       // Alertes et informations de salle appliquées immédiatement (PUB-06 : < 60 s), avant le téléchargement des médias.
       const live = liveData(manifest)
@@ -262,7 +274,9 @@ export class Engine {
   /** Vérifie la signature Ed25519 sur la chaîne exacte du manifeste avant tout usage (PLY-03). */
   private verify(envelope: Envelope): Manifest {
     const identity = this.state.identity!
-    const ok = nacl.sign.detached.verify(new TextEncoder().encode(envelope.payload), b64ToBytes(envelope.signature.value), b64ToBytes(identity.publicKey))
+    const key = verificationKey(identity, envelope.signature.key_id)
+    if (!key) throw new Error(`Clé de signature inconnue (${envelope.signature.key_id}) : version ignorée`)
+    const ok = nacl.sign.detached.verify(new TextEncoder().encode(envelope.payload), b64ToBytes(envelope.signature.value), b64ToBytes(key))
     if (!ok) throw new Error('Signature du manifeste invalide : version ignorée')
 
     return JSON.parse(envelope.payload) as Manifest

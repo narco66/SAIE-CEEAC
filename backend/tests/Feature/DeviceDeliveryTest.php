@@ -61,4 +61,14 @@ class DeviceDeliveryTest extends TestCase
 
         $this->assertTrue($payload['operating_window']['ignore_holidays']);
     }
+
+    public function test_next_signing_key_is_announced_in_signed_manifests_for_rotation_without_repairing(): void
+    {
+        [, $token] = $this->pairedDevice($this->screen('ECR-CLE'));
+        config(['saie.device.next_signing_key_id' => 'mk-2027-01', 'saie.device.next_signing_key_public' => base64_encode(random_bytes(32))]);
+
+        $payload = json_decode($this->getJson('/api/v1/device/manifest', ['Authorization' => "Bearer $token"])->assertOk()->json('payload'), true);
+
+        $this->assertSame([config('saie.device.signing_key_id'), 'mk-2027-01'], array_column($payload['trusted_keys'], 'key_id'));
+    }
 }

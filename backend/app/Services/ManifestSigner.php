@@ -26,6 +26,23 @@ class ManifestSigner
         return openssl_verify($payload, base64_decode($signature), $this->publicKeyPem(), 0) === 1;
     }
 
+    /**
+     * Clés de confiance annoncées aux lecteurs : la clé courante et, pendant une rotation, la clé suivante.
+     *
+     * @return list<array{key_id: string, public_key: string}>
+     */
+    public function trustedKeys(): array
+    {
+        $keys = [['key_id' => $this->keyId(), 'public_key' => $this->publicKeyRaw()]];
+        $nextId = config('saie.device.next_signing_key_id');
+        $nextKey = config('saie.device.next_signing_key_public');
+        if (filled($nextId) && filled($nextKey) && $nextId !== $this->keyId() && strlen((string) base64_decode((string) $nextKey, true)) === 32) {
+            $keys[] = ['key_id' => (string) $nextId, 'public_key' => (string) $nextKey];
+        }
+
+        return $keys;
+    }
+
     public function keyId(): string
     {
         return (string) config('saie.device.signing_key_id');

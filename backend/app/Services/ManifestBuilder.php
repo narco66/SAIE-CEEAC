@@ -145,6 +145,8 @@ class ManifestBuilder
             'fallback' => $fallback,
             'institution' => ['name' => (string) Setting::effective('identity.institution_name'), 'tagline' => (string) Setting::effective('display.tagline')],
             'dynamic' => (object) app(DynamicSources::class)->forManifest(),
+            // Clés de confiance (rotation sans réappairage), prises en compte par le lecteur seulement si ce manifeste est vérifié.
+            'trusted_keys' => $this->signer->trustedKeys(),
         ];
         if ($screen->kind === 'room_panel' && $screen->room) {
             $manifest['room_panel'] = $this->roomPanelFor($screen->room);

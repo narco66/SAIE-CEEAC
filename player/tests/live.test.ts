@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { acceptManifest, liveData, liveView, resolve, withinWindow } from '../src/schedule.ts'
+import { acceptManifest, liveData, liveView, resolve, verificationKey, withinWindow } from '../src/schedule.ts'
 import type { Manifest, ManifestAlert } from '../src/types.ts'
 
 const manifest = (over: Partial<Manifest> = {}): Manifest => ({
@@ -46,4 +46,11 @@ test('dérogation « jours non ouvrés » d’un écran : allumé un jour féri�
   const holiday = { non_working_days: ['2026-11-04'] }
   assert.equal(withinWindow(manifest(holiday), at), false)
   assert.equal(withinWindow(manifest({ ...holiday, operating_window: { days: [1, 2, 3, 4, 5], on: '08:00', off: '18:00', wake_before_min: 5, override_reason: 'Sommet', ignore_holidays: true } }), at), true)
+})
+
+test('rotation de clé : la clé suivante annoncée par un manifeste vérifié est reconnue, une clé inconnue jamais (PLY-03)', () => {
+  const identity = { keyId: 'mk-2026-11', publicKey: 'cle-courante', trustedKeys: { 'mk-2027-01': 'cle-suivante' } }
+  assert.equal(verificationKey(identity, 'mk-2026-11'), 'cle-courante')
+  assert.equal(verificationKey(identity, 'mk-2027-01'), 'cle-suivante')
+  assert.equal(verificationKey(identity, 'mk-pirate'), null)
 })

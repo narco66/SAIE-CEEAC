@@ -110,6 +110,15 @@ export function liveView(active: Manifest, live: LiveData | null, at: Date): Man
   }
 }
 
+/**
+ * Clé publique de vérification d'une enveloppe (PLY-03) : la clé reçue à l'appairage ou une clé annoncée par un manifeste
+ * déjà vérifié (rotation sans réappairage). Une clé inconnue n'est jamais acceptée.
+ */
+export function verificationKey(identity: { keyId: string; publicKey: string; trustedKeys?: Record<string, string> }, keyId: string): string | null {
+  if (keyId === identity.keyId) return identity.publicKey
+  return identity.trustedKeys?.[keyId] ?? null
+}
+
 /** Contrôles d'un manifeste signé reçu (PLY-03) : destinataire, validité, et aucun retour à une version antérieure. */
 export function acceptManifest(manifest: Pick<Manifest, 'device_id' | 'version' | 'valid_until' | 'content_hash'>, deviceCode: string, active: Pick<Manifest, 'version' | 'content_hash'> | null, at: Date): 'accept' | 'same' | string {
   if (manifest.device_id !== deviceCode) return 'Manifeste destiné à un autre lecteur'

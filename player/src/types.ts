@@ -75,10 +75,11 @@ export interface Manifest {
   }
   assets: Asset[]
   player_release?: { version: string; channel: 'pilot' | 'stable'; url: string; sha256: string } | null
+  trusted_keys?: { key_id: string; public_key: string }[]
 }
 
 export interface Envelope { format: string; version: number; etag: string; payload: string; signature: { alg: string; key_id: string; value: string } }
 
-export interface Identity { deviceId: string; deviceCode: string; token: string; publicKey: string; keyId: string; pairedAt: string; tokenIssuedAt?: string; revoked?: boolean }
+export interface Identity { deviceId: string; deviceCode: string; token: string; publicKey: string; keyId: string; pairedAt: string; tokenIssuedAt?: string; trustedKeys?: Record<string, string>; revoked?: boolean }
 
 export interface DeviceEvent { event_id: string; kind: string; manifest_version?: number | null; ref_type?: string | null; ref_id?: string | null; lang?: string | null; occurred_at: string; payload?: Record<string, unknown> }
