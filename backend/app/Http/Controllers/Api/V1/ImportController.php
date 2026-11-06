@@ -87,16 +87,21 @@ class ImportController extends Controller
             $raw = array_combine($headers, array_pad(array_slice($cells, 0, count($headers)), count($headers), ''));
             $values = Referentials::resolveCodes(array_intersect_key($raw, array_flip($definition['csv'])));
             $key = (string) ($values[$definition['key']] ?? '');
-            if (isset($seen[$key])) {
+            // REF-03 : niveaux, emplacements et bâtiments ne sont uniques que dans leur parent (même code « PALIER » à chaque étage).
+            $parent = isset($definition['parent']) ? (string) ($values[$definition['parent']] ?? '') : '';
+            $seenKey = $parent.'|'.$key;
+            if (isset($seen[$seenKey])) {
                 $counts['duplicates']++;
                 $counts['invalid']++;
-                $rows[] = ['line' => $line, 'key' => $key, 'status' => 'invalid', 'errors' => ["Doublon de la ligne {$seen[$key]} dans le fichier."]];
+                $rows[] = ['line' => $line, 'key' => $key, 'status' => 'invalid', 'errors' => ["Doublon de la ligne {$seen[$seenKey]} dans le fichier."]];
 
                 continue;
             }
-            $seen[$key] = $line;
-            $unresolved = collect($values)->filter(fn ($v) => is_string($v) && str_starts_with($v, 'introuvable:'))->map(fn ($v, $k) => "Référence inconnue pour $k : ".substr($v, 12))->values()->all();
-            $existing = $definition['model']::query()->where($definition['key'], $key)->first();
+            $seen[$seenKey] = $line;
+            $unresolved = collect($values)->filter(fn ($v) => is_string($v) && (str_starts_with($v, 'introuvable:') || str_starts_with($v, 'ambigu:')))
+                ->map(fn ($v, $k) => str_starts_with($v, 'ambigu:') ? "Référence ambiguë pour $k : ".substr($v, 7).' existe dans plusieurs bâtiments ; ajoutez la colonne building_code' : "Référence inconnue pour $k : ".substr($v, 12))->values()->all();
+            $existing = $unresolved !== [] ? null : $definition['model']::query()->where($definition['key'], $key)
+                ->when(isset($definition['parent']), fn ($q) => $q->where($definition['parent'], $values[$definition['parent']] ?? null))->first();
             $validator = Validator::make($values, ($definition['rules'])($existing));
             if ($unresolved !== [] || $validator->fails()) {
                 $counts['invalid']++;

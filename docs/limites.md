@@ -107,6 +107,11 @@ Défauts corrigés, chacun prouvé par un test qui échouait avant le correctif 
   - mots de passe du superutilisateur et du propriétaire de la base en secrets Docker, jamais transmis aux conteneurs applicatifs.
 - **Restent à faire en exploitation** : figer les images Docker par version et empreinte au moment de la publication ; copie hors site chiffrée des volumes de sauvegarde par l’outil de la DSI ; premier exercice de restauration sur la pile Docker (chemin du répertoire de données et RTO à consigner) ; politique de mise à jour du navigateur des kiosques.
 
+- **6 novembre, audit — lot R7 (référentiels, plages, concurrence)** :
+  - import : un code d’emplacement ou de niveau n’est cherché que dans son parent ; un niveau homonyme dans deux bâtiments est signalé « ambigu » (colonne `building_code` pour lever l’ambiguïté) ;
+  - un groupe d’écrans peut porter une plage de fonctionnement, héritée par ses écrans sans plage propre ;
+  - une modification de campagne, de contenu, de modèle ou d’occurrence sans la version lue est refusée (428).
+
 ### Priorité 1 — décisions à prendre (aucune correction faite)
 
 - **Participants des réunions standard** (nom, organisation) : visibles de tout agent qui peut voir les salles. À arbitrer au titre de GOV-02 : restreindre à l’organisateur, aux participants et aux gestionnaires ?

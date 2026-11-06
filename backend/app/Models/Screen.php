@@ -53,6 +53,22 @@ class Screen extends Model
         return $this->belongsToMany(ScreenGroup::class, 'group_members', 'screen_id', 'group_id');
     }
 
+    /**
+     * PLY-08 : plage en vigueur — celle de l'écran (dérogation), sinon celle de son premier groupe qui en porte une
+     * (ordre alphabétique de code, déterministe), sinon le paramètre général.
+     *
+     * @return array<string, mixed>
+     */
+    public function effectiveOperatingWindow(): array
+    {
+        if ($this->operating_window) {
+            return $this->operating_window;
+        }
+        $group = $this->groups()->whereNotNull('operating_window')->orderBy('code')->first();
+
+        return $group?->operating_window ?: (array) Setting::effective('operating.default_window');
+    }
+
     public function activeDevice(): HasOne
     {
         return $this->hasOne(Device::class)->where('status', 'active');

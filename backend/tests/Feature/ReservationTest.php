@@ -96,7 +96,7 @@ class ReservationTest extends TestCase
         $mine = $this->actingAs($this->agent)->postJson('/api/v1/reservations', $this->payload('14:00', '15:00'))->assertCreated();
         $occurrence = ReservationOccurrence::query()->findOrFail($mine->json('data.occurrences.0.id'));
 
-        $this->actingAs($this->agent)->patchJson("/api/v1/occurrences/{$occurrence->id}", ['room_id' => $other->id])->assertStatus(409);
+        $this->actingAs($this->agent)->patchJson("/api/v1/occurrences/{$occurrence->id}", ['room_id' => $other->id, 'expected_version' => $occurrence->version])->assertStatus(409);
         $this->assertSame($this->room->id, $occurrence->refresh()->room_id);
         $this->assertSame('confirmed', $occurrence->status);
     }
@@ -200,7 +200,7 @@ class ReservationTest extends TestCase
         $service = ServiceRequest::query()->create(['occurrence_id' => $occurrence->id, 'service_type_id' => ServiceType::query()->where('code', 'VISIO')->value('id'), 'due_at' => $occurrence->starts_at->subHours(2)]);
 
         $newStart = $this->day->setTime(15, 0);
-        $this->actingAs($this->agent)->patchJson("/api/v1/occurrences/{$occurrence->id}", ['start_at' => $newStart->toIso8601String(), 'end_at' => $newStart->addHour()->toIso8601String()])->assertOk();
+        $this->actingAs($this->agent)->patchJson("/api/v1/occurrences/{$occurrence->id}", ['start_at' => $newStart->toIso8601String(), 'end_at' => $newStart->addHour()->toIso8601String(), 'expected_version' => $occurrence->version])->assertOk();
 
         $this->assertTrue($service->refresh()->due_at->equalTo($newStart->subHours(2)), (string) $service->due_at);
     }

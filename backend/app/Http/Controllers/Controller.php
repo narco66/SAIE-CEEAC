@@ -98,10 +98,17 @@ abstract class Controller
         return $query->orderBy($query->getModel()->getTable().'.'.$column, $direction)->orderBy($query->getModel()->getTable().'.'.$query->getModel()->getKeyName());
     }
 
+    /**
+     * API-04 : concurrence optimiste obligatoire — la version lue (If-Match ou expected_version) doit accompagner la
+     * modification ; sans elle, la requête est refusée plutôt que d'écraser la modification d'un autre utilisateur.
+     */
     protected function expectVersion(Request $request, int $current): void
     {
         $expected = $request->header('If-Match') ?? $request->input('expected_version');
-        if ($expected !== null && (int) trim((string) $expected, '"W/') !== $current) {
+        if ($expected === null || $expected === '') {
+            throw new BusinessException('VERSION_REQUIRED', 'Version de l’objet manquante : rechargez la page avant de modifier.', 428, ['current_version' => $current]);
+        }
+        if ((int) trim((string) $expected, '"W/') !== $current) {
             throw new BusinessException('VERSION_CONFLICT', 'L’objet a été modifié par un autre utilisateur. Rechargez la version courante.', 409, ['current_version' => $current]);
         }
     }

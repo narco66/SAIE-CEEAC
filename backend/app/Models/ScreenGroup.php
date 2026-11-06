@@ -18,6 +18,14 @@ class ScreenGroup extends Model
      */
     protected $guarded = ['id'];
 
+    /**
+     * @return array<string, string>
+     */
+    protected function casts(): array
+    {
+        return ['operating_window' => 'array'];
+    }
+
     public function screens(): BelongsToMany
     {
         return $this->belongsToMany(Screen::class, 'group_members', 'group_id', 'screen_id');

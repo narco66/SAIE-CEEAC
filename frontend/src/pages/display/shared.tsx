@@ -34,6 +34,7 @@ export interface Screen {
 export interface ScreenGroup {
   id: string; code: string; name: string; description: string | null; screens_count: number
   screens: { id: string; code: string; name: string }[]; active_campaigns: number
+  operating_window?: OperatingWindow | null
 }
 
 export interface Referentials {

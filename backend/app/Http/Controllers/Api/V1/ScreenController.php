@@ -190,7 +190,7 @@ class ScreenController extends Controller
         $groups = ScreenGroup::query()->withCount('screens')->with('screens:id,code,name')->orderBy('name')->get();
 
         return response()->json(['data' => $groups->map(fn (ScreenGroup $g) => [
-            'id' => $g->id, 'code' => $g->code, 'name' => $g->name, 'description' => $g->description, 'screens_count' => $g->screens_count,
+            'id' => $g->id, 'code' => $g->code, 'name' => $g->name, 'description' => $g->description, 'screens_count' => $g->screens_count, 'operating_window' => $g->operating_window,
             'screens' => $g->screens->map(fn ($s) => ['id' => $s->id, 'code' => $s->code, 'name' => $s->name]),
             'active_campaigns' => DB::table('campaign_targets')->join('campaigns', 'campaigns.id', '=', 'campaign_targets.campaign_id')->where('target_type', 'group')->where('target_id', $g->id)->whereIn('campaigns.status', ['scheduled', 'active'])->count(),
         ])]);
@@ -199,7 +199,9 @@ class ScreenController extends Controller
     public function storeGroup(Request $request): JsonResponse
     {
         $this->authorizePermission('groups.manage');
-        $data = $request->validate(['code' => ['required', 'string', 'max:40', 'unique:screen_groups,code'], 'name' => ['required', 'string', 'max:120'], 'description' => ['nullable', 'string', 'max:500'], 'screen_ids' => ['array'], 'screen_ids.*' => ['uuid', 'exists:screens,id']]);
+        $data = $request->validate(['code' => ['required', 'string', 'max:40', 'unique:screen_groups,code'], 'name' => ['required', 'string', 'max:120'], 'description' => ['nullable', 'string', 'max:500'], 'screen_ids' => ['array'], 'screen_ids.*' => ['uuid', 'exists:screens,id'],
+            // PLY-08 : plage du groupe, appliquée aux écrans du groupe sans plage propre.
+            'operating_window' => ['nullable', 'array'], 'operating_window.days' => ['required_with:operating_window', 'array', 'min:1'], 'operating_window.days.*' => ['integer', 'between:1,7'], 'operating_window.on' => ['required_with:operating_window', 'date_format:H:i'], 'operating_window.off' => ['required_with:operating_window', 'date_format:H:i', 'after:operating_window.on'], 'operating_window.ignore_holidays' => ['sometimes', 'boolean']]);
         $this->inScope(array_map(fn ($id) => ['type' => 'screen', 'id' => $id], $data['screen_ids'] ?? []), 'groups.manage');
         $group = ScreenGroup::query()->create(collect($data)->except('screen_ids')->all());
         $group->screens()->sync($data['screen_ids'] ?? []);
@@ -211,7 +213,8 @@ class ScreenController extends Controller
     public function updateGroup(Request $request, ScreenGroup $group): JsonResponse
     {
         $this->authorizePermission('groups.manage');
-        $data = $request->validate(['name' => ['sometimes', 'string', 'max:120'], 'description' => ['nullable', 'string', 'max:500'], 'screen_ids' => ['sometimes', 'array'], 'screen_ids.*' => ['uuid', 'exists:screens,id']]);
+        $data = $request->validate(['name' => ['sometimes', 'string', 'max:120'], 'description' => ['nullable', 'string', 'max:500'], 'screen_ids' => ['sometimes', 'array'], 'screen_ids.*' => ['uuid', 'exists:screens,id'],
+            'operating_window' => ['nullable', 'array'], 'operating_window.days' => ['required_with:operating_window', 'array', 'min:1'], 'operating_window.days.*' => ['integer', 'between:1,7'], 'operating_window.on' => ['required_with:operating_window', 'date_format:H:i'], 'operating_window.off' => ['required_with:operating_window', 'date_format:H:i', 'after:operating_window.on'], 'operating_window.ignore_holidays' => ['sometimes', 'boolean']]);
         $this->inScope(array_merge([['type' => 'group', 'id' => $group->id]], array_map(fn ($id) => ['type' => 'screen', 'id' => $id], $data['screen_ids'] ?? [])), 'groups.manage');
         $group->update(collect($data)->except('screen_ids')->all());
         if (array_key_exists('screen_ids', $data)) {

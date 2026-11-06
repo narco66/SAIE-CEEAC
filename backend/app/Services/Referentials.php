@@ -33,15 +33,15 @@ class Referentials
             'sites' => ['model' => Site::class, 'key' => 'code', 'csv' => ['code', 'name', 'timezone', 'address', 'is_active'], 'rules' => fn (?Model $m) => [
                 'code' => [$m ? 'sometimes' : 'required', 'string', 'max:40', Rule::unique('sites', 'code')->ignore($m?->getKey())], 'name' => [$m ? 'sometimes' : 'required', 'string', 'max:120'],
                 'timezone' => ['sometimes', 'timezone'], 'address' => ['nullable', 'string', 'max:200'], 'is_active' => ['sometimes', 'boolean']]],
-            'buildings' => ['model' => Building::class, 'key' => 'code', 'csv' => ['code', 'name', 'site_code', 'is_active'], 'rules' => fn (?Model $m) => [
+            'buildings' => ['model' => Building::class, 'key' => 'code', 'parent' => 'site_id', 'csv' => ['code', 'name', 'site_code', 'is_active'], 'rules' => fn (?Model $m) => [
                 'code' => [$m ? 'sometimes' : 'required', 'string', 'max:40'], 'name' => [$m ? 'sometimes' : 'required', 'string', 'max:120'], 'site_id' => [$m ? 'sometimes' : 'required', 'uuid', 'exists:sites,id'], 'is_active' => ['sometimes', 'boolean']]],
-            'floors' => ['model' => Floor::class, 'key' => 'code', 'csv' => ['code', 'label', 'level', 'building_code', 'is_active'], 'rules' => fn (?Model $m) => [
+            'floors' => ['model' => Floor::class, 'key' => 'code', 'parent' => 'building_id', 'csv' => ['code', 'label', 'level', 'building_code', 'is_active'], 'rules' => fn (?Model $m) => [
                 'code' => [$m ? 'sometimes' : 'required', 'string', 'max:40'], 'label' => [$m ? 'sometimes' : 'required', 'string', 'max:120'], 'level' => [$m ? 'sometimes' : 'required', 'integer', 'between:-5,60'],
                 'building_id' => [$m ? 'sometimes' : 'required', 'uuid', 'exists:buildings,id'], 'is_active' => ['sometimes', 'boolean']]],
             'zones' => ['model' => DisplayZone::class, 'key' => 'code', 'csv' => ['code', 'name', 'max_classification', 'audio_allowed', 'audio_max_volume', 'is_active'], 'rules' => fn (?Model $m) => [
                 'code' => [$m ? 'sometimes' : 'required', 'string', 'max:40', Rule::unique('display_zones', 'code')->ignore($m?->getKey())], 'name' => [$m ? 'sometimes' : 'required', 'string', 'max:120'],
                 'max_classification' => [$m ? 'sometimes' : 'required', 'in:public,interne'], 'audio_allowed' => ['sometimes', 'boolean'], 'audio_max_volume' => ['sometimes', 'integer', 'between:0,100'], 'is_active' => ['sometimes', 'boolean']]],
-            'locations' => ['model' => Location::class, 'key' => 'code', 'csv' => ['code', 'name', 'floor_code', 'zone_code', 'description', 'is_active'], 'rules' => fn (?Model $m) => [
+            'locations' => ['model' => Location::class, 'key' => 'code', 'parent' => 'floor_id', 'csv' => ['code', 'name', 'building_code', 'floor_code', 'zone_code', 'description', 'is_active'], 'rules' => fn (?Model $m) => [
                 'code' => [$m ? 'sometimes' : 'required', 'string', 'max:40'], 'name' => [$m ? 'sometimes' : 'required', 'string', 'max:120'], 'floor_id' => [$m ? 'sometimes' : 'required', 'uuid', 'exists:floors,id'],
                 'zone_id' => [$m ? 'sometimes' : 'required', 'uuid', 'exists:display_zones,id'], 'description' => ['nullable', 'string', 'max:500'], 'is_active' => ['sometimes', 'boolean']]],
             'structures' => ['model' => Structure::class, 'key' => 'code', 'csv' => ['code', 'name', 'type', 'parent_code', 'floor_code', 'is_active'], 'rules' => fn (?Model $m) => [
@@ -96,12 +96,25 @@ class Referentials
     public static function resolveCodes(array $row): array
     {
         $map = ['site_code' => [Site::class, 'site_id'], 'building_code' => [Building::class, 'building_id'], 'floor_code' => [Floor::class, 'floor_id'], 'zone_code' => [DisplayZone::class, 'zone_id'], 'parent_code' => [Structure::class, 'parent_id']];
+        // Un niveau n'est unique que dans son bâtiment : building_code, s'il est fourni, lève l'ambiguïté de floor_code.
+        $building = isset($row['building_code']) && trim((string) $row['building_code']) !== '' ? Building::query()->where('code', trim((string) $row['building_code']))->value('id') : null;
         foreach ($map as $column => [$model, $target]) {
             if (array_key_exists($column, $row)) {
                 $value = trim((string) $row[$column]);
-                $row[$target] = $value === '' ? null : ($model::query()->where('code', $value)->value('id') ?? 'introuvable:'.$value);
+                if ($value === '') {
+                    $row[$target] = null;
+                } else {
+                    $ids = $model::query()->where('code', $value)->when($column === 'floor_code' && $building, fn ($q) => $q->where('building_id', $building))->limit(2)->pluck('id');
+                    $row[$target] = match ($ids->count()) {
+                        0 => 'introuvable:'.$value, 1 => $ids->first(), default => 'ambigu:'.$value
+                    };
+                }
                 unset($row[$column]);
             }
+        }
+        // building_code ne sert qu'à désigner le niveau d'un emplacement : il n'est pas un attribut de l'emplacement.
+        if (array_key_exists('floor_id', $row) && array_key_exists('building_id', $row)) {
+            unset($row['building_id']);
         }
         foreach (['is_active', 'audio_allowed', 'requires_headcount'] as $flag) {
             if (array_key_exists($flag, $row)) {

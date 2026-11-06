@@ -172,7 +172,7 @@ class AlertController extends Controller
 
     private function inWindow(Screen $screen): bool
     {
-        $window = $screen->operating_window ?: config('saie.operating_window');
+        $window = $screen->effectiveOperatingWindow();
 
         return app(ScheduleResolver::class)->withinOperatingWindow($window, [], CarbonImmutable::now(config('saie.timezone')));
     }

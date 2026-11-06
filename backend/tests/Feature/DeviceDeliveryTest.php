@@ -35,6 +35,23 @@ class DeviceDeliveryTest extends TestCase
         $this->get("/api/v1/device/assets/{$version->id}", ['Authorization' => "Bearer $token"])->assertForbidden();
     }
 
+    public function test_screen_without_own_window_inherits_its_group_window(): void
+    {
+        $screen = $this->screen('ECR-GRP', true, ['operating_window' => null]);
+        $diffuser = $this->userWith('diffuseur');
+        $this->actingAs($diffuser)->postJson('/api/v1/screen-groups', [
+            'code' => 'G-SAMEDI', 'name' => 'Ouverts le samedi', 'screen_ids' => [$screen->id],
+            'operating_window' => ['days' => [1, 2, 3, 4, 5, 6], 'on' => '07:00', 'off' => '20:00'],
+        ])->assertCreated();
+        [, $token] = $this->pairedDevice($screen);
+        $this->app['auth']->forgetGuards();
+
+        $payload = json_decode($this->getJson('/api/v1/device/manifest', ['Authorization' => "Bearer $token"])->assertOk()->json('payload'), true);
+
+        $this->assertSame('07:00', $payload['operating_window']['on']);
+        $this->assertSame([1, 2, 3, 4, 5, 6], $payload['operating_window']['days']);
+    }
+
     public function test_holiday_override_of_a_screen_reaches_its_manifest(): void
     {
         $screen = $this->screen('ECR-FERIE', true, ['operating_window' => ['days' => [1, 2, 3, 4, 5], 'on' => '08:00', 'off' => '18:00', 'ignore_holidays' => true], 'window_override_reason' => 'Sommet des chefs d’État']);

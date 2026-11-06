@@ -98,6 +98,11 @@ function GroupModal({ group, onClose }: { group: ScreenGroup | null; onClose: ()
   const [name, setName] = useState(group?.name ?? '')
   const [description, setDescription] = useState(group?.description ?? '')
   const [selected, setSelected] = useState<string[]>(group?.screens.map((s) => s.id) ?? [])
+  // PLY-08 : plage du groupe, appliquée à ses écrans qui n'ont pas de plage propre.
+  const [ownWindow, setOwnWindow] = useState(!!group?.operating_window)
+  const [days, setDays] = useState<number[]>(group?.operating_window?.days ?? [1, 2, 3, 4, 5])
+  const [on, setOn] = useState(group?.operating_window?.on ?? '08:00')
+  const [off, setOff] = useState(group?.operating_window?.off ?? '18:00')
   const [filter, setFilter] = useState('')
   const [error, setError] = useState<ApiError | null>(null)
   const [busy, setBusy] = useState(false)
@@ -124,8 +129,9 @@ function GroupModal({ group, onClose }: { group: ScreenGroup | null; onClose: ()
     setBusy(true)
     setError(null)
     try {
-      if (group) await api.patch(`/screen-groups/${group.id}`, { name, description: description || null, screen_ids: selected })
-      else await api.post('/screen-groups', { code, name, description: description || null, screen_ids: selected })
+      const operating_window = ownWindow ? { days, on, off } : null
+      if (group) await api.patch(`/screen-groups/${group.id}`, { name, description: description || null, screen_ids: selected, operating_window })
+      else await api.post('/screen-groups', { code, name, description: description || null, screen_ids: selected, operating_window })
       client.invalidateQueries({ queryKey: ['screen-groups'] })
       client.invalidateQueries({ queryKey: ['screens'] })
       toast.success(group ? 'Groupe mis à jour' : 'Groupe créé')
@@ -153,6 +159,25 @@ function GroupModal({ group, onClose }: { group: ScreenGroup | null; onClose: ()
         <Field label="Description" wide error={error?.field('description')}>
           <textarea value={description} onChange={(e) => setDescription(e.target.value)} maxLength={500} />
         </Field>
+        <fieldset className="wide">
+          <legend>Plage de fonctionnement du groupe</legend>
+          <label><input type="checkbox" checked={ownWindow} onChange={(e) => setOwnWindow(e.target.checked)} /> Définir une plage pour ce groupe (sinon : plage générale des paramètres). La plage propre d’un écran reste prioritaire.</label>
+          {ownWindow && (
+            <div className="form-grid" style={{ marginTop: 8 }}>
+              <fieldset className="wide">
+                <legend>Jours</legend>
+                <div className="radio-row">
+                  {['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'].map((d, i) => (
+                    <label key={d}><input type="checkbox" checked={days.includes(i + 1)} onChange={(e) => setDays(e.target.checked ? [...days, i + 1].sort() : days.filter((x) => x !== i + 1))} /> {d}</label>
+                  ))}
+                </div>
+                {error?.field('operating_window.days') && <span className="field-error">{error.field('operating_window.days')}</span>}
+              </fieldset>
+              <Field label="Allumage" error={error?.field('operating_window.on')}><input type="time" value={on} onChange={(e) => setOn(e.target.value)} /></Field>
+              <Field label="Extinction" error={error?.field('operating_window.off')}><input type="time" value={off} onChange={(e) => setOff(e.target.value)} /></Field>
+            </div>
+          )}
+        </fieldset>
       </div>
       <h3 className="sub-title">Écrans membres</h3>
       {screens.isLoading ? <Loading /> : screens.isError ? <ErrorState error={screens.error} onRetry={() => screens.refetch()} /> : (

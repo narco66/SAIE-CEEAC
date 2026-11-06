@@ -122,7 +122,7 @@ class ManifestBuilder
         $alerts = $this->alertsFor($screen);
         $fallback = $this->fallbackFor($zone->id, $assets);
 
-        $window = $screen->operating_window ?: Setting::effective('operating.default_window');
+        $window = $screen->effectiveOperatingWindow();
         $audioAllowed = $screen->audio_enabled && $zone->audio_allowed;
 
         $manifest = [

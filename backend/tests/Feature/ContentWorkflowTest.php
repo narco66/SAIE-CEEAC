@@ -142,7 +142,7 @@ class ContentWorkflowTest extends TestCase
     public function test_text_overflow_blocks_submission(): void
     {
         $content = $this->createContent();
-        $this->actingAs($this->author)->patchJson("/api/v1/contents/{$content->id}", ['languages' => ['fr' => ['title' => str_repeat('Très long titre ', 10)]]])->assertOk();
+        $this->actingAs($this->author)->patchJson("/api/v1/contents/{$content->id}", ['languages' => ['fr' => ['title' => str_repeat('Très long titre ', 10)]]], ['If-Match' => (string) $content->refresh()->version])->assertOk();
         $this->actingAs($this->author)->postJson("/api/v1/contents/{$content->id}/submit", ['languages' => ['fr']])->assertUnprocessable()->assertJsonPath('code', 'TEXT_OVERFLOW');
     }
 
@@ -151,5 +151,13 @@ class ContentWorkflowTest extends TestCase
         $content = $this->createContent();
         $content->forceFill(['classification' => 'restreint'])->save();
         $this->actingAs($this->author)->postJson("/api/v1/contents/{$content->id}/submit", ['languages' => ['fr']])->assertUnprocessable()->assertJsonPath('code', 'RESTRICTED_CONTENT');
+    }
+
+    public function test_modification_without_the_read_version_is_refused(): void
+    {
+        $content = $this->createContent();
+        $this->actingAs($this->author)->patchJson("/api/v1/contents/{$content->id}", ['title' => 'Écrasement'])
+            ->assertStatus(428)->assertJsonPath('code', 'VERSION_REQUIRED');
+        $this->assertSame('Communiqué', $content->refresh()->title);
     }
 }
