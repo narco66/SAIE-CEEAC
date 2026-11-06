@@ -1,4 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useId, useRef, useState, type ReactNode } from 'react'
+import { useBlocker } from 'react-router'
 import { ApiError } from '../lib/api'
 
 export type IconName =
@@ -211,21 +212,48 @@ export function ErrorState({ error, onRetry }: { error: unknown; onRetry?: () =>
   )
 }
 
-export function Modal({ title, kicker, children, footer, onClose, wide }: { title: string; kicker?: string; children: ReactNode; footer?: ReactNode; onClose: () => void; wide?: boolean }) {
-  const id = useId()
-  const ref = useRef<HTMLDivElement>(null)
+const FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]):not([type="hidden"]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+
+/**
+ * Comportement clavier d'une fenêtre modale (UX-01, WCAG 2.1.2 et 2.4.3) : focus initial à l'intérieur, tabulation piégée
+ * dans la fenêtre, Échap pour fermer, retour du focus à l'élément d'origine à la fermeture.
+ */
+export function useDialogFocus(ref: React.RefObject<HTMLElement | null>, onClose: () => void, initialSelector = FOCUSABLE) {
   const close = useRef(onClose)
   close.current = onClose
   useEffect(() => {
     const previous = document.activeElement as HTMLElement | null
-    ref.current?.querySelector<HTMLElement>('input, select, textarea, button')?.focus()
-    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && close.current()
+    ref.current?.querySelector<HTMLElement>(initialSelector)?.focus()
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        close.current()
+        return
+      }
+      if (e.key !== 'Tab' || !ref.current) return
+      const items = Array.from(ref.current.querySelectorAll<HTMLElement>(FOCUSABLE)).filter((el) => el.offsetParent !== null || el === document.activeElement)
+      if (!items.length) return
+      const first = items[0]
+      const last = items[items.length - 1]
+      if (e.shiftKey && (document.activeElement === first || !ref.current.contains(document.activeElement))) {
+        e.preventDefault()
+        last.focus()
+      } else if (!e.shiftKey && (document.activeElement === last || !ref.current.contains(document.activeElement))) {
+        e.preventDefault()
+        first.focus()
+      }
+    }
     document.addEventListener('keydown', onKey)
     return () => {
       document.removeEventListener('keydown', onKey)
       previous?.focus()
     }
-  }, [])
+  }, [ref, initialSelector])
+}
+
+export function Modal({ title, kicker, children, footer, onClose, wide }: { title: string; kicker?: string; children: ReactNode; footer?: ReactNode; onClose: () => void; wide?: boolean }) {
+  const id = useId()
+  const ref = useRef<HTMLDivElement>(null)
+  useDialogFocus(ref, onClose, 'input, select, textarea, button')
   return (
     <div className="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby={id}>
       <div className={`dialog ${wide ? 'wide-dialog' : ''}`} ref={ref}>
@@ -361,6 +389,10 @@ export function useToast() {
 }
 
 /** Avertit avant de quitter une page contenant un brouillon non enregistré (UX-03). */
+/**
+ * UX-03 : prévient la perte d'un brouillon, à la fermeture de l'onglet comme à la navigation interne (menu, liens,
+ * retour arrière). Les redirections qui suivent un enregistrement passent `state: { afterSave: true }` et ne sont pas bloquées.
+ */
 export function useUnsavedWarning(dirty: boolean) {
   useEffect(() => {
     if (!dirty) return
@@ -371,6 +403,13 @@ export function useUnsavedWarning(dirty: boolean) {
     window.addEventListener('beforeunload', handler)
     return () => window.removeEventListener('beforeunload', handler)
   }, [dirty])
+  const blocker = useBlocker(({ currentLocation, nextLocation }) => dirty && currentLocation.pathname !== nextLocation.pathname
+    && !(nextLocation.state as { afterSave?: boolean } | null)?.afterSave)
+  useEffect(() => {
+    if (blocker.state !== 'blocked') return
+    if (window.confirm('Des modifications ne sont pas enregistrées. Quitter cette page et les abandonner ?')) blocker.proceed()
+    else blocker.reset()
+  }, [blocker])
 }
 
 export function useDebounced<T>(value: T, delay = 300): T {

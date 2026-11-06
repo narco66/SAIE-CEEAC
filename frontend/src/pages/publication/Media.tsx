@@ -162,6 +162,7 @@ function UploadModal({ onClose, onOpen }: { onClose: () => void; onOpen: (id: st
   const [language, setLanguage] = useState('')
   const [category, setCategory] = useState('')
   const [busy, setBusy] = useState(false)
+  const [progress, setProgress] = useState(0)
   const [error, setError] = useState<ApiError | null>(null)
   const [uploaded, setUploaded] = useState<Asset | null>(null)
 
@@ -192,7 +193,8 @@ function UploadModal({ onClose, onOpen }: { onClose: () => void; onOpen: (id: st
       fd.append('classification', classification)
       if (language) fd.append('language', language)
       if (category) fd.append('category_id', category)
-      const res = await api.upload<{ data: Asset }>('/assets', fd)
+      setProgress(0)
+      const res = await api.upload<{ data: Asset }>('/assets', fd, setProgress)
       setUploaded(res.data)
       client.invalidateQueries({ queryKey: ['assets'] })
       toast.success('Fichier déposé', 'Il est en quarantaine jusqu’à la fin de l’analyse.')
@@ -252,7 +254,12 @@ function UploadModal({ onClose, onOpen }: { onClose: () => void; onOpen: (id: st
             </Field>
           </div>
           {error && !error.field('file') && <div style={{ marginTop: 12 }}><Notice tone="danger">{error.message}</Notice></div>}
-          {busy && <p className="muted small" style={{ marginTop: 8 }} role="status">Envoi en cours… ne fermez pas cette fenêtre.</p>}
+          {busy && (
+            <div style={{ marginTop: 8 }}>
+              <progress max={1} value={progress} style={{ width: '100%' }} aria-label="Progression de l’envoi" />
+              <p className="muted small" role="status">Envoi en cours : {Math.round(progress * 100)} % — ne fermez pas cette fenêtre.</p>
+            </div>
+          )}
         </>
       )}
     </Modal>

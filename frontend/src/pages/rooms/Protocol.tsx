@@ -1,11 +1,11 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { api, ApiError, type Paginated } from '../../lib/api'
 import { useAuth } from '../../lib/auth'
 import { useData } from '../../lib/hooks'
 import { fmtDate, fmtLongDate, fmtTime, LANG_LABEL } from '../../lib/format'
-import { Button, EmptyState, ErrorState, Field, Icon, Loading, Notice, PageHeading, Status, useToast, useUnsavedWarning } from '../../components/ui'
+import { Button, EmptyState, ErrorState, Field, Icon, Loading, Notice, PageHeading, Status, useDialogFocus, useToast, useUnsavedWarning } from '../../components/ui'
 import { FlowProgress, MEMBER_STATES, slotLabel, TZ_LABEL, useReferentials, type Occurrence, type Reservation, type Room } from './shared'
 
 interface Visit {
@@ -148,11 +148,8 @@ function VisitFlow({ onClose }: { onClose: () => void }) {
   const [error, setError] = useState<ApiError | null>(null)
   const [done, setDone] = useState<{ kind: 'welcome'; content_id: string; reference: string } | { kind: 'visit'; reference: string } | null>(null)
   useUnsavedWarning(!done && !!name)
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose()
-    document.addEventListener('keydown', onKey)
-    return () => document.removeEventListener('keydown', onKey)
-  }, [onClose])
+  const dialogRef = useRef<HTMLDivElement>(null)
+  useDialogFocus(dialogRef, onClose)
 
   const reservations = useQuery({
     queryKey: ['reservations', 'protocol-candidates', can('reservations.approve')],
@@ -210,7 +207,7 @@ function VisitFlow({ onClose }: { onClose: () => void }) {
 
   return (
     <div className="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="visit-flow-title">
-      <div className="flow-modal visit-modal">
+      <div className="flow-modal visit-modal" ref={dialogRef}>
         <header>
           <div><small>PARCOURS P09</small><h2 id="visit-flow-title">Préparer une visite</h2></div>
           <button className="close icon-button" onClick={onClose} aria-label="Fermer"><Icon name="x" /></button>

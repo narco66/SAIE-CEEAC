@@ -164,7 +164,7 @@ export default function CampaignWizard() {
       setBaseline(JSON.stringify(form))
       if (!publish) {
         toast.success('Brouillon enregistré', `${current!.reference} · ${current!.name}`)
-        if (!id) navigate(`/affichage/campagnes/${current!.id}/modifier`, { replace: true, state: { step } })
+        if (!id) navigate(`/affichage/campagnes/${current!.id}/modifier`, { replace: true, state: { step, afterSave: true } })
         else { client.setQueryData(['campaign', id], current); setLoaded(current!.version) }
         return
       }
@@ -173,12 +173,12 @@ export default function CampaignWizard() {
         client.invalidateQueries({ queryKey: ['campaigns'] })
         client.invalidateQueries({ queryKey: ['contents'] })
         toast.success(res.data.status === 'active' ? 'Campagne en diffusion' : 'Campagne programmée', `${res.data.reference} · ${res.data.preview?.effective ?? 0} écran(s) effectif(s).`)
-        navigate(`/affichage/diffusions/${res.data.id}`)
+        navigate(`/affichage/diffusions/${res.data.id}`, { state: { afterSave: true } })
       } catch (e) {
         if (!id) {
           const err = e instanceof ApiError ? e : new ApiError(500, { message: errorText(e) })
           toast.info('Brouillon enregistré', 'La programmation a été refusée : corrigez puis réessayez.')
-          navigate(`/affichage/campagnes/${current!.id}/modifier`, { replace: true, state: { step: CODE_STEP[err.code] ?? 4, error: { code: err.code, message: err.message } } })
+          navigate(`/affichage/campagnes/${current!.id}/modifier`, { replace: true, state: { afterSave: true, step: CODE_STEP[err.code] ?? 4, error: { code: err.code, message: err.message } } })
           return
         }
         client.setQueryData(['campaign', id], current)

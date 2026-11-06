@@ -91,6 +91,14 @@ Défauts corrigés, chacun prouvé par un test qui échouait avant le correctif 
   - plus de bouton public de réappairage sur un terminal révoqué ; l’agent de dalle exige l’origine du lecteur ; une erreur de rendu affiche le repli neutre ;
   - médias servis par Nginx après autorisation de l’API ; purge des anciens manifestes et des fichiers d’exports échus ; étapes de `saie:tick` isolées.
 
+- **6 novembre, audit — lot R6 (interface et accessibilité)** :
+  - focus clavier visible et contrasté partout, y compris dans les barres de recherche ; bordures de champ à 3:1 ; libellés, en-têtes, badges et messages d’au moins 12 px ;
+  - toutes les fenêtres modales gardent le focus, se ferment avec Échap et le rendent à l’élément d’origine ; Échap ferme aussi les menus ;
+  - quitter un formulaire modifié par la navigation interne demande confirmation ;
+  - progression affichée pendant le dépôt d’un média ou d’un document (la reprise d’un envoi interrompu n’est pas prise en charge) ;
+  - clé d’idempotence liée à l’intention : un double clic ne crée plus de doublon ;
+  - PDF : corps et tableaux à 10 pt au moins ; la confirmation d’une réunion confidentielle est classée « restreint ».
+
 ### Priorité 1 — décisions à prendre (aucune correction faite)
 
 - **Participants des réunions standard** (nom, organisation) : visibles de tout agent qui peut voir les salles. À arbitrer au titre de GOV-02 : restreindre à l’organisateur, aux participants et aux gestionnaires ?

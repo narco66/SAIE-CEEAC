@@ -147,7 +147,7 @@ class ExportService
         $statusLabels = ['pending' => 'En attente', 'confirmed' => 'Confirmée', 'refused' => 'Refusée', 'cancelled' => 'Annulée', 'in_progress' => 'En cours', 'completed' => 'Terminée', 'no_show' => 'Non honorée'];
 
         return [
-            'title' => 'Confirmation de réservation', 'reference' => $r->reference, 'classification' => $r->confidential ? 'interne' : 'interne',
+            'title' => 'Confirmation de réservation', 'reference' => $r->reference, 'classification' => $r->confidential ? 'restreint' : 'interne',
             'banner' => $pending ? 'Demande non confirmée' : null,
             'meta' => [
                 ['Statut', $pending ? 'Demande non confirmée' : ($statusLabels[$first->status] ?? $first->status)], ['Objet', $r->subject], ['Organisateur', $r->organizer->name],

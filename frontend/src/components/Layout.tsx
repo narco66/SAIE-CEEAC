@@ -81,6 +81,8 @@ export default function Layout() {
         setPopover('search')
         setTimeout(() => searchRef.current?.focus(), 10)
       }
+      // Échap ferme tout menu ouvert (notifications, compte, recherche) — UX-01.
+      if (e.key === 'Escape') setPopover(null)
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)

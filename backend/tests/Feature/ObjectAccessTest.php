@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\ReservationOccurrence;
+use App\Services\ExportService;
 use Carbon\CarbonImmutable;
 use Tests\TestCase;
 
@@ -36,5 +37,20 @@ class ObjectAccessTest extends TestCase
         $outsider = $this->userWith('contributeur', 'COM', null, 'COM');
         $this->actingAs($outsider)->patchJson("/api/v1/visits/$id", ['status' => 'cancelled'])->assertForbidden();
         $this->actingAs($protocol)->patchJson("/api/v1/visits/$id", ['notes' => 'Accueil au hall'])->assertOk();
+    }
+
+    public function test_confirmation_of_a_confidential_meeting_is_classified_restricted(): void
+    {
+        $room = $this->room();
+        $agent = $this->userWith('agent');
+        $day = CarbonImmutable::now('Africa/Libreville')->addDays(2)->setTime(10, 0);
+        $id = $this->actingAs($agent)->postJson('/api/v1/reservations', [
+            'room_id' => $room->id, 'start_at' => $day->toIso8601String(), 'end_at' => $day->addHour()->toIso8601String(),
+            'confidentiality' => true, 'subject' => 'Arbitrages', 'participant_count' => 4,
+        ])->assertCreated()->json('data.id');
+
+        $model = app(ExportService::class)->build('reservation_confirmation', ['reservation_id' => $id], $agent);
+
+        $this->assertSame('restreint', $model['classification']);
     }
 }

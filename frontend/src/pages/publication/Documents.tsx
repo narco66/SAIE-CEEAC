@@ -104,6 +104,7 @@ function DocumentUpload({ onClose, onCreated }: { onClose: () => void; onCreated
   const [f, setF] = useState({ title: '', summary: '', classification: 'interne', category_id: '', owner_structure_id: me.structure?.id ?? '', language: 'fr', keywords: '', valid_from: '', expires_at: '' })
   const [audiences, setAudiences] = useState<string[]>([])
   const [busy, setBusy] = useState(false)
+  const [progress, setProgress] = useState(0)
   const [error, setError] = useState<ApiError | null>(null)
   const set = (k: keyof typeof f, v: string) => setF((x) => ({ ...x, [k]: v }))
 
@@ -133,7 +134,8 @@ function DocumentUpload({ onClose, onCreated }: { onClose: () => void; onCreated
       if (f.valid_from) fd.append('valid_from', f.valid_from)
       if (f.expires_at) fd.append('expires_at', f.expires_at)
       audiences.forEach((a) => fd.append('audience_ids[]', a))
-      const res = await api.upload<{ data: DocumentRow }>('/documents', fd)
+      setProgress(0)
+      const res = await api.upload<{ data: DocumentRow }>('/documents', fd, setProgress)
       client.invalidateQueries({ queryKey: ['documents'] })
       toast.success('Document déposé', `${res.data.reference} créé en brouillon ; le fichier est en cours d’analyse.`)
       onCreated(res.data.id)
@@ -157,6 +159,7 @@ function DocumentUpload({ onClose, onCreated }: { onClose: () => void; onCreated
         <ul><li>L’intégrité, le type MIME réel et l’antivirus sont contrôlés ; publication possible seulement une fois le fichier déclaré sain.</li></ul>
       </div>
       {(fileError || error?.field('file')) && <p className="field-error" role="alert">{fileError ?? error?.field('file')}</p>}
+      {busy && <div style={{ marginTop: 8 }}><progress max={1} value={progress} style={{ width: '100%' }} aria-label="Progression de l’envoi" /><p className="muted small" role="status">Envoi en cours : {Math.round(progress * 100)} %</p></div>}
       <div className="form-grid" style={{ marginTop: 14 }}>
         <Field label="Titre" required wide error={error?.field('title')}><input value={f.title} maxLength={200} onChange={(e) => set('title', e.target.value)} /></Field>
         <Field label="Résumé" wide error={error?.field('summary')}><textarea value={f.summary} maxLength={2000} onChange={(e) => set('summary', e.target.value)} /></Field>

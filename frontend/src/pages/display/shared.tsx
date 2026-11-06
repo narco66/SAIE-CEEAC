@@ -6,7 +6,7 @@ import { useEffect, useId, useRef, useState, type ReactNode } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { api } from '../../lib/api'
 import { DAYS, fmtDateTime, fmtTime, LANG_LABEL, CLASS_LABEL } from '../../lib/format'
-import { Button, Icon, Kv, StatusOf, type IconName } from '../../components/ui'
+import { Button, Icon, Kv, StatusOf, useDialogFocus, type IconName } from '../../components/ui'
 import './display.css'
 
 /* ===== Types de l'API ===== */
@@ -147,17 +147,7 @@ export function FlowShell({ title, kicker = 'PARCOURS', steps, step, children, f
 }) {
   const id = useId()
   const ref = useRef<HTMLDivElement>(null)
-  const closeRef = useRef(onClose)
-  closeRef.current = onClose
-  useEffect(() => {
-    const previous = document.activeElement as HTMLElement | null
-    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && closeRef.current()
-    document.addEventListener('keydown', onKey)
-    return () => {
-      document.removeEventListener('keydown', onKey)
-      previous?.focus()
-    }
-  }, [])
+  useDialogFocus(ref, onClose, '.flow-content input, .flow-content select, .flow-content textarea, button')
   /* Focus sur le premier champ à chaque changement d'étape. */
   useEffect(() => {
     ref.current?.querySelector<HTMLElement>('.flow-content input, .flow-content select, .flow-content textarea, .flow-content h3')?.focus()

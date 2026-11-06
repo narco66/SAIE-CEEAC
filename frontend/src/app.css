@@ -106,3 +106,16 @@ table a.cell-link, a.link-text { color: var(--blue); font-weight: 600; }
 .canvas-zone .handle { position: absolute; right: -5px; bottom: -5px; width: 10px; height: 10px; background: #f2c94c; cursor: nwse-resize; }
 :focus-visible { outline: 3px solid rgba(9,105,168,.35); outline-offset: 2px; }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; } }
+
+/*
+ * Accessibilité (UX-01, WCAG 2.2 AA 2.4.7, 1.4.11 ; cahier §26.3 « libellés au moins 12 px ») :
+ * focus clavier visible et contrasté, bordures de champ à 3:1, tailles minimales. Surcharge la feuille de la maquette.
+ */
+:where(a, button, input, select, textarea, summary, [tabindex]):focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
+.sidebar :where(a, button):focus-visible, .topbar-dark :where(a, button):focus-visible { outline-color: #ffffff; }
+.search-field:focus-within { border-color: var(--blue); box-shadow: 0 0 0 2px var(--blue); }
+.form-grid input, .form-grid select, .form-grid textarea, .field input, .field select, .field textarea, .input, .search-field { border-color: #7d8a97; }
+th { font-size: 12px; letter-spacing: .3px; color: #4f5b67; }
+.status { font-size: 12px; }
+.field-error, .field-help, .search-field input, .form-grid input, .form-grid select, .field input, .field select, .field textarea { font-size: 12px; }
+small { font-size: max(12px, 1em * .85); }

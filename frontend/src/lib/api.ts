@@ -52,6 +52,20 @@ export function ensureCsrf(force = false): Promise<void> {
   return csrfReady
 }
 
+/**
+ * Clé d'idempotence liée à l'intention (API-03) : même chemin et même corps dans une fenêtre de 30 s donnent la même clé,
+ * de sorte qu'un double clic ou une relance immédiate est rejoué par le serveur au lieu de créer un doublon.
+ */
+async function intentKey(path: string, body: string): Promise<string> {
+  const window30s = Math.floor(Date.now() / 30_000)
+  try {
+    const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(`${path}|${body}|${window30s}`))
+    return 'i' + Array.from(new Uint8Array(digest)).slice(0, 24).map((b) => b.toString(16).padStart(2, '0')).join('')
+  } catch {
+    return newIdempotencyKey()
+  }
+}
+
 export function newIdempotencyKey(): string {
   return (crypto.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(36).slice(2)}`).replace(/[^A-Za-z0-9_-]/g, '')
 }
@@ -95,7 +109,7 @@ export async function request<T>(method: string, path: string, options: RequestO
     headers['Content-Type'] = 'application/json'
     body = JSON.stringify(options.body)
   }
-  if (options.idempotent && upper === 'POST') headers['Idempotency-Key'] = newIdempotencyKey()
+  if (options.idempotent && upper === 'POST') headers['Idempotency-Key'] = typeof body === 'string' || body === undefined ? await intentKey(path, body ?? '') : newIdempotencyKey()
 
   let response: Response
   try {
@@ -129,7 +143,39 @@ export const api = {
   patch: <T>(path: string, body?: unknown, headers?: Record<string, string>) => request<T>('PATCH', path, { body, headers }),
   put: <T>(path: string, body?: unknown) => request<T>('PUT', path, { body }),
   delete: <T>(path: string) => request<T>('DELETE', path),
-  upload: <T>(path: string, form: FormData) => request<T>('POST', path, { body: form, idempotent: true }),
+  upload: <T>(path: string, form: FormData, onProgress?: (ratio: number) => void) => (onProgress ? uploadWithProgress<T>(path, form, onProgress) : request<T>('POST', path, { body: form, idempotent: true })),
+}
+
+/**
+ * Téléversement avec progression (V12, DOC-01) : seule XMLHttpRequest expose l'avancement de l'envoi. Mêmes protections
+ * que les autres appels (CSRF, clé d'idempotence, erreurs normalisées).
+ */
+async function uploadWithProgress<T>(path: string, form: FormData, onProgress: (ratio: number) => void): Promise<T> {
+  await ensureCsrf()
+  return new Promise<T>((resolvePromise, reject) => {
+    const xhr = new XMLHttpRequest()
+    xhr.open('POST', BASE + path)
+    xhr.withCredentials = true
+    xhr.setRequestHeader('Accept', 'application/json')
+    xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest')
+    const token = readCookie('XSRF-TOKEN')
+    if (token) xhr.setRequestHeader('X-XSRF-TOKEN', token)
+    xhr.setRequestHeader('Idempotency-Key', newIdempotencyKey())
+    xhr.upload.onprogress = (e) => { if (e.lengthComputable) onProgress(e.loaded / e.total) }
+    xhr.onerror = () => reject(new ApiError(0, { code: 'NETWORK', message: 'Connexion au serveur interrompue pendant l’envoi. Réessayez.' }))
+    xhr.onload = () => {
+      let payload: unknown = xhr.responseText
+      try { payload = JSON.parse(xhr.responseText) } catch { /* réponse non JSON */ }
+      if (xhr.status >= 200 && xhr.status < 300) {
+        onProgress(1)
+        resolvePromise(payload as T)
+        return
+      }
+      if (xhr.status === 401 && onUnauthenticated) onUnauthenticated()
+      reject(new ApiError(xhr.status, typeof payload === 'object' && payload ? payload as ConstructorParameters<typeof ApiError>[1] : { message: String(payload).slice(0, 200) }))
+    }
+    xhr.send(form)
+  })
 }
 
 /** URL directe d'un fichier servi par l'API (téléchargement réautorisé côté serveur à chaque appel). */

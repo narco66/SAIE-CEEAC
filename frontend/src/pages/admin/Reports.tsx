@@ -1,8 +1,8 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { api, type ApiError } from '../../lib/api'
 import { addDays, fmtDate, fmtDateTime, fmtNumber, localParts } from '../../lib/format'
-import { Button, ErrorState, Icon, Loading, Notice, PageHeading, Status } from '../../components/ui'
+import { Button, ErrorState, Icon, Loading, Notice, PageHeading, Status, useDialogFocus } from '../../components/ui'
 import { useAuth } from '../../lib/auth'
 import {
   asApiError, EXPORT_FIELDS, ExportTracker, IndicatorValue, PERIOD_EXPORT_TYPES, PeriodFields, periodBounds, presetRange, requestExport,
@@ -251,11 +251,8 @@ function ReportModal({ onClose, from: initialFrom, to: initialTo }: { onClose: (
   useEffect(() => {
     if (def && !def.formats.includes(format)) setFormat(def.formats[0])
   }, [def, format])
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose()
-    document.addEventListener('keydown', onKey)
-    return () => document.removeEventListener('keydown', onKey)
-  }, [onClose])
+  const dialogRef = useRef<HTMLDivElement>(null)
+  useDialogFocus(dialogRef, onClose)
 
   const generate = async () => {
     setBusy(true)
@@ -273,7 +270,7 @@ function ReportModal({ onClose, from: initialFrom, to: initialTo }: { onClose: (
 
   return (
     <div className="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="report-modal-title">
-      <div className="flow-modal">
+      <div className="flow-modal" ref={dialogRef}>
         <header>
           <div><small>PARCOURS</small><h2 id="report-modal-title">Générer un rapport</h2></div>
           <button className="icon-button" onClick={onClose} aria-label="Fermer"><Icon name="x" /></button>

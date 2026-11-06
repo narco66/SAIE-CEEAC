@@ -215,7 +215,7 @@ export default function ContentEditor() {
         client.invalidateQueries({ queryKey: ['contents'] })
         client.setQueryData(['content', res.data.id], res.data)
         toast.success('Brouillon enregistré', `${res.data.reference} créé.`)
-        navigate(`/affichage/contenus/${res.data.id}/edition`, { replace: true, state: { step } })
+        navigate(`/affichage/contenus/${res.data.id}/edition`, { replace: true, state: { step, afterSave: true } })
         return res.data
       }
       if (!dirty) return detail ?? null
@@ -560,7 +560,7 @@ export default function ContentEditor() {
             client.invalidateQueries({ queryKey: ['contents'] })
             client.invalidateQueries({ queryKey: ['content', detail.id] })
             toast.success('Contenu archivé', detail.title)
-            navigate('/affichage/contenus')
+            navigate('/affichage/contenus', { state: { afterSave: true } })
           }} />
       )}
       {readOnly && <Notice tone="info" icon="shield">Lecture seule : vous ne pouvez pas modifier ce contenu (statut ou périmètre).</Notice>}
