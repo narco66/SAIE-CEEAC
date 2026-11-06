@@ -36,7 +36,8 @@ jobs:
           extensions: pdo_pgsql, mbstring, openssl, intl, fileinfo, zip, gd, bcmath
           coverage: none
       - name: Extensions obligatoires (TECH-01)
-        run: php -r 'foreach (["pdo_pgsql","mbstring","openssl","intl","fileinfo","zip","gd"] as $e) { if (!extension_loaded($e)) { fwrite(STDERR, "Extension manquante: $e\n"); exit(1); } }'
+        run: |
+          php -r 'foreach (["pdo_pgsql","mbstring","openssl","intl","fileinfo","zip","gd"] as $e) { if (!extension_loaded($e)) { fwrite(STDERR, "Extension manquante : $e\n"); exit(1); } }'
       - run: composer install --no-interaction --prefer-dist --no-progress
       - run: cp .env.example .env && php artisan key:generate
       - name: Formatage (Pint)
@@ -137,10 +138,11 @@ jobs:
       - name: Fichier Compose valide
         run: |
           cp infra/.env.example infra/.env
-          sed -i 's/^DB_PASSWORD=.*/DB_PASSWORD=ci/' infra/.env
+          sed -i 's/^SAIE_APP_PASSWORD=.*/SAIE_APP_PASSWORD=ci/' infra/.env
+          mkdir -p infra/secrets && printf ci > infra/secrets/db-admin-password && printf ci > infra/secrets/db-owner-password
           docker compose -f infra/docker-compose.yml --profile deploy --profile local config --quiet
       - name: Image PHP
-        run: docker buildx build --load -f infra/php.Dockerfile -t saie-ceeac/php:ci .
+        run: docker buildx build --load -f infra/php.Dockerfile --target app -t saie-ceeac/php:ci .
       - name: Image web
         run: docker buildx build --load -f infra/web.Dockerfile -t saie-ceeac/web:ci .
       - name: Aucun secret ni dépendance de développement dans l'image PHP
