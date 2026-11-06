@@ -21,6 +21,7 @@ use App\Support\Reference;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -183,7 +184,7 @@ class DocumentController extends Controller
     {
         $this->assertView($document);
         $documentVersion = $document->versions()->where('version', $version)->firstOrFail();
-        if ($documentVersion->id !== $document->current_version_id && ! $this->documents->canManage($document, $this->user())) {
+        if (Gate::forUser($this->user())->denies('download', [$document, $documentVersion])) {
             $this->deny('Version archivée réservée au propriétaire');
         }
         /** @var AssetVersion $file */
@@ -222,7 +223,7 @@ class DocumentController extends Controller
 
     private function assertView(Document $document): void
     {
-        if (! $this->documents->canView($document, $this->user())) {
+        if (Gate::forUser($this->user())->denies('view', $document)) {
             $this->audit()->log('document.access_denied', $document, outcome: 'denied');
             abort(404);
         }
@@ -291,7 +292,7 @@ class DocumentController extends Controller
 
     private function assertManage(Document $document): void
     {
-        if (! $this->documents->canManage($document, $this->user())) {
+        if (Gate::forUser($this->user())->denies('manage', $document)) {
             $this->deny('Document hors périmètre');
         }
     }

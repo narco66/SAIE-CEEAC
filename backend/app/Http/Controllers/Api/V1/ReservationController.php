@@ -21,6 +21,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 
 /**
  * Réservations (V26 à V29, API-03) : contrôle SQL, idempotence, séries et confidentialité.
@@ -332,15 +333,12 @@ class ReservationController extends Controller
 
     private function canSeeAll(Reservation $reservation): bool
     {
-        return $reservation->organizer_id === $this->user()->id || $this->managesAny($reservation) || $this->service->isEscalatedBackup($reservation, $this->user());
+        return Gate::forUser($this->user())->allows('viewAll', $reservation);
     }
 
     private function assertCanView(Reservation $reservation): void
     {
-        if (! $this->canSeeAll($reservation) && ! $this->can('rooms.view')) {
-            abort(404);
-        }
-        if (! $this->canSeeAll($reservation) && $reservation->confidential) {
+        if (Gate::forUser($this->user())->denies('view', $reservation)) {
             abort(404);
         }
     }

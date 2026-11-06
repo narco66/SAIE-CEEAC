@@ -20,6 +20,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 
@@ -200,22 +201,14 @@ class ContentController extends Controller
 
     private function assertVisible(Content $content): void
     {
-        if (! $this->can('contents.view') || ! $this->visible(Content::query()->whereKey($content->id))->exists()) {
+        if (Gate::forUser($this->user())->denies('view', $content)) {
             abort(404);
         }
     }
 
     private function canEdit(Content $content): bool
     {
-        if (in_array($content->status, ['archived', 'expired'], true)) {
-            return false;
-        }
-        if ($content->author_id === $this->user()->id) {
-            return true;
-        }
-        $scope = $this->access()->structureScope($this->user(), 'contents.create');
-
-        return $this->can('contents.create') && ($scope === null || in_array($content->owner_structure_id, $scope, true));
+        return Gate::forUser($this->user())->allows('update', $content);
     }
 
     private function assertEditable(Content $content): void

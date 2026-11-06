@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Asset;
 use App\Models\AssetVersion;
 use App\Models\Content;
+use App\Services\AssetAccess;
 use App\Services\AssetService;
 use App\Support\BusinessException;
 use App\Support\Present;
@@ -13,6 +14,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
@@ -156,34 +158,19 @@ class AssetController extends Controller
      */
     private function visible(Builder $query): Builder
     {
-        $user = $this->user();
-        $managed = $this->access()->can($user, 'media.upload') ? $this->access()->structureScope($user, 'media.upload') : [];
-        $documentManaged = $this->access()->can($user, 'documents.manage') ? $this->access()->structureScope($user, 'documents.manage') : [];
-        $none = ['00000000-0000-0000-0000-000000000000'];
-
-        return $query
-            ->where(fn ($q) => $q->whereIn('classification', ['public', 'interne'])
-                ->orWhere('created_by', $user->id)
-                ->when($managed === null, fn ($w) => $w->orWhereRaw('true'), fn ($w) => $w->orWhereIn('owner_structure_id', $managed ?: $none)))
-            ->where(fn ($q) => $q->whereNotExists(fn ($d) => $d->select(DB::raw(1))->from('document_versions')->join('asset_versions', 'asset_versions.id', '=', 'document_versions.asset_version_id')->whereColumn('asset_versions.asset_id', 'assets.id'))
-                ->orWhere('created_by', $user->id)
-                ->when($documentManaged === null, fn ($w) => $w->orWhereRaw('true'), fn ($w) => $w->orWhereExists(fn ($d) => $d->select(DB::raw(1))->from('document_versions')
-                    ->join('asset_versions', 'asset_versions.id', '=', 'document_versions.asset_version_id')->join('documents', 'documents.id', '=', 'document_versions.document_id')
-                    ->whereColumn('asset_versions.asset_id', 'assets.id')->where(fn ($o) => $o->whereIn('documents.owner_structure_id', $documentManaged ?: $none)->orWhere('documents.author_id', $user->id)))));
+        return app(AssetAccess::class)->scope($query, $this->user());
     }
 
     private function assertVisible(Asset $asset): void
     {
-        if (! $this->can('media.view') || ! $this->visible(Asset::query()->whereKey($asset->id))->exists()) {
+        if (Gate::forUser($this->user())->denies('view', $asset)) {
             abort(404);
         }
     }
 
     private function canEdit(Asset $asset): bool
     {
-        $scope = $this->access()->structureScope($this->user(), 'media.upload');
-
-        return $this->can('media.upload') && ($asset->created_by === $this->user()->id || $scope === null || in_array($asset->owner_structure_id, $scope, true));
+        return Gate::forUser($this->user())->allows('update', $asset);
     }
 
     private function assertEditable(Asset $asset): void

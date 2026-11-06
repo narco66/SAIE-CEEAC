@@ -112,6 +112,14 @@ Défauts corrigés, chacun prouvé par un test qui échouait avant le correctif 
   - un groupe d’écrans peut porter une plage de fonctionnement, héritée par ses écrans sans plage propre ;
   - une modification de campagne, de contenu, de modèle ou d’occurrence sans la version lue est refusée (428).
 
+- **6 novembre, après la synchronisation GitHub** :
+  - CI de nouveau exécutable (le fichier du workflow était un YAML invalide) et verte sur tous ses jobs, y compris la suite de bout en bout ;
+  - vidéos : la version transcodée en H.264 est réellement diffusée ; une vidéo illisible et non transcodable est refusée au dépôt ;
+  - lecteurs : jetons à durée de vie de 90 jours, renouvelés automatiquement ; rotation de la clé de signature sans réappairage ; intégrité de toute la version publiée (SRI) ;
+  - Policies Laravel pour les documents, médias, contenus et réservations (SEC-02), appliquées par les contrôleurs ;
+  - sources dynamiques protégées du rebinding DNS, taille limitée pendant le transfert ;
+  - vingt anomalies mineures de l'audit corrigées (voir l'historique Git).
+
 ### Priorité 1 — décisions à prendre (aucune correction faite)
 
 - **Participants des réunions standard** (nom, organisation) : visibles de tout agent qui peut voir les salles. À arbitrer au titre de GOV-02 : restreindre à l’organisateur, aux participants et aux gestionnaires ?
