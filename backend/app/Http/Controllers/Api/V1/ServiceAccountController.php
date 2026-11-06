@@ -25,7 +25,8 @@ class ServiceAccountController extends Controller
         $this->authorizePermission('settings.technical');
         $data = $request->validate(['name' => ['required', 'string', 'max:120'], 'description' => ['nullable', 'string', 'max:250'], 'scopes' => ['required', 'array', 'min:1'], 'scopes.*' => ['in:'.implode(',', array_keys(ServiceAccount::SCOPES))], 'reason' => ['required', 'string', 'min:5', 'max:300']]);
         $account = ServiceAccount::query()->create(['name' => $data['name'], 'description' => $data['description'] ?? null, 'scopes' => $data['scopes'], 'created_by' => $this->user()->id]);
-        $token = $account->createToken('integration', $data['scopes'])->plainTextToken;
+        // SEC-05 : jeton d'intégration à durée de vie bornée (un an), renouvelé par rotation.
+        $token = $account->createToken('integration', $data['scopes'], now()->addYear())->plainTextToken;
         $this->audit()->log('service_account.created', $account, $data['reason'], after: ['scopes' => $data['scopes']]);
 
         return response()->json(['data' => $this->present($account), 'token' => $token, 'notice' => 'Copiez ce jeton maintenant : il ne sera plus jamais affiché.'], 201);
@@ -36,7 +37,7 @@ class ServiceAccountController extends Controller
         $this->authorizePermission('settings.technical');
         $data = $request->validate(['reason' => ['required', 'string', 'min:5', 'max:300']]);
         $account->tokens()->delete();
-        $token = $account->createToken('integration', $account->scopes)->plainTextToken;
+        $token = $account->createToken('integration', $account->scopes, now()->addYear())->plainTextToken;
         $this->audit()->log('service_account.rotated', $account, $data['reason']);
 
         return response()->json(['data' => $this->present($account), 'token' => $token]);

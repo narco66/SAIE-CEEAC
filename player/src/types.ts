@@ -79,6 +79,6 @@ export interface Manifest {
 
 export interface Envelope { format: string; version: number; etag: string; payload: string; signature: { alg: string; key_id: string; value: string } }
 
-export interface Identity { deviceId: string; deviceCode: string; token: string; publicKey: string; keyId: string; pairedAt: string; revoked?: boolean }
+export interface Identity { deviceId: string; deviceCode: string; token: string; publicKey: string; keyId: string; pairedAt: string; tokenIssuedAt?: string; revoked?: boolean }
 
 export interface DeviceEvent { event_id: string; kind: string; manifest_version?: number | null; ref_type?: string | null; ref_id?: string | null; lang?: string | null; occurred_at: string; payload?: Record<string, unknown> }

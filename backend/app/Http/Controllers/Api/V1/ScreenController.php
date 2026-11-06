@@ -144,7 +144,7 @@ class ScreenController extends Controller
                 'status' => 'active', 'app_version' => $pairing->device_info['app_version'] ?? null, 'platform' => $pairing->device_info['platform'] ?? null,
                 'reported_resolution' => $pairing->device_info['resolution'] ?? null, 'paired_at' => now(), 'paired_by' => $this->user()->id,
             ]);
-            $token = $device->createToken('device', ['device'])->plainTextToken;
+            $token = $device->createToken('device', ['device'], now()->addDays((int) config('saie.device.token_ttl_days')))->plainTextToken;
             $pairing->forceFill(['used_at' => now(), 'device_id' => $device->id, 'issued_token' => $token])->save();
             $this->audit()->log('device.paired', $screen, after: ['device' => $device->code]);
 

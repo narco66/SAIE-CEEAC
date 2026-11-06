@@ -20,6 +20,8 @@ return [
     'device' => [
         // Préfixe d'emplacement interne Nginx (X-Accel-Redirect) ; vide : fichier servi par PHP (poste de développement).
         'accel_redirect' => env('SAIE_ACCEL_REDIRECT'),
+        // PLY-02 : durée de vie d'un jeton de lecteur ; le lecteur le renouvelle de lui-même à mi-vie.
+        'token_ttl_days' => (int) env('SAIE_DEVICE_TOKEN_TTL_DAYS', 90),
         'heartbeat_s' => 30,
         'suspect_after_s' => 90,
         'unavailable_after_s' => 300,

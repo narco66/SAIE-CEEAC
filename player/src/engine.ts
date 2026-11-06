@@ -14,6 +14,7 @@ const HEARTBEAT_MS = 30_000
 const RESERVE = 0.2
 /** Délai maximal d'un appel à l'API (PLY-01) : une connexion pendante ne doit jamais figer heartbeat et synchronisation. */
 const CALL_TIMEOUT_MS = 20_000
+const TOKEN_ROTATE_MS = 30 * 24 * 3600_000
 /** Agent local de pilotage de la dalle (player/agent/panel-agent.mjs). */
 const PANEL_AGENT = import.meta.env.VITE_PANEL_AGENT_URL ?? 'http://127.0.0.1:7071/panel'
 
@@ -174,6 +175,20 @@ export class Engine {
     return response
   }
 
+  /** PLY-02 : renouvellement du jeton après 30 jours (durée de vie serveur : 90 jours) ; l'ancien jeton est révoqué par le serveur. */
+  private async rotateTokenIfDue(): Promise<void> {
+    const identity = this.state.identity
+    if (!identity || identity.revoked) return
+    const issued = Date.parse(identity.tokenIssuedAt ?? identity.pairedAt)
+    if (Number.isFinite(issued) && Date.now() - issued < TOKEN_ROTATE_MS) return
+    const response = await this.call('/token/rotate', { method: 'POST' })
+    if (!response.ok) return
+    const { token } = (await response.json()) as { token: string }
+    const renewed = { ...identity, token, tokenIssuedAt: new Date().toISOString() }
+    await setIdentity(renewed)
+    this.set({ identity: renewed })
+  }
+
   /** Révocation : l'API est refusée ; le cache reste lisible jusqu'à l'expiration de l'autorisation en cours (R17). */
   private async markRevoked(): Promise<void> {
     const identity = this.state.identity
@@ -301,6 +316,7 @@ export class Engine {
       this.markOnline(true)
       this.set({ clockOffsetMs: offset })
       await this.flush()
+      await this.rotateTokenIfDue()
     } catch (error) {
       if (error instanceof TypeError || (error as Error).name === 'TimeoutError' || (error as Error).name === 'AbortError') this.markOnline(false)
     }

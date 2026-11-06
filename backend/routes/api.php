@@ -56,6 +56,7 @@ Route::prefix('device')->group(function (): void {
     Route::middleware(['auth:sanctum', 'device', 'throttle:device'])->group(function (): void {
         Route::get('manifest', [DeviceApiController::class, 'manifest']);
         Route::post('heartbeat', [DeviceApiController::class, 'heartbeat']);
+        Route::post('token/rotate', [DeviceApiController::class, 'rotateToken']);
         Route::post('receipts', [DeviceApiController::class, 'receipts']);
         Route::get('assets/{assetVersion}', [DeviceApiController::class, 'asset']);
         Route::post('screenshots/{screenshot}', [DeviceApiController::class, 'uploadScreenshot']);

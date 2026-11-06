@@ -161,6 +161,22 @@ class DeviceApiController extends Controller
         return response()->json(['accepted' => $accepted, 'duplicates' => count($rows) - $accepted]);
     }
 
+    /**
+     * PLY-02 : renouvellement du jeton du lecteur. Le nouveau jeton est remis une seule fois ; l'ancien expire 10 minutes plus tard
+     * (chevauchement pour les appels déjà en cours), de sorte qu'un jeton dérobé cesse de valoir au renouvellement suivant.
+     */
+    public function rotateToken(Request $request): JsonResponse
+    {
+        $device = $this->device();
+        $current = $request->user()->currentAccessToken();
+        $expires = now()->addDays((int) config('saie.device.token_ttl_days'));
+        $token = $device->createToken('device', ['device'], $expires)->plainTextToken;
+        $current?->forceFill(['expires_at' => now()->addMinutes(10)])->save();
+        app(Audit::class)->log('device.token_rotated', $device, actor: $device);
+
+        return response()->json(['token' => $token, 'expires_at' => $expires->toIso8601ZuluString()]);
+    }
+
     public function asset(Request $request, AssetVersion $assetVersion): SymfonyResponse
     {
         $device = $this->device();
