@@ -18,6 +18,8 @@ return [
     ],
 
     'device' => [
+        // Préfixe d'emplacement interne Nginx (X-Accel-Redirect) ; vide : fichier servi par PHP (poste de développement).
+        'accel_redirect' => env('SAIE_ACCEL_REDIRECT'),
         'heartbeat_s' => 30,
         'suspect_after_s' => 90,
         'unavailable_after_s' => 300,

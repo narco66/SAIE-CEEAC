@@ -1,3 +1,4 @@
+import { Component, type ReactNode } from 'react'
 import { createRoot } from 'react-dom/client'
 import '@fontsource/dm-sans/400.css'
 import '@fontsource/dm-sans/700.css'
@@ -6,6 +7,7 @@ import '@fontsource/manrope/800.css'
 import './player.css'
 import Player from './Player.tsx'
 import { engine } from './engine.ts'
+import { NeutralFallback, Stage } from './views.tsx'
 
 /*
  * Chien de garde logiciel (PLY-01) : rechargement si le rendu est figé plus de 60 s ou après une rafale d'erreurs.
@@ -29,5 +31,23 @@ if ('serviceWorker' in navigator && import.meta.env.PROD) {
   navigator.serviceWorker.register(`${import.meta.env.BASE_URL}sw.js`, { scope: import.meta.env.BASE_URL }).catch(() => undefined)
 }
 
-createRoot(document.getElementById('root')!).render(<Player />)
+/** Une erreur de rendu affiche le repli institutionnel neutre (jamais un écran blanc) puis relance le rendu (PLY-01). */
+class RenderGuard extends Component<{ children: ReactNode }, { failed: boolean }> {
+  state = { failed: false }
+
+  static getDerivedStateFromError(): { failed: boolean } {
+    return { failed: true }
+  }
+
+  componentDidCatch(error: Error): void {
+    onFatal(`Rendu interrompu : ${error.message}`)
+    setTimeout(() => this.setState({ failed: false }), 10_000)
+  }
+
+  render(): ReactNode {
+    return this.state.failed ? <Stage><NeutralFallback manifest={null} /></Stage> : this.props.children
+  }
+}
+
+createRoot(document.getElementById('root')!).render(<RenderGuard><Player /></RenderGuard>)
 engine.start()

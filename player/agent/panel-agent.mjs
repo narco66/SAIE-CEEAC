@@ -16,7 +16,12 @@ import { execFile, exec } from 'node:child_process'
 
 const driver = process.env.SAIE_PANEL_DRIVER ?? 'simulate'
 const port = Number(process.env.SAIE_PANEL_PORT ?? 7071)
-const allowedOrigin = process.env.SAIE_PLAYER_ORIGIN ?? '*'
+// Origine du lecteur obligatoire hors simulation : aucune autre page ouverte sur le kiosque ne doit piloter la dalle.
+const allowedOrigin = process.env.SAIE_PLAYER_ORIGIN ?? (driver === 'simulate' ? 'http://localhost:5174' : null)
+if (!allowedOrigin) {
+  console.error('SAIE_PLAYER_ORIGIN doit indiquer l’origine du lecteur (ex. https://saie.ceeac-eccas.org).')
+  process.exit(1)
+}
 let simulated = 'on'
 let lastError = null
 
@@ -51,6 +56,8 @@ const send = (res, status, body) => {
 createServer(async (req, res) => {
   if (req.method === 'OPTIONS') return send(res, 204, {})
   if (req.url !== '/panel') return send(res, 404, { error: 'not_found' })
+  // Une commande ne vient que du lecteur : le navigateur envoie l'origine, que CORS seul ne suffit pas à filtrer.
+  if (req.method === 'POST' && req.headers.origin !== allowedOrigin) return send(res, 403, { error: 'origine non autorisée' })
   try {
     if (req.method === 'POST') {
       let raw = ''

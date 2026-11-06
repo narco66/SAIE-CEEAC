@@ -85,3 +85,36 @@ export function audioAllowed(manifest: Manifest, at: Date): boolean {
   const local = localClock(at, manifest.timezone)
   return local.time >= manifest.audio_policy.hours.on && local.time < manifest.audio_policy.hours.off
 }
+
+/** Données « vivantes » d'un manifeste : appliquées dès sa vérification, sans attendre les médias du programme (PLY-03, PUB-06). */
+export type LiveData = Pick<Manifest, 'version' | 'authorization' | 'alerts' | 'agenda' | 'room_panel' | 'orientation'>
+
+export function liveData(manifest: Manifest): LiveData {
+  return { version: manifest.version, authorization: manifest.authorization, alerts: manifest.alerts, agenda: manifest.agenda, room_panel: manifest.room_panel, orientation: manifest.orientation }
+}
+
+/**
+ * Vue affichée : le programme et les médias viennent du manifeste actif (bascule atomique) ; alertes, agenda, panneau de salle
+ * et orientation viennent du dernier manifeste vérifié. Hors ligne, ces informations publiques cessent d'être affichées à
+ * l'expiration de leur autorisation (PLY-05) : jamais un agenda ou une bienvenue périmés.
+ */
+export function liveView(active: Manifest, live: LiveData | null, at: Date): Manifest {
+  const source: LiveData = live && live.version >= active.version ? live : liveData(active)
+  const expired = !!source.authorization?.public && Date.parse(source.authorization.public) <= at.getTime()
+  return {
+    ...active,
+    alerts: source.alerts,
+    agenda: expired ? [] : source.agenda,
+    room_panel: source.room_panel && expired ? { ...source.room_panel, occurrences: [], blocks: [] } : source.room_panel,
+    orientation: source.orientation && expired ? { ...source.orientation, welcomes: [] } : source.orientation,
+  }
+}
+
+/** Contrôles d'un manifeste signé reçu (PLY-03) : destinataire, validité, et aucun retour à une version antérieure. */
+export function acceptManifest(manifest: Pick<Manifest, 'device_id' | 'version' | 'valid_until' | 'content_hash'>, deviceCode: string, active: Pick<Manifest, 'version' | 'content_hash'> | null, at: Date): 'accept' | 'same' | string {
+  if (manifest.device_id !== deviceCode) return 'Manifeste destiné à un autre lecteur'
+  if (manifest.valid_until && Date.parse(manifest.valid_until) <= at.getTime()) return 'Manifeste expiré : version ignorée'
+  if (active && manifest.content_hash === active.content_hash && manifest.version <= active.version) return 'same'
+  if (active && manifest.version <= active.version) return 'Manifeste plus ancien que la version active : version ignorée'
+  return 'accept'
+}

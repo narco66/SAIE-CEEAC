@@ -134,6 +134,8 @@ class ManifestBuilder
             'operating_window' => [
                 'days' => array_map('intval', $window['days'] ?? [1, 2, 3, 4, 5]), 'on' => $window['on'] ?? '08:00', 'off' => $window['off'] ?? '18:00',
                 'wake_before_min' => (int) ($window['wake_before_min'] ?? 5), 'override_reason' => $screen->window_override_reason,
+                // Dérogation « jours non ouvrés » (PLY-08) : appliquée par le lecteur comme par l'aperçu serveur.
+                'ignore_holidays' => (bool) ($window['ignore_holidays'] ?? false),
             ],
             'non_working_days' => Holiday::query()->whereBetween('date', [now($tz)->subDay()->toDateString(), now($tz)->addDays(60)->toDateString()])->orderBy('date')->pluck('date')->map(fn ($d) => $d->format('Y-m-d'))->all(),
             'audio_policy' => ['enabled' => $audioAllowed, 'max_volume' => $audioAllowed ? min((int) $zone->audio_max_volume, (int) Setting::effective('operating.audio_max_volume')) : 0, 'hours' => ['on' => '08:00', 'off' => '18:00']],

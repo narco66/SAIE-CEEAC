@@ -1,5 +1,5 @@
 import nacl from 'tweetnacl'
-import { withinWindow } from './schedule.ts'
+import { acceptManifest, liveData, withinWindow, type LiveData } from './schedule.ts'
 import {
   ackEvents, cachedIds, clearIdentity, downloadAsset, enqueue, evictUnreferenced, getActive, getIdentity, hasAsset, kv, peekEvents,
   requestPersistence, setActive, setIdentity, storageEstimate, type ActiveState,
@@ -12,6 +12,8 @@ const SYNC_MS = 30_000
 const OFF_WINDOW_SYNC_MS = 300_000
 const HEARTBEAT_MS = 30_000
 const RESERVE = 0.2
+/** Délai maximal d'un appel à l'API (PLY-01) : une connexion pendante ne doit jamais figer heartbeat et synchronisation. */
+const CALL_TIMEOUT_MS = 20_000
 /** Agent local de pilotage de la dalle (player/agent/panel-agent.mjs). */
 const PANEL_AGENT = import.meta.env.VITE_PANEL_AGENT_URL ?? 'http://127.0.0.1:7071/panel'
 
@@ -27,6 +29,8 @@ export interface EngineState {
   download: { done: number; total: number } | null
   errors: string[]
   readyAssets: Set<string>
+  /** Alertes, agenda, panneau et orientation du dernier manifeste vérifié, même si ses médias sont encore en téléchargement. */
+  live: LiveData | null
 }
 
 type Listener = () => void
@@ -39,12 +43,13 @@ function b64ToBytes(b64: string): Uint8Array {
 }
 
 export class Engine {
-  state: EngineState = { phase: 'boot', identity: null, active: null, online: navigator.onLine, lastContact: null, lastManifestAt: null, clockOffsetMs: 0, pairing: null, download: null, errors: [], readyAssets: new Set() }
+  state: EngineState = { phase: 'boot', identity: null, active: null, online: navigator.onLine, lastContact: null, lastManifestAt: null, clockOffsetMs: 0, pairing: null, download: null, errors: [], readyAssets: new Set(), live: null }
   private listeners = new Set<Listener>()
   private timers: number[] = []
   private nextSync = 0
   private nextHeartbeat = 0
   private syncing = false
+  private beating = false
   private offlineSince: string | null = null
   private playback: Record<string, unknown> | null = null
   private recentPlays = new Map<string, number>()
@@ -69,9 +74,9 @@ export class Engine {
 
   async start(): Promise<void> {
     await requestPersistence()
-    const [identity, active, offset] = await Promise.all([getIdentity(), getActive(), kv.get<number>('clock_offset')])
+    const [identity, active, offset, live] = await Promise.all([getIdentity(), getActive(), kv.get<number>('clock_offset'), kv.get<LiveData>('live')])
     const ready = new Set(await cachedIds())
-    this.set({ identity: identity ?? null, active: active ?? null, clockOffsetMs: offset ?? 0, readyAssets: ready, lastManifestAt: active?.activatedAt ?? null })
+    this.set({ identity: identity ?? null, active: active ?? null, clockOffsetMs: offset ?? 0, readyAssets: ready, lastManifestAt: active?.activatedAt ?? null, live: live ?? null })
     if (!identity) {
       await this.startPairing()
     } else {
@@ -142,9 +147,11 @@ export class Engine {
     const tick = async () => {
       const now = Date.now()
       const manifest = this.state.active?.manifest
-      if (now >= this.nextHeartbeat) {
+      // Heartbeat et synchronisation sont indépendants : l'un bloqué ne retarde pas l'autre.
+      if (now >= this.nextHeartbeat && !this.beating) {
         this.nextHeartbeat = now + HEARTBEAT_MS
-        await this.heartbeat()
+        this.beating = true
+        void this.heartbeat().finally(() => { this.beating = false })
       }
       if (now >= this.nextSync && !this.syncing) {
         const awake = !manifest || withinWindow(manifest, this.now(), manifest.operating_window.wake_before_min ?? 5)
@@ -159,7 +166,7 @@ export class Engine {
 
   private async call(path: string, init: RequestInit = {}): Promise<Response> {
     const token = this.state.identity?.token
-    const response = await fetch(`${API}${path}`, { ...init, headers: { Accept: 'application/json', Authorization: `Bearer ${token}`, ...(init.headers ?? {}) } })
+    const response = await fetch(`${API}${path}`, { signal: AbortSignal.timeout(CALL_TIMEOUT_MS), ...init, headers: { Accept: 'application/json', Authorization: `Bearer ${token}`, ...(init.headers ?? {}) } })
     if (response.status === 401) {
       await this.markRevoked()
       throw new Error('Lecteur révoqué')
@@ -208,11 +215,17 @@ export class Engine {
       if (!response.ok) throw new Error(`Manifeste indisponible (${response.status})`)
       const envelope = (await response.json()) as Envelope
       const manifest = this.verify(envelope)
-      if (this.state.active && manifest.version <= this.state.active.manifest.version && manifest.content_hash === this.state.active.manifest.content_hash) {
+      const verdict = acceptManifest(manifest, this.state.identity.deviceCode, this.state.active?.manifest ?? null, this.now())
+      if (verdict === 'same') {
         await kv.set('etag', response.headers.get('ETag'))
         return
       }
+      if (verdict !== 'accept') throw new Error(verdict)
       await enqueue({ kind: 'manifest_received', manifest_version: manifest.version })
+      // Alertes et informations de salle appliquées immédiatement (PUB-06 : < 60 s), avant le téléchargement des médias.
+      const live = liveData(manifest)
+      await kv.set('live', live)
+      this.set({ live })
       await this.prepare(manifest)
       const state: ActiveState = { envelope, manifest, activatedAt: new Date().toISOString() }
       await setActive(state)
@@ -224,7 +237,7 @@ export class Engine {
       await this.applyRelease(manifest)
     } catch (error) {
       const message = (error as Error).message
-      if (error instanceof TypeError) this.markOnline(false)
+      if (error instanceof TypeError || (error as Error).name === 'TimeoutError' || (error as Error).name === 'AbortError') this.markOnline(false)
       else this.pushError(message)
     } finally {
       this.syncing = false
@@ -236,9 +249,8 @@ export class Engine {
     const identity = this.state.identity!
     const ok = nacl.sign.detached.verify(new TextEncoder().encode(envelope.payload), b64ToBytes(envelope.signature.value), b64ToBytes(identity.publicKey))
     if (!ok) throw new Error('Signature du manifeste invalide : version ignorée')
-    const manifest = JSON.parse(envelope.payload) as Manifest
-    if (manifest.device_id !== identity.deviceCode) throw new Error('Manifeste destiné à un autre lecteur')
-    return manifest
+
+    return JSON.parse(envelope.payload) as Manifest
   }
 
   /**
@@ -259,7 +271,8 @@ export class Engine {
     this.set({ download: missing.length ? { done: 0, total: missing.length } : null })
     let done = 0
     for (const asset of missing) {
-      await downloadAsset(asset, this.state.identity!.token)
+      // Délai proportionnel à la taille (débit plancher d'environ 100 ko/s, minimum une minute) : un transfert bloqué n'immobilise pas le lecteur.
+      await downloadAsset(asset, this.state.identity!.token, AbortSignal.timeout(Math.max(60_000, Math.round(asset.size / 100))))
       done++
       this.set({ download: { done, total: missing.length } })
     }
@@ -289,7 +302,7 @@ export class Engine {
       this.set({ clockOffsetMs: offset })
       await this.flush()
     } catch (error) {
-      if (error instanceof TypeError) this.markOnline(false)
+      if (error instanceof TypeError || (error as Error).name === 'TimeoutError' || (error as Error).name === 'AbortError') this.markOnline(false)
     }
   }
 
@@ -323,6 +336,13 @@ export class Engine {
    */
   private async applyRelease(manifest: Manifest): Promise<void> {
     const release = manifest.player_release
+    // Plus aucune version cible pour le canal (retrait de la dernière) : retour à la version de base (PLY-12, retour arrière).
+    if (!release && location.pathname.startsWith('/player/releases/')) {
+      await enqueue({ kind: 'activated', ref_type: 'release', ref_id: 'base', manifest_version: manifest.version })
+      await this.flush()
+      location.replace('/player/')
+      return
+    }
     if (!release || release.version === APP_VERSION || !release.url.startsWith('/player/releases/')) return
     if (location.pathname.startsWith(release.url)) return
     try {

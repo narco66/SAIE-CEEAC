@@ -45,7 +45,7 @@ Mise en place, par lecteur :
 
    Sous Windows : tâche planifiée au démarrage, avec les mêmes variables.
 
-   Toujours renseigner `SAIE_PLAYER_ORIGIN` : par défaut, l’agent accepte toutes les origines.
+   `SAIE_PLAYER_ORIGIN` est obligatoire (sauf en simulation) : l’agent refuse de démarrer sans elle et rejette toute commande venant d’une autre origine.
 3. Vérifier localement : `curl http://127.0.0.1:7071/panel` renvoie le pilote et l’état (`on`, `standby`…). Puis `curl -X POST -H "Content-Type: application/json" -d '{"power":"off"}' http://127.0.0.1:7071/panel` éteint la dalle.
 4. Dans l’administration (fiche écran, V08), renseigner le **Canal de pilotage de la dalle** :
    - **HDMI-CEC**, **RS-232** ou **API constructeur** : l’état réel s’affiche alors dans la fiche et dans la supervision ;
@@ -70,13 +70,15 @@ Chaque modèle de dalle se teste au pilote, avec un cycle complet d’extinction
 2. Dans l’administration : *Écrans & lecteurs › Enrôler un lecteur*, saisir le code et choisir l’écran (remplacement explicite si l’écran a déjà un lecteur actif).
 3. Le lecteur récupère une seule fois son jeton individuel et la clé publique de signature, puis télécharge son premier manifeste. Le jeton n’est jamais affiché dans l’interface.
 
-Révocation : fiche écran › *Révoquer le lecteur* (motif obligatoire). L’API refuse immédiatement le terminal ; le contenu déjà en cache reste lisible jusqu’à l’expiration de l’autorisation en cours (24 h public, 1 h interne), puis le lecteur affiche un message neutre avec possibilité de réappairage.
+Révocation : fiche écran › *Révoquer le lecteur* (motif obligatoire). L’API refuse immédiatement le terminal ; le contenu déjà en cache reste lisible jusqu’à l’expiration de l’autorisation en cours (24 h public, 1 h interne), puis le lecteur affiche un message neutre, sans aucune action proposée au public. Pour réappairer un terminal révoqué, un technicien de la DSI utilise au clavier la combinaison de maintenance **Ctrl + Alt + Maj + P**, qui efface l’identité du lecteur et affiche un nouveau code.
 
 ## Cycle de diffusion
 
 - Synchronisation toutes les 30 s (± 5 s) avec `If-None-Match` ; 5 min hors plage, réveil 5 min avant l’ouverture.
-- Le manifeste n’est accepté qu’après vérification de sa signature Ed25519 et de son destinataire ; toutes les ressources sont téléchargées et leur SHA-256 vérifié **avant** la bascule, qui se fait en une seule écriture IndexedDB. En cas d’échec, la version précédente reste active.
-- Hors ligne : poursuite des seuls contenus préchargés dont l’autorisation n’a pas expiré ; bandeau « Mode hors connexion » après 90 s sans contact ; le panneau de salle affiche « Statut non actualisé » et n’accepte aucune réservation.
+- Le manifeste n’est accepté qu’après vérification de sa signature Ed25519, de son destinataire et de sa validité ; un manifeste expiré ou d’une version antérieure à la version active est refusé (aucun retour arrière par rejeu). Toutes les ressources du programme sont téléchargées et leur SHA-256 vérifié **avant** la bascule, qui se fait en une seule écriture IndexedDB. En cas d’échec, la version précédente reste active.
+- Les **alertes**, l’agenda des réunions, le panneau de salle et l’orientation du nouveau manifeste s’appliquent dès sa vérification, sans attendre le téléchargement des médias : une alerte paraît en moins d’une minute même pendant le chargement d’une vidéo.
+- Chaque appel au serveur a un délai maximal (20 s ; téléchargement d’un média : proportionnel à sa taille, une minute au moins) ; heartbeat et synchronisation sont indépendants. Les médias des deux derniers manifestes restent téléchargeables. En production, l’API autorise chaque téléchargement puis délègue l’envoi du fichier à Nginx (`X-Accel-Redirect`).
+- Hors ligne : poursuite des seuls contenus préchargés dont l’autorisation n’a pas expiré ; à l’expiration de l’autorisation publique (24 h), l’agenda, les réunions du panneau et les messages de bienvenue cessent d’être affichés ; bandeau « Mode hors connexion » après 90 s sans contact ; le panneau de salle affiche « Statut non actualisé » et n’accepte aucune réservation.
 - Événements différés (`manifest_received`, `content_loaded`, `activated`, `played`, `alert_received`, `alert_activated`, `offline`, `online`, `error`) stockés localement avec un identifiant unique, envoyés au heartbeat suivant et dédoublonnés par le serveur.
 - Horloge : l’écart avec l’heure serveur est mesuré à chaque heartbeat, stocké, et appliqué au calcul du programme ; il est affiché dans la supervision.
 

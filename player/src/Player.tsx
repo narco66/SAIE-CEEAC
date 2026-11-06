@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from 'react'
 import { engine } from './engine.ts'
-import { audioAllowed, fallbackValid, resolve } from './schedule.ts'
+import { audioAllowed, fallbackValid, liveView, resolve } from './schedule.ts'
 import type { Manifest } from './types.ts'
 import { AlertView, NeutralFallback, OfflineRibbon, OrientationView, PairingView, RevokedView, RoomPanelView, SlideView, Stage } from './views.tsx'
 
@@ -26,7 +26,15 @@ const rotatingLang = (now: Date, langs = ['fr', 'en']) => langs[Math.floor(now.g
 export default function Player() {
   const state = useEngine()
   const now = useNow()
-  const manifest = state.active?.manifest ?? null
+  // Réappairage d'un terminal révoqué : opération de maintenance au clavier (Ctrl + Alt + Maj + P), jamais un bouton public (T04).
+  useEffect(() => {
+    if (state.phase !== 'revoked') return
+    const onKey = (e: KeyboardEvent) => { if (e.ctrlKey && e.altKey && e.shiftKey && e.code === 'KeyP') void engine.resetPairing() }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [state.phase])
+  // Programme du manifeste actif ; alertes et informations de salle du dernier manifeste vérifié (PUB-06, PLY-05).
+  const manifest = useMemo(() => (state.active ? liveView(state.active.manifest, state.live, now) : null), [state.active, state.live, now])
   const offline = !state.online && (!state.lastContact || now.getTime() - Date.parse(state.lastContact) > 90_000)
   const onError = useCallback((m: string) => engine.pushError(m), [])
 
@@ -35,7 +43,7 @@ export default function Player() {
   if (!manifest) {
     return (
       <Stage>
-        {state.phase === 'revoked' ? <RevokedView onRepair={() => engine.resetPairing()} /> : (
+        {state.phase === 'revoked' ? <RevokedView /> : (
           <div className="pairing-view">
             <h1>Téléchargement initial du programme</h1>
             {state.download ? <><div className="progress-bar"><i style={{ width: `${(state.download.done / state.download.total) * 100}%` }} /></div><p>{state.download.done} / {state.download.total} ressources vérifiées</p></> : <p>{state.online ? 'Synchronisation en cours…' : 'Serveur injoignable : cache vide, aucun programme disponible.'}</p>}
@@ -84,7 +92,7 @@ function Display({ manifest, now, offline, lastContact, readyAssets, revoked, on
   } else if (fallbackValid(manifest, now)) {
     body = <SlideView slide={manifest.fallback.slide!} manifest={manifest} now={now} audio={false} onError={onError} />
   } else if (revoked) {
-    body = <RevokedView onRepair={() => engine.resetPairing()} />
+    body = <RevokedView />
   } else {
     body = <NeutralFallback manifest={manifest} />
   }

@@ -226,13 +226,13 @@ export function PairingView({ code, expiresAt, online }: { code?: string; expire
   )
 }
 
-export function RevokedView({ onRepair }: { onRepair: () => void }) {
+/** Terminal révoqué (T04) : aucune action proposée au public ; le réappairage est une opération de maintenance (DSI). */
+export function RevokedView() {
   return (
     <div className="pairing-view">
       <img src={LOGO} alt="CEEAC" />
       <h1>Terminal hors service</h1>
       <p>Ce lecteur n’est plus autorisé à diffuser. Contactez la DSI.</p>
-      <button onClick={onRepair} style={{ marginTop: '1em', padding: '.6em 1.2em', borderRadius: 10, border: '1px solid rgba(255,255,255,.4)', background: 'transparent', color: 'white', fontSize: '1em', cursor: 'pointer' }}>Demander un nouvel appairage</button>
     </div>
   )
 }

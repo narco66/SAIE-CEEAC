@@ -21,7 +21,7 @@ use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
-use Symfony\Component\HttpFoundation\BinaryFileResponse;
+use Symfony\Component\HttpFoundation\Response as SymfonyResponse;
 
 /**
  * API technique des lecteurs : l'identité est propre à chaque terminal, aucun accès utilisateur ou documentaire général.
@@ -161,20 +161,26 @@ class DeviceApiController extends Controller
         return response()->json(['accepted' => $accepted, 'duplicates' => count($rows) - $accepted]);
     }
 
-    public function asset(Request $request, AssetVersion $assetVersion): BinaryFileResponse
+    public function asset(Request $request, AssetVersion $assetVersion): SymfonyResponse
     {
         $device = $this->device();
-        $manifest = Manifest::query()->where('device_id', $device->id)->orderByDesc('version')->first();
-        $allowed = collect($manifest?->payload['assets'] ?? [])->pluck('id')->contains($assetVersion->id);
+        // Les médias des deux derniers manifestes restent autorisés : une recompilation pendant un téléchargement ne le fait pas échouer.
+        $allowed = Manifest::query()->where('device_id', $device->id)->orderByDesc('version')->limit(2)->get()
+            ->contains(fn (Manifest $m) => collect($m->payload['assets'] ?? [])->pluck('id')->contains($assetVersion->id));
         if (! $allowed || $assetVersion->scan_status !== 'ready' || $assetVersion->asset->classification === 'restreint') {
             app(Audit::class)->log('device.asset_denied', $assetVersion->asset, outcome: 'denied', actor: $device);
             abort(403);
         }
-
-        return response()->file(Storage::disk('local')->path($assetVersion->storage_key), [
+        $headers = [
             'Content-Type' => $assetVersion->mime, 'X-Content-SHA256' => $assetVersion->sha256, 'ETag' => '"'.$assetVersion->sha256.'"',
             'Cache-Control' => 'private, max-age=86400, immutable',
-        ]);
+        ];
+        // PERF-01 : en production, Nginx envoie le fichier après cette autorisation, sans occuper un processus PHP.
+        if ($prefix = config('saie.device.accel_redirect')) {
+            return response('', 200, $headers + ['X-Accel-Redirect' => rtrim($prefix, '/').'/'.ltrim($assetVersion->storage_key, '/')]);
+        }
+
+        return response()->file(Storage::disk('local')->path($assetVersion->storage_key), $headers);
     }
 
     public function uploadScreenshot(Request $request, DeviceScreenshot $screenshot): JsonResponse

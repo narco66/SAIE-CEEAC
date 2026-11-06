@@ -21,6 +21,7 @@ use Illuminate\Console\Attributes\Signature;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Throwable;
 
 #[Signature('saie:tick')]
 #[Description('Traitements périodiques SAIE : expirations, statuts, rappels et escalades, supervision des lecteurs, purges')]
@@ -42,7 +43,8 @@ class SaieTick extends Command
         }
 
         $report['réunions_en_cours'] = ReservationOccurrence::query()->where('status', 'confirmed')->where('starts_at', '<=', now())->where('ends_at', '>', now())->update(['status' => 'in_progress', 'updated_at' => now()]);
-        $report['sources'] = app(DynamicSources::class)->collectDue();
+        // Collecte réseau isolée : une source lente ou en erreur n'empêche pas les traitements suivants (EXP-01).
+        $report['sources'] = $this->guard('sources dynamiques', fn () => app(DynamicSources::class)->collectDue(), 0);
         $report['rappels_réunion'] = 0;
         foreach (ReservationOccurrence::query()->with(['reservation.organizer', 'room'])->where('status', 'confirmed')->whereBetween('starts_at', [now()->addMinutes(14), now()->addMinutes(16)])->get() as $occurrence) {
             $subject = $occurrence->reservation->confidential ? 'Réunion confidentielle' : $occurrence->reservation->subject;
@@ -106,25 +108,49 @@ class SaieTick extends Command
             }
         }
 
-        DB::table('device_screenshots')->where('expires_at', '<', now())->whereNotNull('storage_key')->get()->each(function ($shot): void {
-            Storage::disk('local')->delete($shot->storage_key);
-            DB::table('device_screenshots')->where('id', $shot->id)->update(['storage_key' => null, 'status' => 'expired']);
-        });
-        DB::table('exports')->where('status', 'ready')->where('expires_at', '<', now())->get()->each(function ($export): void {
-            if ($export->file_key) {
+        $this->guard('purges', function (): void {
+            DB::table('device_screenshots')->where('expires_at', '<', now())->whereNotNull('storage_key')->get()->each(function ($shot): void {
+                Storage::disk('local')->delete($shot->storage_key);
+                DB::table('device_screenshots')->where('id', $shot->id)->update(['storage_key' => null, 'status' => 'expired']);
+            });
+            // Fichier d'un export échu supprimé quel que soit son statut (déjà marqué « expiré » par une consultation, ou échoué puis relancé).
+            DB::table('exports')->where('expires_at', '<', now())->whereNotNull('file_key')->get()->each(function ($export): void {
                 Storage::disk('local')->delete($export->file_key);
+                DB::table('exports')->where('id', $export->id)->update(['status' => 'expired', 'file_key' => null]);
+            });
+            DB::table('pairing_codes')->where('expires_at', '<', now()->subDay())->whereNull('used_at')->delete();
+            DB::table('idempotency_keys')->where('created_at', '<', now()->subDays(2))->delete();
+            // Seuls les cinq derniers manifestes de chaque lecteur sont conservés (preuve de diffusion récente, volume borné).
+            DB::statement('delete from manifests m using (select id, row_number() over (partition by device_id order by version desc) as rank from manifests) r where m.id = r.id and r.rank > 5');
+            if (config('saie.retention.auto_purge_enabled')) {
+                DB::table('device_telemetry')->where('recorded_at', '<', now()->subDays((int) config('saie.retention.telemetry_days')))->delete();
             }
-            DB::table('exports')->where('id', $export->id)->update(['status' => 'expired', 'file_key' => null]);
         });
-        DB::table('pairing_codes')->where('expires_at', '<', now()->subDay())->whereNull('used_at')->delete();
-        DB::table('idempotency_keys')->where('created_at', '<', now()->subDays(2))->delete();
-        if (config('saie.retention.auto_purge_enabled')) {
-            DB::table('device_telemetry')->where('recorded_at', '<', now()->subDays((int) config('saie.retention.telemetry_days')))->delete();
-        }
 
         $this->line(collect($report)->map(fn ($v, $k) => "$k=$v")->implode(' '));
 
         return self::SUCCESS;
+    }
+
+    /**
+     * Exécute une étape en isolant ses erreurs : elles sont journalisées et les étapes suivantes s'exécutent quand même.
+     *
+     * @template T
+     *
+     * @param  callable(): T  $step
+     * @param  T  $fallback
+     * @return T
+     */
+    private function guard(string $label, callable $step, mixed $fallback = null): mixed
+    {
+        try {
+            return $step();
+        } catch (Throwable $e) {
+            report($e);
+            $this->error("Étape « $label » en échec : ".mb_substr($e->getMessage(), 0, 200));
+
+            return $fallback;
+        }
     }
 
     private function link(Approval $approval): string

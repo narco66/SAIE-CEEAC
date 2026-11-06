@@ -81,6 +81,16 @@ Défauts corrigés, chacun prouvé par un test qui échouait avant le correctif 
   - les bornes d’orientation n’affichent que les bienvenues en cours, qui les ciblent, d’une réunion confirmée et non confidentielle ;
   - le statut d’une visite suit son message (« Planifiée ») et sa réunion (« Terminée », « Annulée »).
 
+- **6 novembre, audit — lot R4 (lecteur et livraison)** :
+  - alertes, agenda, panneau et orientation appliqués dès la vérification du manifeste, sans attendre les médias ; médias des deux derniers manifestes autorisés ;
+  - délais maximaux sur tous les appels du lecteur, heartbeat indépendant de la synchronisation ;
+  - manifeste expiré ou plus ancien que la version active refusé ;
+  - dérogation « jours non ouvrés » transmise au lecteur ;
+  - retour à la version de base du lecteur quand le canal n’a plus de version cible ;
+  - hors ligne, agenda, panneau et bienvenues retirés à l’expiration de l’autorisation ;
+  - plus de bouton public de réappairage sur un terminal révoqué ; l’agent de dalle exige l’origine du lecteur ; une erreur de rendu affiche le repli neutre ;
+  - médias servis par Nginx après autorisation de l’API ; purge des anciens manifestes et des fichiers d’exports échus ; étapes de `saie:tick` isolées.
+
 ### Priorité 1 — décisions à prendre (aucune correction faite)
 
 - **Participants des réunions standard** (nom, organisation) : visibles de tout agent qui peut voir les salles. À arbitrer au titre de GOV-02 : restreindre à l’organisateur, aux participants et aux gestionnaires ?

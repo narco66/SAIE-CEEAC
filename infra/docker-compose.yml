@@ -27,6 +27,7 @@ x-app: &app
     SAIE_CLAMD_PORT: 3310
     SAIE_MANIFEST_KEY_PATH: /run/secrets/saie/manifest-ed25519.pem
     QUEUE_CONNECTION: redis
+    SAIE_ACCEL_REDIRECT: /protected-storage/
     CACHE_STORE: redis
   volumes:
     - storage:/var/www/html/storage
@@ -102,6 +103,8 @@ services:
     volumes:
       - ./certs:/etc/nginx/certs:ro
       - player-releases:/srv/player-releases:ro
+      # Lecture seule, servi uniquement via l'emplacement interne /protected-storage/ après autorisation par l'API.
+      - storage:/srv/saie-storage:ro
     depends_on: [api]
     restart: unless-stopped
 
