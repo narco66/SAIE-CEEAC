@@ -9,6 +9,7 @@ use App\Models\DeviceScreenshot;
 use App\Models\PairingCode;
 use App\Models\Screen;
 use App\Models\ScreenGroup;
+use App\Services\CampaignService;
 use App\Services\ManifestBuilder;
 use App\Services\ScheduleResolver;
 use App\Support\BusinessException;
@@ -81,6 +82,7 @@ class ScreenController extends Controller
     public function update(Request $request, Screen $screen): JsonResponse
     {
         $this->authorizePermission('screens.manage');
+        $this->inScope([['type' => 'screen', 'id' => $screen->id]], 'screens.manage');
         $data = $this->validated($request, $screen);
         $windowChanged = array_key_exists('operating_window', $data) && json_encode($data['operating_window']) !== json_encode($screen->operating_window);
         if ($windowChanged && $data['operating_window'] !== null && empty($data['window_override_reason'])) {
@@ -167,6 +169,7 @@ class ScreenController extends Controller
     public function requestScreenshot(Device $device): JsonResponse
     {
         $this->authorizePermission('screens.manage');
+        $this->inScope([['type' => 'screen', 'id' => $device->screen_id]], 'screens.manage');
         $shot = DeviceScreenshot::query()->create(['device_id' => $device->id, 'requested_by' => $this->user()->id, 'requested_at' => now(), 'status' => 'requested', 'expires_at' => now()->addMinutes(10)]);
         $this->audit()->log('device.screenshot_requested', $device);
 
@@ -197,6 +200,7 @@ class ScreenController extends Controller
     {
         $this->authorizePermission('groups.manage');
         $data = $request->validate(['code' => ['required', 'string', 'max:40', 'unique:screen_groups,code'], 'name' => ['required', 'string', 'max:120'], 'description' => ['nullable', 'string', 'max:500'], 'screen_ids' => ['array'], 'screen_ids.*' => ['uuid', 'exists:screens,id']]);
+        $this->inScope(array_map(fn ($id) => ['type' => 'screen', 'id' => $id], $data['screen_ids'] ?? []), 'groups.manage');
         $group = ScreenGroup::query()->create(collect($data)->except('screen_ids')->all());
         $group->screens()->sync($data['screen_ids'] ?? []);
         $this->audit()->log('group.created', $group);
@@ -208,6 +212,7 @@ class ScreenController extends Controller
     {
         $this->authorizePermission('groups.manage');
         $data = $request->validate(['name' => ['sometimes', 'string', 'max:120'], 'description' => ['nullable', 'string', 'max:500'], 'screen_ids' => ['sometimes', 'array'], 'screen_ids.*' => ['uuid', 'exists:screens,id']]);
+        $this->inScope(array_merge([['type' => 'group', 'id' => $group->id]], array_map(fn ($id) => ['type' => 'screen', 'id' => $id], $data['screen_ids'] ?? [])), 'groups.manage');
         $group->update(collect($data)->except('screen_ids')->all());
         if (array_key_exists('screen_ids', $data)) {
             $group->screens()->sync($data['screen_ids']);
@@ -220,6 +225,7 @@ class ScreenController extends Controller
     public function destroyGroup(ScreenGroup $group): JsonResponse
     {
         $this->authorizePermission('groups.manage');
+        $this->inScope([['type' => 'group', 'id' => $group->id]], 'groups.manage');
         $dependent = DB::table('campaign_targets')->join('campaigns', 'campaigns.id', '=', 'campaign_targets.campaign_id')->where('target_type', 'group')->where('target_id', $group->id)->whereIn('campaigns.status', ['scheduled', 'active', 'suspended'])->pluck('campaigns.reference');
         if ($dependent->isNotEmpty()) {
             throw new BusinessException('GROUP_IN_USE', 'Suppression impossible : des campagnes actives ciblent ce groupe.', 409, ['campaigns' => $dependent]);
@@ -262,5 +268,15 @@ class ScreenController extends Controller
             'status' => ['sometimes', 'in:active,inactive'],
             'notes' => ['nullable', 'string', 'max:1000'],
         ]);
+    }
+
+    /**
+     * HAB-01 : écrans et groupes gérés seulement dans le site et la zone de l'habilitation.
+     *
+     * @param  list<array{type: string, id: string|null}>  $targets
+     */
+    private function inScope(array $targets, string $permission): void
+    {
+        app(CampaignService::class)->assertTargetsInScope($targets, $this->user(), $permission);
     }
 }

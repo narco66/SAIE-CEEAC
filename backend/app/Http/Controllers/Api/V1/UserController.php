@@ -137,7 +137,7 @@ class UserController extends Controller
         $this->authorizePermission('users.manage');
         $data = $request->validate(['reason' => ['required', 'string', 'min:5', 'max:300']]);
         $this->refuseOwnAccount($user);
-        $user->forceFill(['mfa_secret' => null, 'mfa_enabled_at' => null, 'mfa_recovery_codes' => null, 'remember_token' => null])->save();
+        $user->forceFill(['mfa_secret' => null, 'mfa_enabled_at' => null, 'mfa_last_step' => null, 'mfa_recovery_codes' => null, 'remember_token' => null])->save();
         $sessions = DB::table('sessions')->where('user_id', $user->id)->delete();
         $this->audit()->log('user.mfa_reset', $user, $data['reason'], after: ['sessions_closed' => $sessions]);
         $this->warnAccountHolder($user->email, 'Le second facteur de votre compte SAIE-CEEAC a été réinitialisé par un administrateur.');

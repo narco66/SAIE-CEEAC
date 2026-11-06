@@ -12,8 +12,10 @@ use Illuminate\Auth\Events\PasswordReset;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Password;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rules\Password as PasswordRule;
 
 /**
@@ -56,7 +58,16 @@ class AuthController extends Controller
             throw new BusinessException('MFA_EXPIRED', 'Étape expirée : reconnectez-vous.', 401);
         }
         $user = User::query()->findOrFail($pending['user']);
-        $valid = Totp::verify((string) $user->mfa_secret, $data['code']);
+        if ($user->locked_until?->isFuture()) {
+            $audit->log('auth.login_locked', $user, outcome: 'denied', actor: $user);
+            throw new BusinessException('ACCOUNT_LOCKED', 'Trop de tentatives. Réessayez dans quelques minutes.', 429);
+        }
+        // Un code n'est accepté qu'une fois : son pas de temps doit être postérieur au dernier accepté.
+        $step = Totp::step((string) $user->mfa_secret, $data['code']);
+        $valid = $step !== null && ($user->mfa_last_step === null || $step > $user->mfa_last_step);
+        if ($valid) {
+            $user->forceFill(['mfa_last_step' => $step])->save();
+        }
         if (! $valid) {
             $codes = $user->mfa_recovery_codes ?? [];
             $index = array_search(strtoupper(trim($data['code'])), $codes, true);
@@ -67,6 +78,9 @@ class AuthController extends Controller
             }
         }
         if (! $valid) {
+            // Les échecs du second facteur comptent dans le verrouillage du compte, comme ceux du mot de passe.
+            $failed = $user->failed_logins + 1;
+            $user->forceFill(['failed_logins' => $failed, 'locked_until' => $failed >= config('saie.security.max_failed_logins') ? now()->addMinutes((int) config('saie.security.lockout_minutes')) : null])->save();
             $audit->log('auth.mfa_failed', $user, outcome: 'denied', actor: $user);
             throw new BusinessException('MFA_INVALID', 'Code de vérification incorrect.', 422);
         }
@@ -103,7 +117,9 @@ class AuthController extends Controller
             'password' => ['required', 'confirmed', PasswordRule::min(12)->mixedCase()->numbers()],
         ]);
         $status = Password::reset($data, function (User $user, string $password) use ($audit): void {
-            $user->forceFill(['password' => $password, 'must_change_password' => false, 'failed_logins' => 0, 'locked_until' => null])->save();
+            // Une réinitialisation ferme toutes les sessions et invalide le cookie « se souvenir de moi » (SEC-01).
+            $user->forceFill(['password' => $password, 'must_change_password' => false, 'failed_logins' => 0, 'locked_until' => null, 'remember_token' => Str::random(60)])->save();
+            DB::table('sessions')->where('user_id', $user->id)->delete();
             event(new PasswordReset($user));
             $audit->log('auth.password_reset', $user, actor: $user);
         });

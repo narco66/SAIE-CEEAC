@@ -164,10 +164,41 @@ class ProductionReadiness
                 $this->check('PostgreSQL 18', config('database.default') === 'pgsql' && $version >= 180000, 'Version '.intdiv($version, 10000).' ('.config('database.default').')'),
                 $this->check('Session PostgreSQL en UTC', strtoupper($timezone) === 'UTC', "timezone=$timezone"),
                 $this->check('Migrations appliquées', $pending === 0, $pending === 0 ? 'Aucune migration en attente' : "$pending migration(s) en attente : php artisan migrate --force"),
+                $this->leastPrivilege(),
             ];
         } catch (Throwable $e) {
             return [$this->check('Base de données joignable', false, $e->getMessage())];
         }
+    }
+
+    /**
+     * SEC-04, TECH-02 : l'application ne se connecte ni en superutilisateur ni en propriétaire des tables,
+     * et ne peut ni modifier ni supprimer le journal d'audit.
+     *
+     * @return array{name: string, status: 'ok'|'fail', detail: string}
+     */
+    private function leastPrivilege(): array
+    {
+        ['role' => $role, 'super' => $super, 'owner' => $owner, 'tamper' => $tamper] = $this->privilegeFacts();
+        $ok = ! $super && ! $owner && ! $tamper;
+
+        return $this->check('Compte PostgreSQL à moindre privilège', $ok, $ok ? "Compte « $role » sans superutilisateur ni droit d’altération du journal"
+            : "Compte « $role » : ".implode(', ', array_filter([$super ? 'superutilisateur' : null, $owner ? 'propriétaire des tables' : null, $tamper ? 'peut modifier ou supprimer le journal' : null])).' — utiliser saie_app (infra/postgres/10-roles.sh)');
+    }
+
+    /**
+     * Droits effectifs du compte de connexion.
+     *
+     * @return array{role: string, super: bool, owner: bool, tamper: bool}
+     */
+    protected function privilegeFacts(): array
+    {
+        return [
+            'role' => (string) DB::scalar('select current_user'),
+            'super' => (bool) DB::scalar('select rolsuper from pg_roles where rolname = current_user'),
+            'owner' => (bool) DB::scalar("select pg_catalog.pg_get_userbyid(relowner) = current_user from pg_class where relname = 'audit_logs'"),
+            'tamper' => (bool) DB::scalar("select has_table_privilege('audit_logs', 'UPDATE') or has_table_privilege('audit_logs', 'DELETE') or has_table_privilege('audit_logs', 'TRUNCATE')"),
+        ];
     }
 
     private function writable(string $directory): bool

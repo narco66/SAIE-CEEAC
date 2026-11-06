@@ -36,14 +36,23 @@ class Totp
 
     public static function verify(string $secret, string $code, int $window = 1): bool
     {
+        return self::step($secret, $code, $window) !== null;
+    }
+
+    /**
+     * Pas de temps (compteur de 30 s) auquel correspond le code, ou null ; sert à refuser le rejeu d'un code déjà accepté.
+     */
+    public static function step(string $secret, string $code, int $window = 1): ?int
+    {
         $code = preg_replace('/\D/', '', $code);
         for ($i = -$window; $i <= $window; $i++) {
-            if (hash_equals(self::code($secret, time() + $i * 30), $code)) {
-                return true;
+            $timestamp = time() + $i * 30;
+            if (hash_equals(self::code($secret, $timestamp), $code)) {
+                return intdiv($timestamp, 30);
             }
         }
 
-        return false;
+        return null;
     }
 
     public static function uri(string $secret, string $account): string

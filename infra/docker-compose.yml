@@ -18,6 +18,9 @@ x-app: &app
   environment:
     DB_HOST: postgres
     DB_PORT: 5432
+    # Compte applicatif à moindre privilège (SEC-04) ; le service « migrate » utilise le propriétaire du schéma.
+    DB_USERNAME: saie_app
+    DB_PASSWORD: ${SAIE_APP_PASSWORD:?définir SAIE_APP_PASSWORD dans infra/.env}
     REDIS_HOST: redis
     SAIE_AV_DRIVER: clamd
     SAIE_CLAMD_HOST: clamav
@@ -39,10 +42,15 @@ services:
     image: postgres:18
     environment:
       POSTGRES_DB: saie_ceeac
-      POSTGRES_USER: saie
-      POSTGRES_PASSWORD: ${DB_PASSWORD:?définir DB_PASSWORD dans infra/.env}
-    volumes: [pgdata:/var/lib/postgresql]
-    healthcheck: { test: ["CMD-SHELL", "pg_isready -U saie -d saie_ceeac"], interval: 5s, retries: 20 }
+      # Superutilisateur réservé à l'administration de la base ; jamais utilisé par l'application.
+      POSTGRES_USER: saie_admin
+      POSTGRES_PASSWORD: ${DB_ADMIN_PASSWORD:?définir DB_ADMIN_PASSWORD dans infra/.env}
+      SAIE_OWNER_PASSWORD: ${DB_PASSWORD:?définir DB_PASSWORD dans infra/.env}
+      SAIE_APP_PASSWORD: ${SAIE_APP_PASSWORD:?définir SAIE_APP_PASSWORD dans infra/.env}
+    volumes:
+      - pgdata:/var/lib/postgresql
+      - ./postgres/10-roles.sh:/docker-entrypoint-initdb.d/10-roles.sh:ro
+    healthcheck: { test: ["CMD-SHELL", "pg_isready -U saie_admin -d saie_ceeac"], interval: 5s, retries: 20 }
     restart: unless-stopped
   redis:
     image: redis:7-alpine
@@ -73,6 +81,13 @@ services:
     <<: *app
     profiles: [deploy]
     restart: "no"
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USERNAME: saie
+      DB_PASSWORD: ${DB_PASSWORD:?définir DB_PASSWORD dans infra/.env}
+      REDIS_HOST: redis
+      SAIE_MANIFEST_KEY_PATH: /run/secrets/saie/manifest-ed25519.pem
     command: ["php", "artisan", "migrate", "--force", "--no-interaction"]
   preflight:
     <<: *app

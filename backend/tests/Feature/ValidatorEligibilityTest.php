@@ -92,4 +92,21 @@ class ValidatorEligibilityTest extends TestCase
         $this->actingAs($this->validatorFr)->postJson("/api/v1/contents/{$content->id}/approve", $payload + ['reassign_to' => $otherFr->id])->assertOk();
         $this->assertSame($otherFr->id, Approval::query()->where('object_id', $content->id)->value('assignee_id'));
     }
+
+    public function test_co_author_who_edited_or_submitted_cannot_validate_nor_be_assigned(): void
+    {
+        $content = $this->submitted('fr');
+        $coAuthor = $this->userWith('contributeur');
+        $this->grantRole($coAuthor, 'validateur', ['fr']);
+        $this->actingAs($this->validatorFr)->postJson("/api/v1/contents/{$content->id}/approve", ['lang' => 'fr', 'decision' => 'return', 'reason' => 'Préciser la date', 'expected_revision' => 1])->assertOk();
+
+        $line = $content->languages()->where('lang', 'fr')->firstOrFail();
+        $this->actingAs($coAuthor)->patchJson("/api/v1/contents/{$content->id}", ['expected_version' => $content->refresh()->version, 'languages' => ['fr' => ['title' => 'Réunion de coordination', 'body' => 'Lundi 10 h, salle Kivu.']]])->assertOk();
+        $this->actingAs($coAuthor)->postJson("/api/v1/contents/{$content->id}/submit", ['languages' => ['fr']])->assertOk();
+
+        $revision = $line->refresh()->revision;
+        $this->actingAs($coAuthor)->postJson("/api/v1/contents/{$content->id}/approve", ['lang' => 'fr', 'decision' => 'approve', 'expected_revision' => $revision])
+            ->assertForbidden()->assertJsonPath('message', 'Un co-rédacteur ne peut pas valider un contenu qu’il a modifié ou soumis.');
+        $this->assertNotSame($coAuthor->id, Approval::query()->where('object_id', $content->id)->where('status', 'open')->value('assignee_id'));
+    }
 }

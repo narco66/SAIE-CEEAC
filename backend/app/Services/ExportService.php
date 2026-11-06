@@ -58,8 +58,36 @@ class ExportService
         match ($type) {
             'reservation_confirmation' => $this->assertReservation($user, $params['reservation_id'] ?? null),
             'document_sheet' => $this->documents->canView(Document::query()->findOrFail($params['document_id'] ?? null), $user) ?: throw new AuthorizationException,
+            'meeting_preparation' => $this->assertMeetingPreparation($user, $params['occurrence_id'] ?? null),
+            'campaign_order' => $this->assertCampaignOrder($user, $params['campaign_id'] ?? null),
             default => null,
         };
+    }
+
+    /**
+     * PDF03 (SEC-02) : gestionnaire de la salle, ou équipe de prestation si la réunion comporte une prestation de son périmètre.
+     */
+    private function assertMeetingPreparation(User $user, ?string $id): void
+    {
+        $occurrence = ReservationOccurrence::query()->with(['room', 'serviceRequests.serviceType'])->findOrFail($id);
+        if ($this->reservations->manages($occurrence->room, $user)) {
+            return;
+        }
+        $scope = $this->access->powerScope($user, 'prestations');
+        $types = $scope === null ? null : ($scope['service_types'] ?? []);
+        $covered = $this->access->can($user, 'services.process') && $occurrence->serviceRequests->contains(fn ($s) => $types === null || in_array($s->serviceType?->code, $types, true));
+        if (! $covered) {
+            throw new AuthorizationException;
+        }
+    }
+
+    /**
+     * PDF04 (HAB-01) : les cibles de la campagne doivent relever du site et de la zone de l'habilitation.
+     */
+    private function assertCampaignOrder(User $user, ?string $id): void
+    {
+        $campaign = Campaign::query()->with('targets')->findOrFail($id);
+        app(CampaignService::class)->assertTargetsInScope($campaign->targets->map(fn ($t) => ['type' => $t->target_type, 'id' => $t->target_id])->all(), $user, 'campaigns.view');
     }
 
     public function generate(Export $export): void

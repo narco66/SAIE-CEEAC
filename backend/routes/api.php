@@ -69,7 +69,7 @@ Route::prefix('integration')->middleware(['auth:sanctum', 'throttle:integration'
     Route::get('announcements', [IntegrationController::class, 'announcements']);
 });
 
-Route::middleware(['auth:sanctum', 'human', 'idempotent'])->group(function (): void {
+Route::middleware(['auth:sanctum', 'human', 'throttle:api', 'idempotent'])->group(function (): void {
     Route::get('service-accounts', [ServiceAccountController::class, 'index']);
     Route::post('service-accounts', [ServiceAccountController::class, 'store']);
     Route::post('service-accounts/{account}/rotate', [ServiceAccountController::class, 'rotate']);

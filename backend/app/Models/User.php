@@ -32,6 +32,7 @@ class User extends Authenticatable implements CanResetPasswordContract
             'mfa_secret' => 'encrypted',
             'mfa_recovery_codes' => 'encrypted:array',
             'mfa_enabled_at' => 'datetime',
+            'mfa_last_step' => 'integer',
             'locked_until' => 'datetime',
             'last_login_at' => 'datetime',
             'last_activity_at' => 'datetime',

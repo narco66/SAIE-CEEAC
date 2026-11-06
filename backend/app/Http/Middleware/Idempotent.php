@@ -11,10 +11,16 @@ use Symfony\Component\HttpFoundation\Response;
 
 /**
  * En-tête Idempotency-Key lié à l'utilisateur et à l'empreinte du corps (API-03) : un rejeu renvoie la réponse initiale,
- * une réutilisation avec un autre corps renvoie 409.
+ * une réutilisation avec un autre corps renvoie 409. Les réponses porteuses d'un secret affiché une seule fois
+ * (second facteur, jetons de comptes de service) ne sont jamais conservées : leur rejeu est refusé (SEC-05).
  */
 class Idempotent
 {
+    /**
+     * @var list<string>
+     */
+    private const SECRET_RESPONSES = ['api/v1/me/mfa/setup', 'api/v1/me/mfa/confirm', 'api/v1/service-accounts', 'api/v1/service-accounts/*/rotate'];
+
     public function handle(Request $request, Closure $next): Response
     {
         $key = (string) $request->headers->get('Idempotency-Key', '');
@@ -26,7 +32,8 @@ class Idempotent
         }
 
         $actor = $request->user();
-        $scope = mb_substr(($actor ? class_basename($actor).':'.$actor->getKey() : 'anon').'|'.$request->path(), 0, 60);
+        // Empreinte du demandeur et du chemin complet : deux objets distincts ne partagent jamais une même portée.
+        $scope = substr(hash('sha256', ($actor ? class_basename($actor).':'.$actor->getKey() : 'anon').'|'.$request->path()), 0, 60);
         $hash = hash('sha256', $request->getContent().'|'.json_encode($request->except([])));
 
         $inserted = IdempotencyKey::query()->insertOrIgnore([
@@ -38,6 +45,9 @@ class Idempotent
             if (! $existing || $existing->request_hash !== $hash) {
                 return $this->error('IDEMPOTENCY_MISMATCH', 'Cette clé d’idempotence a déjà été utilisée avec une autre requête.', 409, $request);
             }
+            if ($existing->response_status !== null && $existing->response_body === null) {
+                return $this->error('IDEMPOTENCY_NOT_REPLAYABLE', 'Cette réponse contenait un secret affiché une seule fois : elle ne peut pas être rejouée.', 409, $request);
+            }
             if ($existing->response_status === null) {
                 return $this->error('IDEMPOTENCY_IN_PROGRESS', 'La requête initiale est encore en cours de traitement.', 409, $request);
             }
@@ -48,7 +58,8 @@ class Idempotent
         $response = $next($request);
 
         if ($response instanceof JsonResponse && $response->getStatusCode() < 500) {
-            $record->forceFill(['response_status' => $response->getStatusCode(), 'response_body' => $response->getData(true)])->save();
+            $secret = $request->is(...self::SECRET_RESPONSES);
+            $record->forceFill(['response_status' => $response->getStatusCode(), 'response_body' => $secret ? null : $response->getData(true)])->save();
         } else {
             $record->delete();
         }

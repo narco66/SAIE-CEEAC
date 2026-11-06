@@ -37,7 +37,9 @@ class AppServiceProvider extends ServiceProvider
     {
         Date::use(CarbonImmutable::class);
 
-        RateLimiter::for('login', fn (Request $request) => Limit::perMinute(10)->by(Str::lower((string) $request->input('email')).'|'.$request->ip()));
+        // Étape du second facteur : la requête ne porte pas d'adresse, la limite vise alors l'utilisateur en attente.
+        RateLimiter::for('login', fn (Request $request) => Limit::perMinute(10)->by((Str::lower((string) $request->input('email'))
+            ?: 'mfa:'.($request->hasSession() ? (string) ($request->session()->get('mfa.pending')['user'] ?? '') : '')).'|'.$request->ip()));
         RateLimiter::for('device', fn (Request $request) => Limit::perMinute(120)->by('device:'.($request->user()?->getKey() ?? $request->ip())));
         RateLimiter::for('integration', fn (Request $request) => Limit::perMinute(60)->by('integration:'.($request->user()?->getKey() ?? $request->ip())));
         RateLimiter::for('api', fn (Request $request) => Limit::perMinute(300)->by($request->user()?->getKey() ?: $request->ip()));

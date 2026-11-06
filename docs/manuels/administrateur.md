@@ -80,7 +80,7 @@ Trois pouvoirs nominatifs complètent un rôle ; la permission correspondante n�
 1. Ouvrez le compte par **Détail**, onglet **Pouvoirs étendus**.
 2. Choisissez le **Pouvoir**. Un encadré indique si l’utilisateur détient le rôle requis ; sans ce rôle, le serveur refusera.
 3. Indiquez **Début** (vide : immédiat) et **Fin**, obligatoire et dans le futur : un pouvoir étendu est toujours daté.
-4. Pour **Urgence**, cochez si besoin les **Zones autorisées (vide : toutes les zones du rôle)**. Pour **Prestations**, cochez si besoin les **Types de prestation (vide : tous)**.
+4. Pour **Urgence**, cochez les **Zones autorisées** ; pour **Prestations**, cochez les **Types de prestation**. Un périmètre est obligatoire : pour accorder l’étendue totale, cochez explicitement **Tout le parc (choix explicite)** ou **Tous les types (choix explicite)**.
 5. Saisissez le **Motif**, puis **Attribuer le pouvoir**.
 
 Pour y mettre fin avant l’échéance : **Révoquer**, motif, puis **Révoquer le pouvoir**.

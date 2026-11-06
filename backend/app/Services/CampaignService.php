@@ -8,6 +8,7 @@ use App\Models\ContentVersion;
 use App\Models\Screen;
 use App\Models\User;
 use App\Support\BusinessException;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
@@ -46,6 +47,26 @@ class CampaignService
         });
 
         return $query->orderBy('code')->get();
+    }
+
+    /**
+     * HAB-01 : une campagne, une alerte ou un repli ne vise que des écrans du site et de la zone de l'affectation qui donne la permission ;
+     * « tous les écrans » est réservé à une affectation sans restriction. Refus journalisé.
+     *
+     * @param  list<array{type: string, id?: string|null}>  $targets
+     */
+    public function assertTargetsInScope(array $targets, User $user, string $permission): void
+    {
+        $scope = app(Access::class)->screenScope($user, $permission);
+        if ($scope === null) {
+            return;
+        }
+        $outside = collect($targets)->contains(fn ($t) => $t['type'] === 'all')
+            || $this->resolveTargets(array_map(fn ($t) => ['type' => $t['type'], 'id' => $t['id'] ?? null], $targets))->pluck('id')->diff($scope)->isNotEmpty();
+        if ($outside) {
+            $this->audit->log('access.denied', null, 'Cible hors du site ou de la zone de l’habilitation', after: ['permission' => $permission], outcome: 'denied', actor: $user);
+            throw new AuthorizationException('Certaines cibles sont hors du site ou de la zone de votre habilitation.');
+        }
     }
 
     /**

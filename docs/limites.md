@@ -64,6 +64,15 @@ Défauts corrigés, chacun prouvé par un test qui échouait avant le correctif 
   - l’adresse de connexion d’un compte qui détient des droits privilégiés que l’on n’a pas ne peut plus être changée ; tout changement d’adresse ou réinitialisation du second facteur prévient le titulaire ; la réactivation exige un motif ;
   - un média restreint n’est plus visible des seuls titulaires de la consultation de la médiathèque ; le fichier d’un document n’est servi par la médiathèque qu’à ses gestionnaires ; reclasser un document reclasse son fichier.
 
+- **6 novembre, audit — lot R2 (sécurité majeure et séparation des fonctions)** :
+  - les réponses porteuses d’un secret affiché une fois (second facteur, jetons de comptes de service) ne sont plus conservées par l’idempotence, les anciennes sont effacées ; la portée d’une clé couvre le chemin complet ;
+  - un code du second facteur n’est accepté qu’une fois ; ses échecs comptent dans le verrouillage ; la limite de connexion vise l’utilisateur en attente ; les routes authentifiées sont limitées en débit ;
+  - un changement ou une réinitialisation du mot de passe ferme toutes les sessions et invalide « se souvenir de moi » ;
+  - le site et la zone d’une affectation bornent les campagnes, alertes, replis, écrans et groupes ; prolonger ou révoquer une alerte exige son périmètre « urgence » ; les pouvoirs « urgence » et « prestations » exigent un périmètre explicite ;
+  - un co-rédacteur ou un soumissionnaire ne peut ni valider le contenu ni être désigné pour le faire ;
+  - fiche PDF03 et bon PDF04 soumis à un contrôle d’objet ; une visite n’est modifiée que dans le périmètre de son auteur ;
+  - pile Docker : l’application se connecte avec un compte à moindre privilège (`saie_app`) qui ne peut ni modifier le schéma ni altérer le journal ; le contrôle `preflight` le vérifie.
+
 ### Priorité 1 — décisions à prendre (aucune correction faite)
 
 - **Participants des réunions standard** (nom, organisation) : visibles de tout agent qui peut voir les salles. À arbitrer au titre de GOV-02 : restreindre à l’organisateur, aux participants et aux gestionnaires ?

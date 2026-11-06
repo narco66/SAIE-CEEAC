@@ -85,6 +85,7 @@ class AlertController extends Controller
             'confirm' => ['accepted'],
         ]);
         $this->assertZoneScope($data['targets']);
+        $this->campaigns->assertTargetsInScope($data['targets'], $this->user(), 'alerts.manage');
         $screens = $this->screensFor($data['targets']);
         $summary = $this->summary($screens);
         $start = isset($data['starts_at']) ? Carbon::parse($data['starts_at']) : now();
@@ -110,6 +111,7 @@ class AlertController extends Controller
     public function extend(Request $request, Alert $alert): JsonResponse
     {
         $this->authorizePermission('alerts.manage');
+        $this->assertAlertInScope($alert);
         $data = $request->validate(['minutes' => ['required', 'integer', 'between:5,120'], 'reason' => ['required', 'string', 'min:5', 'max:300']]);
         if ($alert->status !== 'active' || $alert->expires_at->isPast()) {
             throw new BusinessException('ALERT_NOT_ACTIVE', 'Cette alerte n’est plus active.', 409);
@@ -130,6 +132,7 @@ class AlertController extends Controller
     public function revoke(Request $request, Alert $alert): JsonResponse
     {
         $this->authorizePermission('alerts.manage');
+        $this->assertAlertInScope($alert);
         $data = $request->validate(['reason' => ['required', 'string', 'min:5', 'max:300']]);
         if ($alert->status !== 'active') {
             throw new BusinessException('ALERT_NOT_ACTIVE', 'Cette alerte n’est plus active.', 409);
@@ -172,6 +175,16 @@ class AlertController extends Controller
         $window = $screen->operating_window ?: config('saie.operating_window');
 
         return app(ScheduleResolver::class)->withinOperatingWindow($window, [], CarbonImmutable::now(config('saie.timezone')));
+    }
+
+    /**
+     * HAB-01, HAB-03 : prolonger ou révoquer une alerte exige que ses cibles relèvent de l'habilitation et du périmètre « urgence ».
+     */
+    private function assertAlertInScope(Alert $alert): void
+    {
+        $targets = $alert->targets()->get()->map(fn ($t) => ['type' => $t->target_type, 'id' => $t->target_id])->all();
+        $this->assertZoneScope($targets);
+        $this->campaigns->assertTargetsInScope($targets, $this->user(), 'alerts.manage');
     }
 
     /**

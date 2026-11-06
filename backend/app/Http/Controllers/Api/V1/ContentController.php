@@ -70,7 +70,7 @@ class ContentController extends Controller
             ->map(fn ($e) => ['action' => $e->action, 'from' => $e->from_status, 'to' => $e->to_status, 'lang' => $e->lang, 'revision' => $e->revision, 'actor' => $e->actor?->name, 'role' => $e->actor_role, 'reason' => $e->reason, 'at' => Present::date($e->created_at)]);
         $data['permissions'] = [
             'edit' => $this->canEdit($content),
-            'validate_languages' => $content->author_id === $this->user()->id ? [] : array_values(array_intersect($this->access()->validationLanguages($this->user()), $content->languages->pluck('lang')->all())),
+            'validate_languages' => in_array($this->user()->id, $this->workflow->contributorIds($content), true) ? [] : array_values(array_intersect($this->access()->validationLanguages($this->user()), $content->languages->pluck('lang')->all())),
             'archive' => $this->can('contents.archive') || $content->author_id === $this->user()->id,
         ];
         // Réaffectation : seuls les validateurs éligibles (langue, périmètre, hors auteur), sauf soi-même.

@@ -14,7 +14,7 @@ interface Assignment {
   id: string; code: string; name: string; structure: string | null; structure_id: string | null; zone_id: string | null; languages: string[] | null
   starts_at: string | null; ends_at: string | null; revoked_at: string | null; active: boolean; reason: string | null
 }
-interface PowerGrant { id: string; power: string; scope: { zone_ids?: string[]; service_types?: string[] } | null; starts_at: string | null; ends_at: string | null; revoked_at: string | null; active: boolean }
+interface PowerGrant { id: string; power: string; scope: { zone_ids?: string[]; service_types?: string[]; all?: boolean } | null; starts_at: string | null; ends_at: string | null; revoked_at: string | null; active: boolean }
 export interface UserRow {
   id: string; name: string; email: string; initials: string; title: string | null; status: string; source: string
   structure: { id: string; name: string } | null; backup: { id: string; name: string } | null
@@ -385,7 +385,7 @@ function PowersTab({ user, onChanged }: { user: UserRow; onChanged: () => Promis
   const refs = useReferentials()
   const roles = useRoles()
   const [revoking, setRevoking] = useState<PowerGrant | null>(null)
-  const [form, setForm] = useState({ power: 'urgence', starts_at: '', ends_at: '', zone_ids: [] as string[], service_types: [] as string[], reason: '' })
+  const [form, setForm] = useState({ power: 'urgence', starts_at: '', ends_at: '', zone_ids: [] as string[], service_types: [] as string[], all: false, reason: '' })
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<ApiError | null>(null)
   const powerDef = roles.data?.powers.find((p) => p.code === form.power)
@@ -398,10 +398,10 @@ function PowersTab({ user, onChanged }: { user: UserRow; onChanged: () => Promis
     setBusy(true)
     setError(null)
     try {
-      const scope = form.power === 'urgence' && form.zone_ids.length ? { zone_ids: form.zone_ids } : form.power === 'prestations' && form.service_types.length ? { service_types: form.service_types } : null
+      const scope = form.power === 'modeles' ? null : form.all ? { all: true } : form.power === 'urgence' ? { zone_ids: form.zone_ids } : { service_types: form.service_types }
       await api.post('/role-extensions', { user_id: user.id, power: form.power, starts_at: localInputToIso(form.starts_at), ends_at: localInputToIso(form.ends_at), scope, reason: form.reason })
       toast.success('Pouvoir étendu attribué')
-      setForm({ ...form, starts_at: '', ends_at: '', zone_ids: [], service_types: [], reason: '' })
+      setForm({ ...form, starts_at: '', ends_at: '', zone_ids: [], service_types: [], all: false, reason: '' })
       await onChanged()
     } catch (e) {
       setError(asApiError(e))
@@ -421,7 +421,7 @@ function PowersTab({ user, onChanged }: { user: UserRow; onChanged: () => Promis
               return (
                 <tr key={p.id} className={p.active ? '' : 'inactive-row'}>
                   <td><strong>{POWER_LABEL[p.power] ?? p.power}</strong></td>
-                  <td>{p.scope?.zone_ids?.length ? `Zones : ${p.scope.zone_ids.map(zoneName).join(', ')}` : p.scope?.service_types?.length ? `Prestations : ${p.scope.service_types.join(', ')}` : 'Périmètre du rôle'}</td>
+                  <td>{p.scope?.zone_ids?.length ? `Zones : ${p.scope.zone_ids.map(zoneName).join(', ')}` : p.scope?.service_types?.length ? `Prestations : ${p.scope.service_types.join(', ')}` : p.scope?.all ? 'Étendue totale (choix explicite)' : 'Périmètre du rôle'}</td>
                   <td>{fmtDateTime(p.starts_at)}</td>
                   <td>{fmtDateTime(p.ends_at)}</td>
                   <td><Status tone={tone}>{label}</Status></td>
@@ -453,8 +453,10 @@ function PowersTab({ user, onChanged }: { user: UserRow; onChanged: () => Promis
             <Field label="Fin" required error={error?.field('ends_at')} help="Obligatoire : un pouvoir étendu est toujours daté."><input className="input" type="datetime-local" value={form.ends_at} min={form.starts_at || undefined} onChange={(e) => setForm({ ...form, ends_at: e.target.value })} aria-invalid={!!error?.field('ends_at')} /></Field>
             {form.power === 'urgence' && (
               <fieldset className="admin-fieldset wide">
-                <legend>Zones autorisées (vide : toutes les zones du rôle)</legend>
-                <div className="check-grid">
+                <legend>Zones autorisées *</legend>
+                <label><input type="checkbox" checked={form.all} onChange={(e) => setForm({ ...form, all: e.target.checked })} /> Tout le parc (choix explicite)</label>
+                {error?.field('scope.zone_ids') && <span className="field-error">{error.field('scope.zone_ids')}</span>}
+                <div className="check-grid" hidden={form.all}>
                   {(refs.data?.zones ?? []).filter((z) => z.is_active !== false).map((z) => (
                     <label key={z.id}><input type="checkbox" checked={form.zone_ids.includes(z.id)} onChange={(e) => setForm({ ...form, zone_ids: toggle(form.zone_ids, z.id, e.target.checked) })} /> {String(z.name)}</label>
                   ))}
@@ -463,8 +465,10 @@ function PowersTab({ user, onChanged }: { user: UserRow; onChanged: () => Promis
             )}
             {form.power === 'prestations' && (
               <fieldset className="admin-fieldset wide">
-                <legend>Types de prestation (vide : tous)</legend>
-                <div className="check-grid">
+                <legend>Types de prestation *</legend>
+                <label><input type="checkbox" checked={form.all} onChange={(e) => setForm({ ...form, all: e.target.checked })} /> Tous les types (choix explicite)</label>
+                {error?.field('scope.service_types') && <span className="field-error">{error.field('scope.service_types')}</span>}
+                <div className="check-grid" hidden={form.all}>
                   {(refs.data?.service_types ?? []).filter((s) => s.is_active !== false).map((s) => (
                     <label key={s.id}><input type="checkbox" checked={form.service_types.includes(String(s.code))} onChange={(e) => setForm({ ...form, service_types: toggle(form.service_types, String(s.code), e.target.checked) })} /> {String(s.name)}</label>
                   ))}

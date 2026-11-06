@@ -14,6 +14,7 @@ use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 
 /**
  * Rôles, délégations datées et pouvoirs étendus nominatifs (V35, HAB-01 à HAB-03).
@@ -99,9 +100,14 @@ class RoleController extends Controller
         $data = $request->validate([
             'user_id' => ['required', 'uuid', 'exists:users,id'], 'power' => ['required', 'in:urgence,modeles,prestations'],
             'starts_at' => ['nullable', 'date'], 'ends_at' => ['required', 'date', 'after:now'], 'reason' => ['required', 'string', 'min:5', 'max:300'],
-            'scope' => ['nullable', 'array'], 'scope.zone_ids' => ['nullable', 'array'], 'scope.zone_ids.*' => ['uuid', 'exists:display_zones,id'],
-            'scope.service_types' => ['nullable', 'array'], 'scope.service_types.*' => ['string', 'exists:service_types,code'],
-        ]);
+            // HAB-03 : « urgence » et « prestations » exigent un périmètre ; l'étendue totale doit être choisie explicitement (scope.all).
+            'scope' => ['nullable', 'array'], 'scope.all' => ['sometimes', 'boolean'],
+            'scope.zone_ids' => ['nullable', 'array', Rule::requiredIf(fn () => $request->input('power') === 'urgence' && ! $request->boolean('scope.all'))], 'scope.zone_ids.*' => ['uuid', 'exists:display_zones,id'],
+            'scope.service_types' => ['nullable', 'array', Rule::requiredIf(fn () => $request->input('power') === 'prestations' && ! $request->boolean('scope.all'))], 'scope.service_types.*' => ['string', 'exists:service_types,code'],
+        ], ['scope.zone_ids.required' => 'Choisissez les zones du pouvoir « urgence », ou « Tout le parc » explicitement.', 'scope.service_types.required' => 'Choisissez les types de prestation, ou « Tous les types » explicitement.']);
+        if (! empty($data['scope']['all'])) {
+            $data['scope'] = ['all' => true];
+        }
         if ($data['user_id'] === $this->user()->id) {
             $this->refuseSelfChange();
         }

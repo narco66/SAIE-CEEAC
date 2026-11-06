@@ -34,6 +34,23 @@ class PreflightTest extends TestCase
             'saie.device.signing_key_path' => $this->keyPath, 'saie.device.signing_key_id' => 'mk-2026-11',
             'mail.default' => 'smtp', 'queue.default' => 'redis', 'logging.channels.single.level' => 'warning', 'logging.channels.daily.level' => 'warning',
         ]);
+        // Compte applicatif à moindre privilège, comme en production (infra/postgres/10-roles.sh) : le compte de test local
+        // est propriétaire des tables ; le contrôle réel est vérifié séparément.
+        $this->app->bind(ProductionReadiness::class, fn () => new class extends ProductionReadiness
+        {
+            protected function privilegeFacts(): array
+            {
+                return ['role' => 'saie_app', 'super' => false, 'owner' => false, 'tamper' => false];
+            }
+        });
+    }
+
+    public function test_application_connected_as_table_owner_blocks_the_go_live(): void
+    {
+        $check = collect((new ProductionReadiness)->checks())->firstWhere('name', 'Compte PostgreSQL à moindre privilège');
+
+        $this->assertSame('fail', $check['status']);
+        $this->assertStringContainsString('propriétaire des tables', $check['detail']);
     }
 
     protected function tearDown(): void

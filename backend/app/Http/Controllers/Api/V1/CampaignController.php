@@ -61,6 +61,7 @@ class CampaignController extends Controller
     {
         $this->authorizePermission('campaigns.manage');
         $data = $this->validated($request, true);
+        $this->campaigns->assertTargetsInScope($data['targets'] ?? [], $this->user(), 'campaigns.manage');
         $campaign = DB::transaction(function () use ($data): Campaign {
             $campaign = new Campaign(collect($data)->except(['items', 'languages', 'targets', 'publish'])->all() + ['reference' => Reference::next('CMP'), 'status' => 'draft', 'created_by' => $this->user()->id]);
             $this->campaigns->assertEventRules($campaign);
@@ -84,7 +85,11 @@ class CampaignController extends Controller
             throw new BusinessException('CAMPAIGN_LOCKED', 'Suspendez la campagne avant de la modifier.', 409);
         }
         $this->expectVersion($request, $campaign->version);
+        $this->assertCampaignInScope($campaign);
         $data = $this->validated($request, false);
+        if (isset($data['targets'])) {
+            $this->campaigns->assertTargetsInScope($data['targets'], $this->user(), 'campaigns.manage');
+        }
         DB::transaction(function () use ($campaign, $data): void {
             $campaign->fill(collect($data)->except(['items', 'languages', 'targets', 'publish'])->all());
             $this->campaigns->assertEventRules($campaign);
@@ -112,6 +117,7 @@ class CampaignController extends Controller
     public function publish(Campaign $campaign): JsonResponse
     {
         $this->authorizePermission('campaigns.manage');
+        $this->assertCampaignInScope($campaign);
         $this->campaigns->publish($campaign, $this->user());
 
         return $this->show($campaign->refresh());
@@ -120,6 +126,7 @@ class CampaignController extends Controller
     public function suspend(Request $request, Campaign $campaign): JsonResponse
     {
         $this->authorizePermission('campaigns.manage');
+        $this->assertCampaignInScope($campaign);
         $data = $request->validate(['reason' => ['required', 'string', 'min:5', 'max:500']]);
         $this->campaigns->suspend($campaign, $this->user(), $data['reason']);
 
@@ -132,6 +139,7 @@ class CampaignController extends Controller
     public function resume(Campaign $campaign): JsonResponse
     {
         $this->authorizePermission('campaigns.manage');
+        $this->assertCampaignInScope($campaign);
         if ($campaign->status !== 'suspended') {
             throw new BusinessException('INVALID_TRANSITION', 'Seule une campagne suspendue peut reprendre.', 409);
         }
@@ -202,6 +210,7 @@ class CampaignController extends Controller
     {
         $this->authorizePermission('fallback.manage');
         $data = $request->validate(['zone_id' => ['required', 'uuid', 'exists:display_zones,id'], 'content_version_id' => ['required', 'uuid', 'exists:content_versions,id'], 'valid_until' => ['required', 'date', 'after:now']]);
+        $this->campaigns->assertTargetsInScope([['type' => 'zone', 'id' => $data['zone_id']]], $this->user(), 'fallback.manage');
         $version = ContentVersion::query()->findOrFail($data['content_version_id']);
         if ($version->classification !== 'public') {
             throw new BusinessException('FALLBACK_NOT_PUBLIC', 'Un contenu de repli doit être public et approuvé (PUB-05).', 422);
@@ -215,6 +224,7 @@ class CampaignController extends Controller
     public function destroyFallback(FallbackContent $fallback): JsonResponse
     {
         $this->authorizePermission('fallback.manage');
+        $this->campaigns->assertTargetsInScope([['type' => 'zone', 'id' => $fallback->zone_id]], $this->user(), 'fallback.manage');
         $fallback->forceFill(['is_active' => false])->save();
         $this->audit()->log('fallback.disabled', $fallback);
 
@@ -289,5 +299,13 @@ class CampaignController extends Controller
             'targets' => [$req, 'array', 'min:1'], 'targets.*.type' => ['required', 'in:screen,group,zone,floor'], 'targets.*.id' => ['required', 'uuid'],
             'publish' => ['sometimes', 'boolean'],
         ]);
+    }
+
+    /**
+     * HAB-01 : une campagne n'est gérée que si toutes ses cibles relèvent du site et de la zone de l'habilitation.
+     */
+    private function assertCampaignInScope(Campaign $campaign): void
+    {
+        $this->campaigns->assertTargetsInScope($campaign->targets()->get()->map(fn ($t) => ['type' => $t->target_type, 'id' => $t->target_id])->all(), $this->user(), 'campaigns.manage');
     }
 }

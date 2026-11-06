@@ -74,7 +74,8 @@ class MeController extends Controller
         if (! Hash::check($data['current_password'], $user->password)) {
             throw new BusinessException('INVALID_PASSWORD', 'Le mot de passe actuel est incorrect.', 422);
         }
-        $user->forceFill(['password' => $data['password'], 'must_change_password' => false])->save();
+        // Le cookie « se souvenir de moi » des autres appareils cesse de valoir (SEC-01).
+        $user->forceFill(['password' => $data['password'], 'must_change_password' => false, 'remember_token' => Str::random(60)])->save();
         DB::table('sessions')->where('user_id', $user->id)->where('id', '!=', $request->session()->getId())->delete();
         $this->audit()->log('account.password_changed', $user);
 
@@ -154,11 +155,12 @@ class MeController extends Controller
     {
         $data = $request->validate(['code' => ['required', 'string', 'max:10']]);
         $secret = $request->session()->get('mfa.setup');
-        if (! $secret || ! Totp::verify($secret, $data['code'])) {
+        $step = $secret ? Totp::step($secret, $data['code']) : null;
+        if ($step === null) {
             throw new BusinessException('MFA_INVALID', 'Code incorrect : vérifiez l’heure de votre appareil.', 422);
         }
         $codes = collect(range(1, 8))->map(fn () => strtoupper(Str::random(4).'-'.Str::random(4)))->all();
-        $this->user()->forceFill(['mfa_secret' => $secret, 'mfa_enabled_at' => now(), 'mfa_recovery_codes' => $codes])->save();
+        $this->user()->forceFill(['mfa_secret' => $secret, 'mfa_enabled_at' => now(), 'mfa_last_step' => $step, 'mfa_recovery_codes' => $codes])->save();
         $request->session()->forget('mfa.setup');
         $this->audit()->log('account.mfa_enabled', $this->user());
 

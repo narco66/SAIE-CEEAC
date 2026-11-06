@@ -172,13 +172,45 @@ class Access
      *
      * @return array<string, mixed>|null null = sans restriction
      */
+    /**
+     * HAB-01 : écrans couverts par les affectations qui donnent la permission, selon leur site et leur zone.
+     * Null : affectation sans site ni zone (tout le parc). Une affectation avec site et zone couvre leur intersection.
+     *
+     * @return list<string>|null
+     */
+    public function screenScope(User $user, string $permission): ?array
+    {
+        if (! $this->can($user, $permission)) {
+            return [];
+        }
+
+        return $this->remember($user, "screens:$permission", function () use ($user, $permission): ?array {
+            $roleIds = DB::table('permission_role')->join('permissions', 'permissions.id', '=', 'permission_role.permission_id')
+                ->where('permissions.code', $permission)->pluck('permission_role.role_id')->all();
+            $relevant = $this->assignments($user)->whereIn('role_id', $roleIds);
+            if ($relevant->contains(fn (RoleAssignment $a): bool => $a->site_id === null && $a->zone_id === null)) {
+                return null;
+            }
+
+            return DB::table('screens')->join('locations', 'locations.id', '=', 'screens.location_id')
+                ->join('floors', 'floors.id', '=', 'locations.floor_id')->join('buildings', 'buildings.id', '=', 'floors.building_id')
+                ->where(function ($q) use ($relevant): void {
+                    $q->whereRaw('1 = 0');
+                    foreach ($relevant as $a) {
+                        $q->orWhere(fn ($w) => $w->when($a->zone_id, fn ($z) => $z->where('locations.zone_id', $a->zone_id))
+                            ->when($a->site_id, fn ($s) => $s->where('buildings.site_id', $a->site_id)));
+                    }
+                })->pluck('screens.id')->all();
+        });
+    }
+
     public function powerScope(User $user, string $power): ?array
     {
         $extensions = $this->powers($user)->where('power', $power);
         if ($extensions->isEmpty()) {
             return [];
         }
-        if ($extensions->contains(fn (RoleExtension $e): bool => empty($e->scope))) {
+        if ($extensions->contains(fn (RoleExtension $e): bool => empty($e->scope) || ! empty($e->scope['all']))) {
             return null;
         }
 

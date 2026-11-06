@@ -202,11 +202,24 @@ class ContentWorkflow
         $this->audit->log('content.archived', $content, $reason);
     }
 
+    /**
+     * HAB-02 : auteur, co-rédacteurs et soumissionnaires d'un contenu ; aucun d'eux ne peut le valider.
+     *
+     * @return list<string>
+     */
+    public function contributorIds(Content $content): array
+    {
+        return collect([$content->author_id])
+            ->merge(ContentLanguage::query()->where('content_id', $content->id)->whereNotNull('submitted_by')->pluck('submitted_by'))
+            ->merge(DB::table('audit_logs')->where('object_id', $content->id)->whereIn('action', ['content.created', 'content.updated', 'content.duplicated'])->whereNotNull('actor_id')->pluck('actor_id'))
+            ->filter()->unique()->values()->all();
+    }
+
     public function assertCanValidate(Content $content, string $lang, User $user): void
     {
-        if ($content->author_id === $user->id) {
+        if (in_array($user->id, $this->contributorIds($content), true)) {
             $this->audit->log('content.self_validation_denied', $content, lang: $lang, outcome: 'denied');
-            throw new AuthorizationException('Un auteur ne peut pas valider sa propre publication.');
+            throw new AuthorizationException($content->author_id === $user->id ? 'Un auteur ne peut pas valider sa propre publication.' : 'Un co-rédacteur ne peut pas valider un contenu qu’il a modifié ou soumis.');
         }
         if (! in_array($lang, $this->access->validationLanguages($user), true)) {
             throw new AuthorizationException('Vous n’êtes pas habilité pour cette langue.');
@@ -305,7 +318,7 @@ class ContentWorkflow
      */
     public function eligibleValidators(Content $content, string $lang): Collection
     {
-        $candidates = User::query()->where('status', 'active')->where('id', '!=', $content->author_id)
+        $candidates = User::query()->where('status', 'active')->whereNotIn('id', $this->contributorIds($content))
             ->whereHas('roleAssignments', fn ($q) => $q->whereNull('revoked_at')->where('starts_at', '<=', now())
                 ->where(fn ($q) => $q->whereNull('ends_at')->orWhere('ends_at', '>', now()))
                 ->whereHas('role', fn ($r) => $r->where('code', 'validateur')))

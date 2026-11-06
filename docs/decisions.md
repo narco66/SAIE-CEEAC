@@ -35,6 +35,9 @@ Ce registre complète l'annexe D du cahier des charges. Chaque entrée indique l
 | T17 | Comptes de démonstration | Mot de passe aléatoire généré au moment du seed et écrit dans `backend/storage/app/private/demo-accounts.txt` (non versionné). Aucun mot de passe dans le code. |
 | T18 | Audit en ajout seul | Déclencheur PostgreSQL `audit_logs_append_only` qui refuse UPDATE/DELETE ; idem pour `content_versions` (versions approuvées immuables). Le journal n'est pas qualifié d'« inviolable » (SEC-04). |
 | T19 | Présence en salle | SAL-10 (P1) n'est pas activé : « Présence non mesurée » partout, aucun taux de présence calculé (SAL-12). |
+| T21 | Annuaire dans les référentiels (audit A-06) | `GET /referentials` renvoie à tout agent connecté la liste des agents actifs, limitée à l'identifiant, au nom et à la structure : tout agent peut réserver une salle et doit pouvoir inviter des collègues (SAL-02). Aucune autre donnée personnelle n'y figure (GOV-02). À réexaminer si l'annuaire institutionnel est raccordé. |
+| T22 | Étendue des pouvoirs étendus (audit A-05) | « Urgence » et « prestations » exigent un périmètre (zones ou types). L'étendue totale reste possible mais seulement par un choix explicite (« Tout le parc », « Tous les types »), tracé avec le motif ; une omission est refusée. |
+| T23 | Rédacteurs exclus de la validation (audit A-03) | Ne peuvent valider un contenu ni être désignés pour le faire : son auteur, toute personne qui l'a modifié ou dupliqué (journal) et tout soumissionnaire d'une de ses versions. |
 | T20 | Simulateur de parc de démonstration | Les lecteurs de démonstration sont des enregistrements marqués `is_demo` ; leur historique de télémétrie (14 jours) est généré par le seeder et étiqueté « simulé ». Le fonctionnement réel est démontré avec le lecteur `/player` appairé par code. |
 
 ## Hypothèses (lacunes mineures)

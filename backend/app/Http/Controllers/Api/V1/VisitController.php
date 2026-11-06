@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
+use App\Models\User;
 use App\Models\Visit;
 use App\Support\Present;
 use App\Support\Reference;
@@ -45,6 +46,12 @@ class VisitController extends Controller
     public function update(Request $request, Visit $visit): JsonResponse
     {
         $this->authorizePermission('visits.manage');
+        // SEC-02 : une visite n'est modifiée que par son auteur ou par un gestionnaire des visites couvrant la structure de l'auteur.
+        $scope = $this->access()->structureScope($this->user(), 'visits.manage');
+        $creatorStructure = $visit->created_by ? User::query()->whereKey($visit->created_by)->value('structure_id') : null;
+        if ($visit->created_by !== $this->user()->id && $scope !== null && ! in_array($creatorStructure, $scope, true)) {
+            $this->deny('Visite hors du périmètre de gestion des visites');
+        }
         $data = $request->validate(['name' => ['sometimes', 'string', 'max:160'], 'institution' => ['nullable', 'string', 'max:160'], 'visitors_count' => ['nullable', 'integer', 'min:1'], 'notes' => ['nullable', 'string', 'max:1000'], 'status' => ['sometimes', 'in:draft,message_draft,planned,done,cancelled']]);
         $visit->update($data);
         $this->audit()->log('visit.updated', $visit, after: $data);
