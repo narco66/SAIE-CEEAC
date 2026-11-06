@@ -82,7 +82,10 @@ class DynamicSources
         return $out;
     }
 
-    public function assertSafeUrl(string $url): void
+    /**
+     * @return list<string> adresses IP vérifiées (toutes publiques)
+     */
+    public function assertSafeUrl(string $url): array
     {
         $parts = parse_url($url);
         if (($parts['scheme'] ?? '') !== 'https' || empty($parts['host']) || isset($parts['user']) || isset($parts['pass'])) {
@@ -97,12 +100,25 @@ class DynamicSources
                 throw new BusinessException('SOURCE_URL_REFUSED', 'Adresse interne ou réservée refusée (protection SSRF).', 422);
             }
         }
+
+        return array_values($ips);
     }
 
     private function download(DynamicSource $source): string
     {
-        $this->assertSafeUrl((string) $source->url);
-        $response = Http::timeout(10)->connectTimeout(5)->withoutRedirecting()->withHeaders(['User-Agent' => 'SAIE-CEEAC/1.0'])->get($source->url);
+        $ips = $this->assertSafeUrl((string) $source->url);
+        $parts = parse_url((string) $source->url);
+        // SEC-02 (SSRF) : la connexion est figée sur l'adresse vérifiée (pas de seconde résolution DNS exploitable par rebinding),
+        // et le transfert est interrompu dès qu'il dépasse la taille maximale, sans attendre la fin du téléchargement.
+        $options = [
+            'curl' => [CURLOPT_RESOLVE => [$parts['host'].':'.($parts['port'] ?? 443).':'.$ips[0]]],
+            'progress' => function (int $expected, int $downloaded): void {
+                if ($expected > self::MAX_BYTES || $downloaded > self::MAX_BYTES) {
+                    throw new \RuntimeException('Réponse trop volumineuse');
+                }
+            },
+        ];
+        $response = Http::timeout(10)->connectTimeout(5)->withoutRedirecting()->withOptions($options)->withHeaders(['User-Agent' => 'SAIE-CEEAC/1.0'])->get($source->url);
         if (! $response->successful()) {
             throw new \RuntimeException('Réponse HTTP '.$response->status());
         }

@@ -8,6 +8,8 @@ pdfjs.GlobalWorkerOptions.workerSrc = new URL('pdfjs-dist/build/pdf.worker.min.m
 
 const TZ = 'Africa/Libreville'
 const time = (d: Date | string) => new Intl.DateTimeFormat('fr-FR', { timeZone: TZ, hour: '2-digit', minute: '2-digit' }).format(typeof d === 'string' ? new Date(d) : d)
+/** Date et heure du dernier contact (PUB-09, SAL-09) : hors ligne depuis plus d'un jour, l'heure seule serait trompeuse. */
+const stamp = (d: string) => new Intl.DateTimeFormat('fr-FR', { timeZone: TZ, day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }).format(new Date(d))
 const longDate = (d: Date, lang = 'fr') => new Intl.DateTimeFormat(lang === 'en' ? 'en-GB' : 'fr-FR', { timeZone: TZ, weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).format(d)
 const LOGO = `${import.meta.env.BASE_URL}ceeac-logo.jpg`
 
@@ -38,7 +40,7 @@ export function Header({ manifest, now, lang }: { manifest: Manifest | null; now
 }
 
 export function OfflineRibbon({ lastContact }: { lastContact: string | null }) {
-  return <div className="ribbon">⚠ Mode hors connexion · dernière mise à jour {lastContact ? time(lastContact) : 'inconnue'}</div>
+  return <div className="ribbon">⚠ Mode hors connexion · dernière mise à jour {lastContact ? stamp(lastContact) : 'inconnue'}</div>
 }
 
 function AgendaLine({ agenda, lang }: { agenda: AgendaItem[]; lang: string }) {
@@ -264,7 +266,7 @@ export function RoomPanelView({ manifest, now, offline, lastContact }: { manifes
           {next.length > 1 && <ul>{next.slice(1, 4).map((o) => <li key={o.start}>{time(o.start)}–{time(o.end)} · {o.label}</li>)}</ul>}
         </div>
       </main>
-      {offline && <footer>⚠ Statut non actualisé · dernier contact {lastContact ? time(lastContact) : 'inconnu'} · aucune réservation possible depuis ce panneau</footer>}
+      {offline && <footer>⚠ Statut non actualisé · dernier contact {lastContact ? stamp(lastContact) : 'inconnu'} · aucune réservation possible depuis ce panneau</footer>}
     </div>
   )
 }

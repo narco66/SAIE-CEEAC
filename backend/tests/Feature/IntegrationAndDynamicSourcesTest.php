@@ -19,7 +19,7 @@ class IntegrationAndDynamicSourcesTest extends TestCase
     public function test_rss_source_is_fetched_by_server_and_embedded_in_manifest(): void
     {
         Http::fake(['https://www.ceeac-eccas.org/*' => Http::response('<rss><channel><item><title>Sommet des chefs d’État</title><pubDate>Tue, 03 Nov 2026 10:00:00 GMT</pubDate></item><item><title><![CDATA[<b>Nouvelle</b> publication]]></title></item></channel></rss>', 200)]);
-        $sources = $this->partialMock(DynamicSources::class, fn ($mock) => $mock->shouldReceive('assertSafeUrl')->andReturnNull());
+        $sources = $this->partialMock(DynamicSources::class, fn ($mock) => $mock->shouldReceive('assertSafeUrl')->andReturn(['93.184.216.34']));
         $source = DynamicSource::query()->create(['code' => 'actus', 'name' => 'Actualités', 'type' => 'rss', 'url' => 'https://www.ceeac-eccas.org/feed', 'is_active' => true]);
         $this->assertSame('ok', $sources->fetch($source)['status']);
 
