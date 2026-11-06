@@ -1,0 +1,26 @@
+﻿powershell : NOTICE:  la base de données « saie_ceeac_restore_drill » n'existe pas, poursuite du traitement
+Au caractère Ligne:1 : 480
++ ... xe'; $out = powershell -NoProfile -ExecutionPolicy Bypass -File infra ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (NOTICE:  la bas...e du traitement:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+{
+    "backup_s":  1.5,
+    "rto_s":  2.5,
+    "last_write_before":  "2026-11-06 11:46:45+01",
+    "last_write_restored":  "2026-11-06 11:46:45+01",
+    "count_users":  "14 -\u003e 14",
+    "count_contents":  "25 -\u003e 25",
+    "count_content_versions":  "15 -\u003e 15",
+    "count_campaigns":  "13 -\u003e 13",
+    "count_reservation_occurrences":  "32 -\u003e 32",
+    "count_documents":  "16 -\u003e 16",
+    "count_asset_versions":  "29 -\u003e 29",
+    "count_audit_logs":  "618 -\u003e 618",
+    "count_device_receipts":  "6752 -\u003e 6752",
+    "exclusion_constraint":  "1",
+    "audit_trigger":  "1",
+    "files_sha256_ok":  27,
+    "files_sha256_ko":  0
+}

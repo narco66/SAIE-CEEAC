@@ -1,0 +1,75 @@
+
+> saie-ceeac-player@1.0.0 test
+> node --experimental-strip-types --test tests/*.test.ts
+
+TAP version 13
+# Subtest: hors plage : écran éteint le soir et le week-end
+ok 1 - hors plage : écran éteint le soir et le week-end
+  ---
+  duration_ms: 49.145
+  type: 'test'
+  ...
+# Subtest: jour non ouvré du référentiel : éteint
+ok 2 - jour non ouvré du référentiel : éteint
+  ---
+  duration_ms: 0.2771
+  type: 'test'
+  ...
+# Subtest: alerte active prioritaire sur les programmes, critique avant information
+ok 3 - alerte active prioritaire sur les programmes, critique avant information
+  ---
+  duration_ms: 0.3324
+  type: 'test'
+  ...
+# Subtest: priorité décroissante puis date de début puis identifiant, rotation à priorité égale
+ok 4 - priorité décroissante puis date de début puis identifiant, rotation à priorité égale
+  ---
+  duration_ms: 1.6104
+  type: 'test'
+  ...
+# Subtest: mode événement : remplace le programme ordinaire quelle que soit sa priorité, puis le rend seul (PUB-12)
+ok 5 - mode événement : remplace le programme ordinaire quelle que soit sa priorité, puis le rend seul (PUB-12)
+  ---
+  duration_ms: 0.7289
+  type: 'test'
+  ...
+# Subtest: mode événement : une alerte active passe toujours avant
+ok 6 - mode événement : une alerte active passe toujours avant
+  ---
+  duration_ms: 0.2138
+  type: 'test'
+  ...
+# Subtest: campagne expirée exclue, créneau horaire et jours respectés
+ok 7 - campagne expirée exclue, créneau horaire et jours respectés
+  ---
+  duration_ms: 0.3844
+  type: 'test'
+  ...
+# Subtest: autorisation hors ligne expirée : contenu interne retiré, public conservé (PLY-05)
+ok 8 - autorisation hors ligne expirée : contenu interne retiré, public conservé (PLY-05)
+  ---
+  duration_ms: 0.3306
+  type: 'test'
+  ...
+# Subtest: ressource manquante : l’entrée n’est pas lancée (jamais de programme incomplet)
+ok 9 - ressource manquante : l’entrée n’est pas lancée (jamais de programme incomplet)
+  ---
+  duration_ms: 0.433
+  type: 'test'
+  ...
+# Subtest: repli expiré remplacé par le repli neutre
+ok 10 - repli expiré remplacé par le repli neutre
+  ---
+  duration_ms: 0.3096
+  type: 'test'
+  ...
+1..10
+# tests 10
+# suites 0
+# pass 10
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 201.8126
+code=0

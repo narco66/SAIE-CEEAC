@@ -1,0 +1,15 @@
+chillerlan/php-qrcode 6.0.1   A QR Code generator and reader with a user-friendly API. PHP 8.2+
+dompdf/dompdf         3.1.6   DOMPDF is a CSS 2.1 compliant HTML to PDF converter
+fakerphp/faker        1.24.1  Faker is a PHP library that generates fake data for you.
+laravel/boost         2.10.4  Laravel Boost accelerates AI-assisted development by providing the essential context and structure that AI needs to generate high-quality, Laravel-specific code.
+laravel/framework     13.40.0 The Laravel Framework.
+laravel/pail          1.2.7   Easily delve into your Laravel application's log files directly from the command line.
+laravel/pao           1.1.5   Agent-optimized output for PHP testing tools
+laravel/pint          1.32.1  An opinionated code formatter for PHP.
+laravel/sanctum       4.3.3   Laravel Sanctum provides a featherweight authentication system for SPAs and simple APIs.
+laravel/tinker        3.0.2   Powerful REPL for the Laravel framework.
+minishlink/web-push   11.0.0  Web Push library for PHP
+mockery/mockery       1.6.15  Mockery is a simple yet flexible PHP mock object framework
+nunomaduro/collision  8.9.5   Cli error handling for console/command-line PHP applications.
+phpunit/phpunit       12.5.43 The PHP Unit Testing framework.
+smalot/pdfparser      2.13.1  Pdf parser library. Can read and extract information from pdf file.

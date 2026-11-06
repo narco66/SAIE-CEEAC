@@ -1,0 +1,26 @@
+ M backend/app/Http/Controllers/Api/V1/AuditController.php
+ M backend/app/Http/Controllers/Api/V1/DocumentController.php
+ M backend/app/Http/Controllers/Api/V1/ExportController.php
+ M backend/app/Jobs/ProcessAssetVersion.php
+ M backend/app/Models/AuditLog.php
+ M backend/app/Models/Document.php
+ M backend/app/Services/ExportService.php
+ M docs/lecteur.md
+ M frontend/src/pages/admin/Audit.tsx
+ M frontend/src/pages/display/ScreenDetail.tsx
+ M frontend/src/pages/publication/ContentEditor.tsx
+?? backend/tests/Feature/AuditFilterTest.php
+?? backend/tests/Feature/ContentArchiveTest.php
+?? docs/audit/
+ backend/app/Http/Controllers/Api/V1/AuditController.php    |  8 +-------
+ backend/app/Http/Controllers/Api/V1/DocumentController.php |  5 ++++-
+ backend/app/Http/Controllers/Api/V1/ExportController.php   |  2 +-
+ backend/app/Jobs/ProcessAssetVersion.php                   |  2 ++
+ backend/app/Models/AuditLog.php                            | 23 +++++++++++++++++++++++
+ backend/app/Models/Document.php                            | 17 +++++++++++++++++
+ backend/app/Services/ExportService.php                     |  3 +--
+ docs/lecteur.md                                            |  2 +-
+ frontend/src/pages/admin/Audit.tsx                         |  6 ++++--
+ frontend/src/pages/display/ScreenDetail.tsx                |  2 +-
+ frontend/src/pages/publication/ContentEditor.tsx           | 16 +++++++++++++++-
+ 11 files changed, 70 insertions(+), 16 deletions(-)
