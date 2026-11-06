@@ -16,7 +16,7 @@ export interface AssetVersion {
   scan_status: string; scan_engine: string | null; scan_detail: string | null; has_thumbnail: boolean; created_at: string | null; processed_at: string | null
 }
 export interface Asset {
-  id: string; reference: string; title: string; kind: 'image' | 'video' | 'pdf' | 'office'; classification: string; language: string | null; status: string
+  id: string; version: number; reference: string; title: string; kind: 'image' | 'video' | 'pdf' | 'office'; classification: string; language: string | null; status: string
   owner: NamedRef | null; category: string | null; creator: UserRef | null; current_version: AssetVersion | null; usages: number | null
   created_at: string | null; updated_at: string | null; is_demo?: boolean
 }

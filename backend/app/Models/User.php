@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\GuardsVersion;
 use Database\Factories\UserFactory;
 use Illuminate\Auth\Passwords\CanResetPassword;
 use Illuminate\Contracts\Auth\CanResetPassword as CanResetPasswordContract;
@@ -19,7 +20,14 @@ use Illuminate\Notifications\Notifiable;
 class User extends Authenticatable implements CanResetPasswordContract
 {
     /** @use HasFactory<UserFactory> */
-    use CanResetPassword, HasFactory, HasUuids, Notifiable;
+    use CanResetPassword, GuardsVersion, HasFactory, HasUuids, Notifiable;
+
+    /**
+     * Version initiale (API-04), présente dès la réponse de création.
+     *
+     * @var array<string, int>
+     */
+    protected $attributes = ['version' => 1];
 
     /**
      * @return array<string, string>

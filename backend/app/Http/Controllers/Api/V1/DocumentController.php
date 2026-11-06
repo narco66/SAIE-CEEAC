@@ -107,9 +107,10 @@ class DocumentController extends Controller
     public function update(Request $request, Document $document): JsonResponse
     {
         $this->assertManage($document);
+        $this->expectVersion($request, $document);
         $data = $this->validated($request, false);
         $before = $document->only(array_keys($data));
-        $document->update(collect($data)->except('audience_ids')->all());
+        $document->update(collect($data)->except('audience_ids')->all() + ['version' => $document->version + 1]);
         if (isset($data['classification'])) {
             // DOC-04 : le fichier suit la classification du document ; un document reclassé « restreint » ne peut plus être diffusé.
             Asset::query()->whereIn('id', AssetVersion::query()->whereIn('id', $document->versions()->select('asset_version_id'))->select('asset_id'))

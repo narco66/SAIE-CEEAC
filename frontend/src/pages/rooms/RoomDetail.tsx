@@ -141,7 +141,7 @@ function useRoomPatch(room: Room) {
     setBusy(true)
     setError(null)
     try {
-      await api.patch(`/rooms/${room.id}`, confirm ? { ...body, confirm_affected: true } : body)
+      await api.patch(`/rooms/${room.id}`, confirm ? { ...body, confirm_affected: true } : body, { 'If-Match': String(room.version) })
       setAffected(null)
       setPending(null)
       await client.invalidateQueries({ queryKey: ['room', room.id] })

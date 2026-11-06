@@ -21,7 +21,7 @@ export interface Device {
 }
 
 export interface Screen {
-  id: string; code: string; name: string; kind: string; orientation: string; resolution: string; status: string
+  id: string; version: number; code: string; name: string; kind: string; orientation: string; resolution: string; status: string
   operating_window: OperatingWindow | null; window_override_reason: string | null; audio_enabled: boolean; control_channel: string
   panel_state: string; panel_state_at: string | null
   location: { id: string; name: string; floor: { id: string; label: string; level: number } | null; zone: { id: string; code: string; name: string; max_classification: string } | null } | null
@@ -32,7 +32,7 @@ export interface Screen {
 }
 
 export interface ScreenGroup {
-  id: string; code: string; name: string; description: string | null; screens_count: number
+  id: string; version: number; code: string; name: string; description: string | null; screens_count: number
   screens: { id: string; code: string; name: string }[]; active_campaigns: number
   operating_window?: OperatingWindow | null
 }

@@ -51,7 +51,7 @@ class MediaAccessTest extends TestCase
         $this->assertSame(200, $this->fileOf($versionId, $owner));
         $this->assertSame(404, $this->fileOf($versionId, $this->userWith('diffuseur')), 'pas de contournement de l’audience par la médiathèque');
 
-        $this->actingAs($owner)->patchJson("/api/v1/documents/$id", ['classification' => 'restreint'])->assertOk();
+        $this->actingAs($owner)->patchJson("/api/v1/documents/$id", ['classification' => 'restreint', 'expected_version' => $document->version])->assertOk();
         $this->assertSame('restreint', AssetVersion::query()->findOrFail($versionId)->asset->classification);
     }
 }

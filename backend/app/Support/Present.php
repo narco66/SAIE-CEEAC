@@ -42,7 +42,7 @@ class Present
         $device = $screen->relationLoaded('activeDevice') ? $screen->activeDevice : null;
 
         return [
-            'id' => $screen->id, 'code' => $screen->code, 'name' => $screen->name, 'kind' => $screen->kind,
+            'id' => $screen->id, 'version' => $screen->version, 'code' => $screen->code, 'name' => $screen->name, 'kind' => $screen->kind,
             'orientation' => $screen->orientation, 'resolution' => $screen->resolution, 'status' => $screen->status,
             'operating_window' => $screen->operating_window ?: config('saie.operating_window'), 'window_override_reason' => $screen->window_override_reason,
             'audio_enabled' => $screen->audio_enabled, 'control_channel' => $screen->control_channel,
@@ -94,7 +94,7 @@ class Present
     public static function asset(Asset $asset, ?int $usages = null): array
     {
         return [
-            'id' => $asset->id, 'reference' => $asset->reference, 'title' => $asset->title, 'kind' => $asset->kind, 'classification' => $asset->classification,
+            'id' => $asset->id, 'version' => $asset->version, 'reference' => $asset->reference, 'title' => $asset->title, 'kind' => $asset->kind, 'classification' => $asset->classification,
             'language' => $asset->language, 'status' => $asset->status, 'owner' => $asset->owner ? ['id' => $asset->owner->id, 'name' => $asset->owner->name] : null,
             'category' => $asset->category?->name, 'category_id' => $asset->category_id, 'creator' => self::userRef($asset->creator), 'current_version' => self::assetVersion($asset->currentVersion),
             'usages' => $usages, 'created_at' => self::date($asset->created_at), 'updated_at' => self::date($asset->updated_at), 'is_demo' => $asset->is_demo,
@@ -107,7 +107,7 @@ class Present
     public static function document(Document $d): array
     {
         return [
-            'id' => $d->id, 'reference' => $d->reference, 'title' => $d->title, 'summary' => $d->summary, 'classification' => $d->classification, 'status' => $d->status,
+            'id' => $d->id, 'version' => $d->version, 'reference' => $d->reference, 'title' => $d->title, 'summary' => $d->summary, 'classification' => $d->classification, 'status' => $d->status,
             'language' => $d->language, 'keywords' => $d->keywords ?? [], 'category' => $d->category ? ['id' => $d->category->id, 'name' => $d->category->name] : null,
             'owner' => $d->owner ? ['id' => $d->owner->id, 'name' => $d->owner->name] : null, 'author' => self::userRef($d->author),
             'valid_from' => $d->valid_from?->toDateString(), 'expires_at' => $d->expires_at?->toDateString(),
@@ -177,7 +177,7 @@ class Present
     public static function room(Room $r): array
     {
         return [
-            'id' => $r->id, 'code' => $r->code, 'name' => $r->name, 'capacity' => $r->capacity, 'location_text' => $r->location_text, 'photos' => $r->photos ?? [],
+            'id' => $r->id, 'version' => $r->version, 'code' => $r->code, 'name' => $r->name, 'capacity' => $r->capacity, 'location_text' => $r->location_text, 'photos' => $r->photos ?? [],
             'floor' => $r->floor ? ['id' => $r->floor->id, 'label' => $r->floor->label, 'level' => $r->floor->level] : null,
             'manager' => self::userRef($r->manager), 'approval_mode' => $r->approval_mode, 'min_minutes' => $r->min_minutes, 'max_minutes' => $r->max_minutes,
             'lead_days' => $r->lead_days, 'prep_minutes' => $r->prep_minutes, 'cleanup_minutes' => $r->cleanup_minutes,

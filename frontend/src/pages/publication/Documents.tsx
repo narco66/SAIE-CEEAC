@@ -10,7 +10,7 @@ import { DOC_STATUS, errorText, useReferentials, type AssetVersion, type NamedRe
 import { checkFile, MAX_DOC_MB } from './Media'
 
 export interface DocumentRow {
-  id: string; reference: string; title: string; summary: string | null; classification: string; status: string; language: string | null; keywords: string[]
+  id: string; version: number; reference: string; title: string; summary: string | null; classification: string; status: string; language: string | null; keywords: string[]
   category: NamedRef | null; owner: NamedRef | null; author: UserRef | null; valid_from: string | null; expires_at: string | null
   current_version: { id: string; version: number; file: AssetVersion | null } | null; diffusion_allowed: boolean; published_at: string | null; updated_at: string | null
 }

@@ -75,9 +75,10 @@ class UserController extends Controller
             $this->assertMayAdminister($user, 'modifier l’adresse de connexion');
             $data['email'] = mb_strtolower($data['email']);
         }
+        $this->expectVersion($request, $user);
         $previousEmail = $user->email;
         $before = $user->only(array_keys($data));
-        $user->update($data);
+        $user->fill($data)->forceFill(['version' => $user->version + 1])->save();
         if ($emailChanged) {
             // L'ancienne adresse est prévenue et les sessions fermées : un changement d'adresse ne permet pas une prise de compte silencieuse.
             $user->forceFill(['remember_token' => null])->save();
@@ -203,7 +204,7 @@ class UserController extends Controller
         $active = fn ($item) => ! $item->revoked_at && $item->starts_at <= now() && (! $item->ends_at || $item->ends_at > now());
 
         return [
-            'id' => $u->id, 'name' => $u->name, 'email' => $u->email, 'initials' => $u->initials(), 'title' => $u->title, 'status' => $u->status, 'source' => $u->source,
+            'id' => $u->id, 'version' => $u->version, 'name' => $u->name, 'email' => $u->email, 'initials' => $u->initials(), 'title' => $u->title, 'status' => $u->status, 'source' => $u->source,
             'structure' => $u->structure ? ['id' => $u->structure->id, 'name' => $u->structure->name] : null, 'backup' => Present::userRef($u->backup),
             'roles' => $u->relationLoaded('roleAssignments') ? $u->roleAssignments->map(fn ($a) => [
                 'id' => $a->id, 'code' => $a->role->code, 'name' => $a->role->name, 'structure' => $a->structure?->name, 'structure_id' => $a->structure_id, 'zone_id' => $a->zone_id, 'languages' => $a->languages,

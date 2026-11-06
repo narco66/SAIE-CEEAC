@@ -83,13 +83,14 @@ class ScreenController extends Controller
     {
         $this->authorizePermission('screens.manage');
         $this->inScope([['type' => 'screen', 'id' => $screen->id]], 'screens.manage');
+        $this->expectVersion($request, $screen);
         $data = $this->validated($request, $screen);
         $windowChanged = array_key_exists('operating_window', $data) && json_encode($data['operating_window']) !== json_encode($screen->operating_window);
         if ($windowChanged && $data['operating_window'] !== null && empty($data['window_override_reason'])) {
             throw new BusinessException('REASON_REQUIRED', 'Une dérogation à la plage de fonctionnement exige un motif.', 422);
         }
         $before = $screen->only(array_keys($data));
-        $screen->update($data);
+        $screen->update($data + ['version' => $screen->version + 1]);
         $this->audit()->log($windowChanged ? 'screen.window_changed' : 'screen.updated', $screen, $data['window_override_reason'] ?? null, $before, $data);
 
         return $this->show($screen->refresh());
@@ -190,7 +191,7 @@ class ScreenController extends Controller
         $groups = ScreenGroup::query()->withCount('screens')->with('screens:id,code,name')->orderBy('name')->get();
 
         return response()->json(['data' => $groups->map(fn (ScreenGroup $g) => [
-            'id' => $g->id, 'code' => $g->code, 'name' => $g->name, 'description' => $g->description, 'screens_count' => $g->screens_count, 'operating_window' => $g->operating_window,
+            'id' => $g->id, 'version' => $g->version, 'code' => $g->code, 'name' => $g->name, 'description' => $g->description, 'screens_count' => $g->screens_count, 'operating_window' => $g->operating_window,
             'screens' => $g->screens->map(fn ($s) => ['id' => $s->id, 'code' => $s->code, 'name' => $s->name]),
             'active_campaigns' => DB::table('campaign_targets')->join('campaigns', 'campaigns.id', '=', 'campaign_targets.campaign_id')->where('target_type', 'group')->where('target_id', $g->id)->whereIn('campaigns.status', ['scheduled', 'active'])->count(),
         ])]);
@@ -216,7 +217,8 @@ class ScreenController extends Controller
         $data = $request->validate(['name' => ['sometimes', 'string', 'max:120'], 'description' => ['nullable', 'string', 'max:500'], 'screen_ids' => ['sometimes', 'array'], 'screen_ids.*' => ['uuid', 'exists:screens,id'],
             'operating_window' => ['nullable', 'array'], 'operating_window.days' => ['required_with:operating_window', 'array', 'min:1'], 'operating_window.days.*' => ['integer', 'between:1,7'], 'operating_window.on' => ['required_with:operating_window', 'date_format:H:i'], 'operating_window.off' => ['required_with:operating_window', 'date_format:H:i', 'after:operating_window.on'], 'operating_window.ignore_holidays' => ['sometimes', 'boolean']]);
         $this->inScope(array_merge([['type' => 'group', 'id' => $group->id]], array_map(fn ($id) => ['type' => 'screen', 'id' => $id], $data['screen_ids'] ?? [])), 'groups.manage');
-        $group->update(collect($data)->except('screen_ids')->all());
+        $this->expectVersion($request, $group);
+        $group->update(collect($data)->except('screen_ids')->all() + ['version' => $group->version + 1]);
         if (array_key_exists('screen_ids', $data)) {
             $group->screens()->sync($data['screen_ids']);
         }

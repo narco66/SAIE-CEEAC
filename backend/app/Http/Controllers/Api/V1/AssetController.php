@@ -68,11 +68,12 @@ class AssetController extends Controller
     public function update(Request $request, Asset $asset): JsonResponse
     {
         $this->assertEditable($asset);
+        $this->expectVersion($request, $asset);
         $data = $request->validate(['title' => ['sometimes', 'string', 'max:200'], 'classification' => ['sometimes', 'in:public,interne,restreint'], 'language' => ['nullable', 'in:fr,en,pt,es'], 'category_id' => ['nullable', 'uuid', 'exists:content_categories,id']]);
         if (isset($data['classification']) && $data['classification'] !== $asset->classification && $this->usageCount($asset) > 0) {
             throw new BusinessException('ASSET_IN_USE', 'Ce média est utilisé : sa classification ne peut changer qu’après révision des contenus concernés.', 409, ['usages' => $this->usages($asset)]);
         }
-        $asset->update($data);
+        $asset->update($data + ['version' => $asset->version + 1]);
         $this->audit()->log('asset.updated', $asset, after: $data);
 
         return $this->show($asset);

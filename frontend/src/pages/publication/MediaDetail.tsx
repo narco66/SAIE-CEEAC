@@ -76,7 +76,7 @@ export default function MediaDetail() {
     try {
       const body: Record<string, unknown> = { title: title.trim(), language: language || null, category_id: category || null }
       if (classification !== a.classification) body.classification = classification
-      const res = await api.patch<{ data: AssetDetail }>(`/assets/${a.id}`, body)
+      const res = await api.patch<{ data: AssetDetail }>(`/assets/${a.id}`, body, { 'If-Match': String(a.version) })
       client.setQueryData(['asset', id], res.data)
       client.invalidateQueries({ queryKey: ['assets'] })
       toast.success('Métadonnées enregistrées')

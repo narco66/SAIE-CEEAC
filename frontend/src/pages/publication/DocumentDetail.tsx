@@ -277,7 +277,7 @@ function EditMetadata({ doc, onClose, onDone }: { doc: DocumentDetailData; onClo
         title: f.title.trim(), summary: f.summary.trim() || null, classification: f.classification, category_id: f.category_id || null, owner_structure_id: f.owner_structure_id || null,
         language: f.language || null, keywords: f.keywords.split(',').map((k) => k.trim()).filter(Boolean), valid_from: f.valid_from || null, expires_at: f.expires_at || null, audience_ids: audiences,
       }
-      onDone((await api.patch<{ data: DocumentDetailData }>(`/documents/${doc.id}`, body)).data)
+      onDone((await api.patch<{ data: DocumentDetailData }>(`/documents/${doc.id}`, body, { 'If-Match': String(doc.version) })).data)
     } catch (e) {
       setError(e instanceof ApiError ? e : new ApiError(500, { message: errorText(e) }))
     } finally {

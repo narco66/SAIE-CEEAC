@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\GuardsVersion;
 use App\Services\Audit;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
@@ -11,7 +12,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Document extends Model
 {
-    use HasUuids;
+    use GuardsVersion, HasUuids;
 
     /**
      * Les attributs sont alimentés exclusivement par des données validées côté contrôleur ou service.
@@ -19,6 +20,13 @@ class Document extends Model
      * @var list<string>
      */
     protected $guarded = ['id'];
+
+    /**
+     * Version initiale (API-04), présente dès la réponse de création.
+     *
+     * @var array<string, int>
+     */
+    protected $attributes = ['version' => 1];
 
     /** @var list<string> */
     protected $hidden = ['search_text', 'search_vector'];

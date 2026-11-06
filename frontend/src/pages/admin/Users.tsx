@@ -16,7 +16,7 @@ interface Assignment {
 }
 interface PowerGrant { id: string; power: string; scope: { zone_ids?: string[]; service_types?: string[]; all?: boolean } | null; starts_at: string | null; ends_at: string | null; revoked_at: string | null; active: boolean }
 export interface UserRow {
-  id: string; name: string; email: string; initials: string; title: string | null; status: string; source: string
+  id: string; version: number; name: string; email: string; initials: string; title: string | null; status: string; source: string
   structure: { id: string; name: string } | null; backup: { id: string; name: string } | null
   roles: Assignment[]; powers: PowerGrant[]; mfa_enabled: boolean; locked?: boolean; locked_until?: string | null; last_login_at: string | null; last_activity_at: string | null; is_demo: boolean
 }
@@ -124,7 +124,7 @@ function UserForm({ user, onClose }: { user?: UserRow; onClose: () => void }) {
     try {
       const base = { structure_id: form.structure_id || null, title: form.title || null, backup_user_id: form.backup_user_id || null }
       if (user) {
-        await api.patch(`/users/${user.id}`, editable ? { ...base, name: form.name, email: form.email } : base)
+        await api.patch(`/users/${user.id}`, editable ? { ...base, name: form.name, email: form.email } : base, { 'If-Match': String(user.version) })
         toast.success('Compte mis à jour')
         await client.invalidateQueries({ queryKey: ['users'] })
         await client.invalidateQueries({ queryKey: ['user', user.id] })

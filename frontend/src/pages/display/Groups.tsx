@@ -130,7 +130,7 @@ function GroupModal({ group, onClose }: { group: ScreenGroup | null; onClose: ()
     setError(null)
     try {
       const operating_window = ownWindow ? { days, on, off } : null
-      if (group) await api.patch(`/screen-groups/${group.id}`, { name, description: description || null, screen_ids: selected, operating_window })
+      if (group) await api.patch(`/screen-groups/${group.id}`, { name, description: description || null, screen_ids: selected, operating_window }, { 'If-Match': String(group.version) })
       else await api.post('/screen-groups', { code, name, description: description || null, screen_ids: selected, operating_window })
       client.invalidateQueries({ queryKey: ['screen-groups'] })
       client.invalidateQueries({ queryKey: ['screens'] })

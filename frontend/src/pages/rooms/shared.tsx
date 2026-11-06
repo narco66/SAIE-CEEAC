@@ -10,7 +10,7 @@ import './rooms.css'
 export interface UserRef { id: string; name: string; initials?: string }
 export interface Equipment { id: string; code: string; name: string; quantity?: number }
 export interface Room {
-  id: string; code: string; name: string; capacity: number; location_text: string | null; photos: string[]
+  id: string; version: number; code: string; name: string; capacity: number; location_text: string | null; photos: string[]
   floor: { id: string; label: string; level: number } | null; manager: UserRef | null
   approval_mode: 'auto' | 'manual'; min_minutes: number; max_minutes: number; lead_days: number
   prep_minutes: number; cleanup_minutes: number; open_from: string; open_to: string; pending_hold_hours: number

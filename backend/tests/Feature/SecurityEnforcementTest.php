@@ -64,7 +64,7 @@ class SecurityEnforcementTest extends TestCase
         $this->actingAs($tech)->postJson("/api/v1/users/{$functional->id}/reset-mfa", ['reason' => 'Téléphone perdu'])->assertOk();
         $this->assertContains($functional->email, $warned);
 
-        $this->actingAs($tech)->patchJson("/api/v1/users/{$agent->id}", ['email' => 'Nouvel.Agent@test.local'])->assertOk();
+        $this->actingAs($tech)->patchJson("/api/v1/users/{$agent->id}", ['email' => 'Nouvel.Agent@test.local', 'expected_version' => $agent->version])->assertOk();
         $this->assertSame('nouvel.agent@test.local', $agent->refresh()->email);
         $this->actingAs($tech)->postJson("/api/v1/users/{$agent->id}/reactivate")->assertUnprocessable();
     }

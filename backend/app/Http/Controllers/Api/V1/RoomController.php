@@ -81,6 +81,7 @@ class RoomController extends Controller
     public function update(Request $request, Room $room): JsonResponse
     {
         $this->reservations->assertManages($room, $this->user());
+        $this->expectVersion($request, $room);
         $data = $this->validated($request, $room);
         $affected = [];
         if (isset($data['capacity']) && $data['capacity'] < $room->capacity) {
@@ -92,7 +93,7 @@ class RoomController extends Controller
             }
         }
         $before = $room->only(array_keys($data));
-        $room->update(collect($data)->except(['equipment', 'confirm_affected'])->all());
+        $room->update(collect($data)->except(['equipment', 'confirm_affected'])->all() + ['version' => $room->version + 1]);
         if (isset($data['equipment'])) {
             $room->equipment()->sync(collect($data['equipment'])->mapWithKeys(fn ($e) => [$e['id'] => ['quantity' => $e['quantity'] ?? 1]]));
         }

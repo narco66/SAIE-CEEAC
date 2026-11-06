@@ -82,15 +82,15 @@ class ResourceSchemas
                 'powers' => ['type' => 'array', 'items' => $object(['power', 'ends_at', 'active'], ['power' => ['enum' => array_keys((array) config('saie.powers'))], 'scope' => ['type' => ['object', 'array', 'null']], 'ends_at' => $instant, 'active' => $bool])],
                 'validation_languages' => ['type' => 'array', 'items' => $string], 'mfa_enabled' => $bool, 'must_change_password' => $bool, 'server_time' => $instant,
             ]),
-            'Screen' => $object(['id', 'code', 'name', 'kind', 'orientation', 'status', 'operating_window', 'panel_state', 'location', 'groups', 'device'], [
-                'id' => $uuid, 'code' => $string, 'name' => $string, 'kind' => $string, 'orientation' => $string, 'resolution' => $nullableString, 'status' => $string,
+            'Screen' => $object(['id', 'version', 'code', 'name', 'kind', 'orientation', 'status', 'operating_window', 'panel_state', 'location', 'groups', 'device'], [
+                'id' => $uuid, 'version' => $int, 'code' => $string, 'name' => $string, 'kind' => $string, 'orientation' => $string, 'resolution' => $nullableString, 'status' => $string,
                 'operating_window' => ['type' => 'object'], 'audio_enabled' => $bool, 'panel_state' => $string, 'panel_state_at' => $instant,
                 'location' => ['type' => ['object', 'null']], 'room' => $named, 'groups' => ['type' => 'array', 'items' => $object(['id', 'name'], ['id' => $uuid, 'name' => $string])],
                 'device' => ['oneOf' => [['type' => 'null'], ['$ref' => '#/components/schemas/Device']]],
             ]),
             'Device' => $device,
-            'Room' => $object(['id', 'code', 'name', 'capacity', 'floor', 'approval_mode', 'open_from', 'open_to', 'status', 'equipment'], [
-                'id' => $uuid, 'code' => $string, 'name' => $string, 'capacity' => $int, 'floor' => ['type' => ['object', 'null']], 'manager' => $userRef,
+            'Room' => $object(['id', 'version', 'code', 'name', 'capacity', 'floor', 'approval_mode', 'open_from', 'open_to', 'status', 'equipment'], [
+                'id' => $uuid, 'version' => $int, 'code' => $string, 'name' => $string, 'capacity' => $int, 'floor' => ['type' => ['object', 'null']], 'manager' => $userRef,
                 'approval_mode' => ['enum' => ['auto', 'manual']], 'min_minutes' => $int, 'max_minutes' => $int, 'prep_minutes' => $int, 'cleanup_minutes' => $int,
                 'open_from' => ['type' => 'string', 'pattern' => '^\d{2}:\d{2}$'], 'open_to' => ['type' => 'string', 'pattern' => '^\d{2}:\d{2}$'],
                 'status' => ['enum' => ['active', 'inactive']], 'auto_release_enabled' => $bool, 'equipment' => ['type' => 'array'],
@@ -99,12 +99,12 @@ class ResourceSchemas
                 'room' => $object(['id', 'name'], ['id' => $uuid, 'name' => $string]),
                 'busy' => ['type' => 'array', 'description' => 'Intervalles occupés, sans titre de réunion confidentielle (SAL-09)'], 'rules' => ['type' => 'object'],
             ]),
-            'Asset' => $object(['id', 'reference', 'title', 'kind', 'classification', 'status', 'current_version'], [
-                'id' => $uuid, 'reference' => $string, 'title' => $string, 'kind' => $string, 'classification' => $classification, 'language' => $nullableString,
+            'Asset' => $object(['id', 'version', 'reference', 'title', 'kind', 'classification', 'status', 'current_version'], [
+                'id' => $uuid, 'version' => $int, 'reference' => $string, 'title' => $string, 'kind' => $string, 'classification' => $classification, 'language' => $nullableString,
                 'status' => $string, 'owner' => $named, 'creator' => $userRef, 'current_version' => $assetVersion, 'created_at' => $instant, 'updated_at' => $instant,
             ]),
-            'Document' => $object(['id', 'reference', 'title', 'classification', 'status', 'keywords', 'current_version', 'diffusion_allowed'], [
-                'id' => $uuid, 'reference' => $string, 'title' => $string, 'summary' => $nullableString, 'classification' => $classification, 'status' => $string,
+            'Document' => $object(['id', 'version', 'reference', 'title', 'classification', 'status', 'keywords', 'current_version', 'diffusion_allowed'], [
+                'id' => $uuid, 'version' => $int, 'reference' => $string, 'title' => $string, 'summary' => $nullableString, 'classification' => $classification, 'status' => $string,
                 'language' => $nullableString, 'keywords' => ['type' => 'array', 'items' => $string], 'owner' => $named, 'author' => $userRef,
                 'valid_from' => ['type' => ['string', 'null'], 'format' => 'date'], 'expires_at' => ['type' => ['string', 'null'], 'format' => 'date'],
                 'current_version' => ['type' => ['object', 'null']], 'diffusion_allowed' => $bool, 'published_at' => $instant, 'updated_at' => $instant,
@@ -148,7 +148,7 @@ class ResourceSchemas
                 'action' => $string, 'object_type' => $nullableString, 'object_id' => $nullableString, 'reason' => $nullableString,
                 'outcome' => ['enum' => ['success', 'denied', 'failure']], 'request_id' => $nullableString,
             ]),
-            'ScreenGroup' => $object(['id', 'code', 'name', 'operating_window'], ['id' => $uuid, 'code' => $string, 'name' => $string, 'description' => $nullableString, 'screens_count' => $int, 'operating_window' => ['type' => ['object', 'null']], 'screens' => ['type' => 'array'], 'active_campaigns' => $int]),
+            'ScreenGroup' => $object(['id', 'version', 'code', 'name', 'operating_window'], ['id' => $uuid, 'version' => $int, 'code' => $string, 'name' => $string, 'description' => $nullableString, 'screens_count' => $int, 'operating_window' => ['type' => ['object', 'null']], 'screens' => ['type' => 'array'], 'active_campaigns' => $int]),
             'ScreenshotRequest' => $object(['id', 'device_id', 'requested_at'], ['id' => $uuid, 'status' => $nullableString, 'device_id' => $uuid, 'requested_at' => $instant]),
             'AssetStatus' => $object(['status', 'version'], ['status' => $string, 'version' => $assetVersion]),
             'Template' => $object(['id', 'code', 'name', 'orientation', 'version', 'status'], [

@@ -97,7 +97,7 @@ function EditAssignmentModal({ s, onClose }: { s: ScreenDetailData; onClose: () 
     setBusy(true)
     setError(null)
     try {
-      const res = await api.patch<{ data: ScreenDetailData }>(`/screens/${s.id}`, { ...form, room_id: form.kind === 'room_panel' ? form.room_id || null : null, status })
+      const res = await api.patch<{ data: ScreenDetailData }>(`/screens/${s.id}`, { ...form, room_id: form.kind === 'room_panel' ? form.room_id || null : null, status }, { 'If-Match': String(s.version) })
       client.setQueryData(['screen', s.id], res.data)
       client.invalidateQueries({ queryKey: ['screens'] })
       toast.success('Affectation enregistrée')
@@ -346,7 +346,7 @@ function OperationTab({ s, canManage }: { s: ScreenDetailData; canManage: boolea
               body.operating_window = { days, on, off, wake_before_min: wake, ignore_holidays: ignoreHolidays }
               body.window_override_reason = reason
             }
-            const res = await api.patch<{ data: ScreenDetailData }>(`/screens/${s.id}`, body)
+            const res = await api.patch<{ data: ScreenDetailData }>(`/screens/${s.id}`, body, { 'If-Match': String(s.version) })
             client.setQueryData(['screen', s.id], res.data)
             client.invalidateQueries({ queryKey: ['screens'] })
             toast.success('Fonctionnement enregistré')
