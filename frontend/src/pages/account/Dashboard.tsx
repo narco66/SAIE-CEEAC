@@ -208,10 +208,12 @@ export default function Dashboard() {
             <div className="panel-title"><div><h2>Mes prochaines réservations</h2></div><button className="link" onClick={() => navigate('/mes-reservations')}>Toutes</button></div>
             <div className="meeting-list">
               {d.my_reservations.map((r) => (
-                <div key={r.id} style={{ cursor: 'pointer' }} onClick={() => navigate(`/reservations/${r.reservation_id}`)}>
+                // UX-01 (WCAG 2.1.1) : vrai lien, atteignable et activable au clavier.
+                <a key={r.id} href={`/reservations/${r.reservation_id}`} style={{ display: 'flex', color: 'inherit', textDecoration: 'none' }}
+                  onClick={(e) => { e.preventDefault(); navigate(`/reservations/${r.reservation_id}`) }}>
                   <time>{fmtTime(r.starts_at)}</time>
                   <span><strong>{r.room}</strong><small>{fmtDateTime(r.starts_at)} · {r.status === 'pending' ? 'en attente' : 'confirmée'}</small></span>
-                </div>
+                </a>
               ))}
             </div>
           </section>

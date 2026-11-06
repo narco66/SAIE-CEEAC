@@ -195,7 +195,10 @@ class Present
      */
     public static function reservation(Reservation $r, bool $full): array
     {
-        $masked = $r->confidential && ! $full;
+        // SAL-02, SAL-09 : pour un tiers, l'objet et les participants d'une demande encore en attente sont masqués comme ceux d'une
+        // réunion confidentielle (seuls le créneau et la salle sont communiqués avant validation).
+        $pendingOnly = $r->relationLoaded('occurrences') && $r->occurrences->isNotEmpty() && $r->occurrences->every(fn ($o) => $o->status === 'pending');
+        $masked = ($r->confidential || $pendingOnly) && ! $full;
 
         return [
             'id' => $r->id, 'reference' => $r->reference, 'confidential' => $r->confidential, 'version' => $r->version,

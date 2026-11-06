@@ -7,6 +7,7 @@ use App\Models\AccessLink;
 use App\Models\Content;
 use App\Models\Document;
 use App\Models\User;
+use App\Services\ContentAccess;
 use App\Services\DocumentAccess;
 use App\Support\Present;
 use Illuminate\Http\JsonResponse;
@@ -44,9 +45,18 @@ class QrController extends Controller
             return response()->json(['data' => ['type' => 'document', 'public' => false, 'redirect' => "/documents/{$document->id}"]]);
         }
 
+        // DOC-05 : le QR d'un contenu ne mène qu'à un contenu encore diffusable ; hors public, il faut une session et le droit de le voir.
         $content = Content::query()->find($link->target_id);
-        if (! $content || $content->classification !== 'public' && ! $user instanceof User) {
-            return response()->json(['code' => 'UNAUTHENTICATED', 'message' => 'Authentification requise.', 'errors' => (object) []], 401);
+        if (! $content || ! in_array($content->status, ['approved', 'scheduled', 'broadcasting'], true)) {
+            return response()->json(['code' => 'NOT_FOUND', 'message' => 'Ce contenu n’est plus diffusé.', 'errors' => (object) []], 404);
+        }
+        if ($content->classification !== 'public') {
+            if (! $user instanceof User) {
+                return response()->json(['code' => 'UNAUTHENTICATED', 'message' => 'Authentification requise.', 'errors' => (object) []], 401);
+            }
+            if (! app(ContentAccess::class)->scope(Content::query()->whereKey($content->id), $user)->exists()) {
+                return response()->json(['code' => 'FORBIDDEN', 'message' => 'Vous n’avez pas accès à ce contenu.', 'errors' => (object) []], 403);
+            }
         }
 
         return response()->json(['data' => ['type' => 'content', 'public' => $content->classification === 'public', 'title' => $content->title]]);

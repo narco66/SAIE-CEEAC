@@ -407,7 +407,7 @@ class ReservationService
         $lines = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//CEEAC//SAIE-CEEAC//FR', 'CALSCALE:GREGORIAN', 'METHOD:PUBLISH', 'X-WR-CALNAME:'.$escape($name), 'X-WR-TIMEZONE:'.config('saie.timezone')];
         foreach ($occurrences as $o) {
             $reservation = $o->reservation;
-            $visible = $viewer && ($reservation->organizer_id === $viewer->id || $this->manages($o->room, $viewer)) || ! $reservation->confidential;
+            $visible = $viewer && ($reservation->organizer_id === $viewer->id || $this->manages($o->room, $viewer)) || (! $reservation->confidential && $o->status !== 'pending');
             $lines[] = 'BEGIN:VEVENT';
             $lines[] = 'UID:'.$o->id.'@saie-ceeac';
             $lines[] = 'DTSTAMP:'.now()->utc()->format('Ymd\THis\Z');

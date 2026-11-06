@@ -119,3 +119,5 @@ th { font-size: 12px; letter-spacing: .3px; color: #4f5b67; }
 .status { font-size: 12px; }
 .field-error, .field-help, .search-field input, .form-grid input, .form-grid select, .field input, .field select, .field textarea { font-size: 12px; }
 small { font-size: max(12px, 1em * .85); }
+/* Entrées de liste cliquables rendues en liens (UX-01) : même mise en page que la maquette. */
+.meeting-list > a { display: flex; align-items: flex-start; gap: 14px; padding: 11px 0; border-top: 1px solid #eef1f4; }

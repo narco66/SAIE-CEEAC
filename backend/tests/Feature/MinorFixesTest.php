@@ -2,15 +2,19 @@
 
 namespace Tests\Feature;
 
+use App\Models\AccessLink;
 use App\Models\Approval;
 use App\Models\ChecklistItem;
 use App\Models\Content;
 use App\Models\Document;
+use App\Models\Language;
+use App\Models\Manifest;
 use App\Models\ReservationOccurrence;
 use App\Models\ServiceRequest;
 use App\Models\ServiceType;
 use App\Services\ContentWorkflow;
 use Carbon\CarbonImmutable;
+use Illuminate\Database\QueryException;
 use Tests\TestCase;
 
 /**
@@ -92,5 +96,60 @@ class MinorFixesTest extends TestCase
 
         $this->actingAs($this->userWith('agent', 'COM'))->getJson("/api/v1/documents/{$document->id}")->assertNotFound();
         $this->actingAs($owner)->getJson("/api/v1/documents/{$document->id}")->assertOk();
+    }
+
+    public function test_content_qr_requires_a_broadcastable_content_and_the_right_to_see_it(): void
+    {
+        $author = $this->userWith('contributeur');
+        $content = Content::query()->create([
+            'reference' => 'CNT-QR', 'title' => 'Note interne', 'category_id' => $this->category()->id, 'owner_structure_id' => $author->structure_id,
+            'author_id' => $author->id, 'classification' => 'interne', 'expires_at' => now()->addDays(5), 'status' => 'approved',
+        ]);
+        AccessLink::query()->create(['code' => 'qrcontenu1', 'target_type' => 'content', 'target_id' => $content->id, 'classification' => 'interne', 'created_by' => $author->id]);
+
+        $this->getJson('/api/v1/q/qrcontenu1')->assertUnauthorized();
+        $this->actingAs($this->userWith('agent', 'DSI'))->getJson('/api/v1/q/qrcontenu1')->assertForbidden();
+        $this->app['auth']->forgetGuards();
+        $this->actingAs($author)->getJson('/api/v1/q/qrcontenu1')->assertOk();
+
+        $content->forceFill(['status' => 'archived'])->save();
+        $this->app['auth']->forgetGuards();
+        $this->actingAs($author)->getJson('/api/v1/q/qrcontenu1')->assertNotFound();
+    }
+
+    public function test_inactive_language_is_refused_by_the_server(): void
+    {
+        Language::query()->where('code', 'en')->update(['is_active' => false]);
+        $author = $this->userWith('contributeur');
+
+        $this->actingAs($author)->postJson('/api/v1/contents', [
+            'title' => 'Communiqué', 'category_id' => $this->category()->id, 'classification' => 'interne', 'expires_at' => now()->addDays(5)->toIso8601String(),
+            'languages' => ['fr' => ['title' => 'Réunion'], 'en' => ['title' => 'Meeting']],
+        ])->assertUnprocessable()->assertJsonPath('code', 'LANGUAGE_UNKNOWN');
+    }
+
+    public function test_subject_of_a_pending_request_is_hidden_from_third_parties(): void
+    {
+        $manager = $this->userWith('gestionnaire_salle');
+        $room = $this->room(['approval_mode' => 'manual', 'manager_id' => $manager->id]);
+        $day = CarbonImmutable::now('Africa/Libreville')->addDays(3)->setTime(9, 0);
+        $id = $this->actingAs($this->userWith('agent'))->postJson('/api/v1/reservations', [
+            'room_id' => $room->id, 'start_at' => $day->toIso8601String(), 'end_at' => $day->addHour()->toIso8601String(),
+            'confidentiality' => false, 'subject' => 'Restructuration du service', 'participant_count' => 4,
+        ])->assertCreated()->json('data.id');
+
+        $this->actingAs($this->userWith('agent', 'DSI'))->getJson("/api/v1/reservations/$id")->assertOk()->assertJsonPath('data.subject', 'Réservée');
+        $this->actingAs($manager)->getJson("/api/v1/reservations/$id")->assertOk()->assertJsonPath('data.subject', 'Restructuration du service');
+        $feed = $this->actingAs($this->userWith('agent', 'DSI'))->get("/api/v1/rooms/{$room->id}/calendar.ics")->assertOk()->getContent();
+        $this->assertStringNotContainsString('Restructuration', $feed);
+    }
+
+    public function test_proof_of_broadcast_is_not_deleted_with_its_player(): void
+    {
+        [$device] = $this->pairedDevice($this->screen('ECR-PREUVE'));
+        Manifest::query()->create(['device_id' => $device->id, 'version' => 1, 'etag' => 'e1', 'payload' => [], 'valid_until' => now()->addHour(), 'generated_at' => now()]);
+
+        $this->expectException(QueryException::class);
+        $device->delete();
     }
 }

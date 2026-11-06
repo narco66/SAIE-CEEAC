@@ -8,6 +8,7 @@ use App\Models\Approval;
 use App\Models\AssetVersion;
 use App\Models\Content;
 use App\Models\ContentVersion;
+use App\Models\Language;
 use App\Models\User;
 use App\Models\WorkflowEvent;
 use App\Services\ContentAccess;
@@ -20,6 +21,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 
 /**
  * Contenus institutionnels multilingues (V17 à V19, PUB-01, PUB-02, PUB-08).
@@ -124,7 +126,7 @@ class ContentController extends Controller
     public function languages(Request $request, Content $content): JsonResponse
     {
         $this->assertEditable($content);
-        $data = $request->validate(['lang' => ['required', 'in:fr,en,pt,es', 'exists:languages,code'], 'title' => ['required', 'string', 'max:200'], 'body' => ['nullable', 'string', 'max:2000']]);
+        $data = $request->validate(['lang' => ['required', 'in:fr,en,pt,es', Rule::exists('languages', 'code')->where('is_active', true)], 'title' => ['required', 'string', 'max:200'], 'body' => ['nullable', 'string', 'max:2000']]);
         if ($content->languages()->count() >= 4) {
             throw new BusinessException('LANGUAGE_LIMIT', 'Un contenu porte au plus quatre versions linguistiques.', 422);
         }
@@ -136,7 +138,7 @@ class ContentController extends Controller
     public function submit(Request $request, Content $content): JsonResponse
     {
         $this->assertEditable($content);
-        $data = $request->validate(['languages' => ['required', 'array', 'min:1'], 'languages.*' => ['in:fr,en,pt,es']]);
+        $data = $request->validate(['languages' => ['required', 'array', 'min:1'], 'languages.*' => ['in:fr,en,pt,es', Rule::exists('languages', 'code')->where('is_active', true)]]);
         $this->workflow->submit($content, $data['languages'], $this->user());
 
         return $this->show($content->refresh());
@@ -245,9 +247,10 @@ class ContentController extends Controller
     private function validated(Request $request, bool $creating): array
     {
         $req = $creating ? 'required' : 'sometimes';
-        $unknown = array_diff(array_keys((array) $request->input('languages', [])), ['fr', 'en', 'pt', 'es']);
+        // PUB-08 : seules les langues actives du référentiel (V36) sont acceptées, côté serveur et pas seulement dans l'interface.
+        $unknown = array_diff(array_keys((array) $request->input('languages', [])), Language::query()->where('is_active', true)->pluck('code')->all());
         if ($unknown !== []) {
-            throw new BusinessException('LANGUAGE_UNKNOWN', 'Langue non prise en charge : '.implode(', ', $unknown), 422);
+            throw new BusinessException('LANGUAGE_UNKNOWN', 'Langue inactive ou non prise en charge : '.implode(', ', $unknown), 422);
         }
 
         return $request->validate([
