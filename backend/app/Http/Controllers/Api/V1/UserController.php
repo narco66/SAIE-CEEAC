@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
+use App\Models\Approval;
 use App\Models\User;
 use App\Support\BusinessException;
 use App\Support\Present;
@@ -98,7 +99,10 @@ class UserController extends Controller
         $user->forceFill(['status' => 'disabled', 'remember_token' => null])->save();
         $sessions = DB::table('sessions')->where('user_id', $user->id)->delete();
         $this->access()->flush($user);
-        $this->audit()->log('user.deactivated', $user, $data['reason'], after: ['sessions_closed' => $sessions]);
+        // HAB-01 : les validations ouvertes du compte désactivé repassent « à affecter » (réaffectation automatique par saie:tick).
+        $released = Approval::query()->where('status', 'open')->where('assignee_id', $user->id)->update(['assignee_id' => null, 'updated_at' => now()]);
+        Approval::query()->where('status', 'open')->where('backup_id', $user->id)->update(['backup_id' => null, 'updated_at' => now()]);
+        $this->audit()->log('user.deactivated', $user, $data['reason'], after: ['sessions_closed' => $sessions, 'approvals_released' => $released]);
 
         return $this->show($user);
     }

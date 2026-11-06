@@ -21,6 +21,7 @@ use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Date;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
@@ -40,6 +41,8 @@ class AppServiceProvider extends ServiceProvider
         // Étape du second facteur : la requête ne porte pas d'adresse, la limite vise alors l'utilisateur en attente.
         RateLimiter::for('login', fn (Request $request) => Limit::perMinute(10)->by((Str::lower((string) $request->input('email'))
             ?: 'mfa:'.($request->hasSession() ? (string) ($request->session()->get('mfa.pending')['user'] ?? '') : '')).'|'.$request->ip()));
+        // TECH-04 : migrate:fresh, db:wipe et migrate:reset sont refusés en production (aucune perte de données par erreur).
+        DB::prohibitDestructiveCommands($this->app->isProduction());
         RateLimiter::for('device', fn (Request $request) => Limit::perMinute(120)->by('device:'.($request->user()?->getKey() ?? $request->ip())));
         RateLimiter::for('integration', fn (Request $request) => Limit::perMinute(60)->by('integration:'.($request->user()?->getKey() ?? $request->ip())));
         RateLimiter::for('api', fn (Request $request) => Limit::perMinute(300)->by($request->user()?->getKey() ?: $request->ip()));

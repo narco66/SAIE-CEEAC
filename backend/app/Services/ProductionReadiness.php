@@ -24,6 +24,8 @@ class ProductionReadiness
             $this->placeholders(),
             $this->check('Adresses en HTTPS', $this->https(config('app.url')) && $this->https(config('app.frontend_url')), 'APP_URL='.config('app.url').' · FRONTEND_URL='.config('app.frontend_url')),
             $this->check('Cookies de session sécurisés', (bool) config('session.secure'), 'SESSION_SECURE_COOKIE doit valoir true derrière TLS'),
+            // API-05 : en production, CORS limité aux origines HTTPS déclarées (jamais les origines de développement par défaut).
+            $this->check('Origines CORS déclarées', collect(config('cors.allowed_origins'))->isNotEmpty() && collect(config('cors.allowed_origins'))->every(fn ($o) => $this->https((string) $o)), 'CORS_ALLOWED_ORIGINS='.implode(',', (array) config('cors.allowed_origins'))),
             $this->check('Mode démonstration désactivé', ! config('saie.demo_mode'), config('saie.demo_mode') ? 'SAIE_DEMO_MODE=true' : 'SAIE_DEMO_MODE=false'),
             $this->demoData(),
             $this->check('Second facteur imposé', (bool) config('saie.security.mfa_enforced'), 'SAIE_MFA_ENFORCED doit valoir true (SEC-01)'),

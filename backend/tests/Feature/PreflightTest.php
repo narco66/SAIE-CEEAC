@@ -33,6 +33,7 @@ class PreflightTest extends TestCase
             'saie.antivirus.driver' => 'clamd', 'saie.antivirus.clamd_host' => '127.0.0.1', 'saie.antivirus.clamd_port' => $port,
             'saie.device.signing_key_path' => $this->keyPath, 'saie.device.signing_key_id' => 'mk-2026-11',
             'mail.default' => 'smtp', 'queue.default' => 'redis', 'logging.channels.single.level' => 'warning', 'logging.channels.daily.level' => 'warning',
+            'cors.allowed_origins' => ['https://saie.ceeac-eccas.org'],
         ]);
         // Compte applicatif à moindre privilège, comme en production (infra/postgres/10-roles.sh) : le compte de test local
         // est propriétaire des tables ; le contrôle réel est vérifié séparément.
@@ -43,6 +44,13 @@ class PreflightTest extends TestCase
                 return ['role' => 'saie_app', 'super' => false, 'owner' => false, 'tamper' => false];
             }
         });
+    }
+
+    public function test_development_cors_origins_block_the_go_live(): void
+    {
+        config(['cors.allowed_origins' => ['http://localhost:5173', 'http://localhost:5174']]);
+
+        $this->assertSame('fail', $this->statuses()['Origines CORS déclarées']);
     }
 
     public function test_application_connected_as_table_owner_blocks_the_go_live(): void

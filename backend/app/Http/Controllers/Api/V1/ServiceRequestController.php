@@ -46,7 +46,8 @@ class ServiceRequestController extends Controller
             $this->deny('Type de prestation hors périmètre');
         }
         $data = $request->validate(['status' => ['required', 'in:accepted,clarification,ready,impossible'], 'note' => ['nullable', 'required_if:status,clarification,impossible', 'string', 'max:500']]);
-        if (in_array($serviceRequest->status, ['cancelled', 'ready', 'impossible'], true) && $data['status'] !== 'accepted') {
+        // SAL-08 : une prestation annulée est close définitivement ; une prestation prête ou impossible ne peut qu'être reprise (« acceptée »).
+        if ($serviceRequest->status === 'cancelled' || (in_array($serviceRequest->status, ['ready', 'impossible'], true) && $data['status'] !== 'accepted')) {
             throw new BusinessException('INVALID_TRANSITION', 'Cette prestation est déjà clôturée.', 409);
         }
         $serviceRequest->forceFill(['status' => $data['status'], 'response_note' => $data['note'] ?? null, 'assignee_id' => $this->user()->id, 'updated_by' => $this->user()->id])->save();
@@ -72,7 +73,10 @@ class ServiceRequestController extends Controller
         }
         foreach ($data['items'] as $item) {
             $row = isset($item['id']) ? ChecklistItem::query()->where('occurrence_id', $occurrence->id)->findOrFail($item['id']) : new ChecklistItem(['occurrence_id' => $occurrence->id]);
-            $row->fill(['phase' => $item['phase'], 'label' => $item['label'], 'note' => $item['note'] ?? null]);
+            // SAL-14 : un constat déjà horodaté ne se réécrit pas.
+            if (! $row->done_at) {
+                $row->fill(['phase' => $item['phase'], 'label' => $item['label'], 'note' => $item['note'] ?? null]);
+            }
             if (! empty($item['done']) && ! $row->done_at) {
                 $row->done_at = now();
                 $row->done_by = $this->user()->id;

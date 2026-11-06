@@ -27,11 +27,15 @@ class DocumentAccess
 
         return $query->where(function (Builder $q) use ($managed, $user, $structureId): void {
             $q->where(function (Builder $readable) use ($structureId): void {
-                $readable->where('status', 'published')->where(function (Builder $c) use ($structureId): void {
-                    $c->where('classification', 'public')
-                        ->orWhere(fn (Builder $i) => $i->where('classification', 'interne')->where(fn (Builder $a) => $a->whereDoesntHave('audiences')
-                            ->orWhereHas('audiences', fn (Builder $s) => $s->where('structures.id', $structureId))));
-                });
+                // DOC-03 : un document échu ou pas encore en vigueur n'est plus proposé aux lecteurs (le propriétaire le voit toujours).
+                $readable->where('status', 'published')
+                    ->where(fn (Builder $v) => $v->whereNull('expires_at')->orWhere('expires_at', '>', now()))
+                    ->where(fn (Builder $v) => $v->whereNull('valid_from')->orWhere('valid_from', '<=', now()))
+                    ->where(function (Builder $c) use ($structureId): void {
+                        $c->where('classification', 'public')
+                            ->orWhere(fn (Builder $i) => $i->where('classification', 'interne')->where(fn (Builder $a) => $a->whereDoesntHave('audiences')
+                                ->orWhereHas('audiences', fn (Builder $s) => $s->where('structures.id', $structureId))));
+                    });
             })->orWhere('author_id', $user->id);
             if ($managed === null) {
                 $q->orWhereRaw('true');

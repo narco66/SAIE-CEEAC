@@ -138,7 +138,7 @@ class ManifestBuilder
                 'ignore_holidays' => (bool) ($window['ignore_holidays'] ?? false),
             ],
             'non_working_days' => Holiday::query()->whereBetween('date', [now($tz)->subDay()->toDateString(), now($tz)->addDays(60)->toDateString()])->orderBy('date')->pluck('date')->map(fn ($d) => $d->format('Y-m-d'))->all(),
-            'audio_policy' => ['enabled' => $audioAllowed, 'max_volume' => $audioAllowed ? min((int) $zone->audio_max_volume, (int) Setting::effective('operating.audio_max_volume')) : 0, 'hours' => ['on' => '08:00', 'off' => '18:00']],
+            'audio_policy' => ['enabled' => $audioAllowed, 'max_volume' => $audioAllowed ? min((int) $zone->audio_max_volume, (int) Setting::effective('operating.audio_max_volume')) : 0, 'hours' => ['on' => $window['on'] ?? '08:00', 'off' => $window['off'] ?? '18:00']],
             'schedule' => $schedule,
             'alerts' => $alerts,
             'agenda' => $this->agendaFor($floor),

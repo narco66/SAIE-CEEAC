@@ -41,7 +41,7 @@ class SaieTick extends Command
             $audit->log('content.expired', $content, actor: null);
         }
         foreach (Content::query()->whereNotIn('status', ['archived', 'expired', 'draft'])->where('is_permanent', false)->whereBetween('expires_at', [now(), now()->addDays(2)])->with('author')->get() as $content) {
-            $notifier->notify($content->author, 'content.expiring', 'Expiration prochaine', $content->title, "/affichage/contenus/{$content->id}/edition", 'content', $content->id);
+            $notifier->notify($content->author, 'content.expiring', 'Expiration prochaine', $workflow->label($content), "/affichage/contenus/{$content->id}/edition", 'content', $content->id);
         }
 
         $report['réunions_en_cours'] = ReservationOccurrence::query()->where('status', 'confirmed')->where('starts_at', '<=', now())->where('ends_at', '>', now())->update(['status' => 'in_progress', 'updated_at' => now()]);

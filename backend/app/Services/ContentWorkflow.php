@@ -126,14 +126,14 @@ class ContentWorkflow
                 $line->forceFill(['status' => 'submitted', 'submitted_at' => now(), 'submitted_by' => $user->id])->save();
                 $approval = Approval::query()->create([
                     'object_type' => 'content', 'object_id' => $content->id, 'lang' => $lang, 'revision' => $line->revision,
-                    'title' => $content->title, 'requested_by' => $user->id, 'assignee_id' => $validator?->id, 'backup_id' => $this->eligibleBackup($validator, $content, $lang),
+                    'title' => $this->label($content), 'requested_by' => $user->id, 'assignee_id' => $validator?->id, 'backup_id' => $this->eligibleBackup($validator, $content, $lang),
                     'due_at' => BusinessCalendar::addBusinessDays(now(), (int) config('saie.workflow.content_due_business_days')),
                 ]);
                 $this->event($content, 'submitted', 'draft', 'submitted', $user, null, $lang, $line->revision);
                 if (! $validator) {
-                    $this->notifier->notify($this->functionalAdmins(), 'approval.unassigned', 'Validation sans validateur habilité', $content->title.' · version '.strtoupper($lang), '/mes-taches', 'content', $content->id, "unassigned{$line->revision}-$lang");
+                    $this->notifier->notify($this->functionalAdmins(), 'approval.unassigned', 'Validation sans validateur habilité', $this->label($content).' · version '.strtoupper($lang), '/mes-taches', 'content', $content->id, "unassigned{$line->revision}-$lang");
                 }
-                $this->notifier->notify($validator, 'content.submitted', 'Nouvelle validation assignée', $content->title.' · version '.strtoupper($lang), "/affichage/contenus/{$content->id}/validation?lang=$lang", 'content', $content->id, "rev{$line->revision}-$lang");
+                $this->notifier->notify($validator, 'content.submitted', 'Nouvelle validation assignée', $this->label($content).' · version '.strtoupper($lang), "/affichage/contenus/{$content->id}/validation?lang=$lang", 'content', $content->id, "rev{$line->revision}-$lang");
                 $this->audit->log('content.submitted', $content, lang: $lang, version: $line->revision, after: ['approval_id' => $approval->id]);
             }
             $this->refreshStatus($content);
@@ -163,7 +163,7 @@ class ContentWorkflow
                 }
                 $approval?->forceFill(['assignee_id' => $reassignTo->id, 'backup_id' => $this->eligibleBackup($reassignTo, $content, $lang)])->save();
                 $this->event($content, 'reassigned', 'submitted', 'submitted', $user, $reason, $lang, $line->revision);
-                $this->notifier->notify($reassignTo, 'content.reassigned', 'Validation réaffectée', $content->title, "/affichage/contenus/{$content->id}/validation?lang=$lang", 'content', $content->id, "reassign{$line->revision}-$lang-".now()->timestamp);
+                $this->notifier->notify($reassignTo, 'content.reassigned', 'Validation réaffectée', $this->label($content), "/affichage/contenus/{$content->id}/validation?lang=$lang", 'content', $content->id, "reassign{$line->revision}-$lang-".now()->timestamp);
                 $this->audit->log('content.reassigned', $content, $reason, lang: $lang, version: $line->revision, after: ['assignee' => $reassignTo->id]);
 
                 return;
@@ -188,7 +188,7 @@ class ContentWorkflow
             }
             $approval?->forceFill(['status' => 'decided', 'decision' => $decision === 'approve' ? 'approved' : 'returned', 'reason' => $reason, 'decided_by' => $user->id, 'decided_at' => now()])->save();
             $this->event($content, $to, 'submitted', $to, $user, $reason, $lang, $line->revision);
-            $this->notifier->notify($content->author, 'content.'.$to, $to === 'approved' ? 'Version approuvée' : 'Version retournée pour correction', $content->title.' · '.strtoupper($lang), "/affichage/contenus/{$content->id}/edition", 'content', $content->id, "$to{$line->revision}-$lang");
+            $this->notifier->notify($content->author, 'content.'.$to, $to === 'approved' ? 'Version approuvée' : 'Version retournée pour correction', $this->label($content).' · '.strtoupper($lang), "/affichage/contenus/{$content->id}/edition", 'content', $content->id, "$to{$line->revision}-$lang");
             $this->audit->log('content.'.$to, $content, $reason, lang: $lang, version: $line->revision);
             $this->refreshStatus($content);
         });
@@ -213,6 +213,15 @@ class ContentWorkflow
             ->merge(ContentLanguage::query()->where('content_id', $content->id)->whereNotNull('submitted_by')->pluck('submitted_by'))
             ->merge(DB::table('audit_logs')->where('object_id', $content->id)->whereIn('action', ['content.created', 'content.updated', 'content.duplicated'])->whereNotNull('actor_id')->pluck('actor_id'))
             ->filter()->unique()->values()->all();
+    }
+
+    /**
+     * NOT-02, DOC-04 : libellé d'un contenu dans les notifications, tâches et courriels ; un contenu restreint n'y est
+     * désigné que par sa référence.
+     */
+    public function label(Content $content): string
+    {
+        return $content->classification === 'restreint' ? $content->reference.' (contenu restreint)' : $content->title;
     }
 
     public function assertCanValidate(Content $content, string $lang, User $user): void
@@ -360,7 +369,7 @@ class ContentWorkflow
                 continue;
             }
             $approval->forceFill(['assignee_id' => $validator->id, 'backup_id' => $this->eligibleBackup($validator, $content, (string) $approval->lang)])->save();
-            $this->notifier->notify($validator, 'content.submitted', 'Nouvelle validation assignée', $content->title.' · version '.strtoupper((string) $approval->lang), "/affichage/contenus/{$content->id}/validation?lang={$approval->lang}", 'content', $content->id, "assign-{$approval->id}");
+            $this->notifier->notify($validator, 'content.submitted', 'Nouvelle validation assignée', $this->label($content).' · version '.strtoupper((string) $approval->lang), "/affichage/contenus/{$content->id}/validation?lang={$approval->lang}", 'content', $content->id, "assign-{$approval->id}");
             $this->audit->log('content.assigned', $content, 'Validateur habilité disponible', lang: $approval->lang, version: $approval->revision, after: ['assignee' => $validator->id], actor: null);
             $assigned++;
         }

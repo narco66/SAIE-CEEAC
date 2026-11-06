@@ -106,6 +106,8 @@ class DashboardController extends Controller
             ->map(fn ($l) => ['id' => 'ret-'.$l->id, 'type' => 'content_return', 'object' => $l->content->title, 'reference' => $l->content->reference, 'lang' => $l->lang,
                 'action' => 'Corriger la version '.strtoupper($l->lang), 'emitter' => null, 'due_at' => null, 'state' => 'to_correct', 'link' => "/affichage/contenus/{$l->content_id}/edition", 'reason' => $l->last_return_reason]);
         $services = $this->can('services.process') ? ServiceRequest::query()->with(['serviceType', 'occurrence.room', 'occurrence.reservation'])->whereIn('status', ['requested', 'clarification'])
+            // SAL-08 : un pouvoir « prestations » limité à certains types ne voit que ces types dans ses tâches.
+            ->when($this->access()->powerScope($this->user(), 'prestations'), fn ($q, $scope) => $q->whereHas('serviceType', fn ($t) => $t->whereIn('code', $scope['service_types'] ?? ['__none__'])))
             ->whereHas('occurrence', fn ($o) => $o->where('ends_at', '>', now()))->orderBy('due_at')->get()
             ->map(fn ($s) => ['id' => 'svc-'.$s->id, 'type' => 'service', 'object' => $s->serviceType->name.' · '.$s->occurrence->room->name, 'reference' => $s->occurrence->reservation->reference, 'lang' => null,
                 'action' => 'Traiter la prestation', 'emitter' => null, 'due_at' => Present::date($s->due_at), 'state' => $s->due_at?->isPast() ? 'overdue' : 'open', 'link' => '/prestations']) : collect();

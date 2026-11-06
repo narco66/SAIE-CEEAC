@@ -176,7 +176,7 @@ class ReservationService
             throw new BusinessException('REASON_REQUIRED', 'Un déplacement administratif exige un motif.', 422);
         }
         $this->checkRules($room, $start, $end, $user);
-        $this->checkCapacity($room, (int) ($changes['participant_count'] ?? $reservation->participant_count), $changes['capacity_override_reason'] ?? null, $user);
+        $override = $this->checkCapacity($room, (int) ($changes['participant_count'] ?? $reservation->participant_count), $changes['capacity_override_reason'] ?? null, $user);
         $conflicts = $this->conflicts($room, [[$start, $end]], $occurrence->id);
         if ($conflicts !== []) {
             throw new BusinessException('BOOKING_CONFLICT', 'Le nouveau créneau n’est pas disponible. La réservation initiale est conservée.', 409, ['conflicts' => $conflicts]);
@@ -187,12 +187,12 @@ class ReservationService
             // SAL-07 : l'exemption de validation se juge sur la salle de destination (son gestionnaire), pas sur la salle d'origine.
             $managesTarget = $this->manages($room, $user);
             $needsApproval = $room->approval_mode === 'manual' && ! $managesTarget && ($room->id !== $occurrence->room_id || ! $start->equalTo($occurrence->starts_at) || ! $end->equalTo($occurrence->ends_at));
-            DB::transaction(function () use ($occurrence, $room, $start, $end, $changes, $reservation, $needsApproval, $user): void {
+            DB::transaction(function () use ($occurrence, $room, $start, $end, $changes, $reservation, $needsApproval, $user, $override): void {
                 $occurrence->forceFill([
                     'room_id' => $room->id, 'starts_at' => $start, 'ends_at' => $end,
                     'blocking_start' => $start->subMinutes($room->prep_minutes), 'blocking_end' => $end->addMinutes($room->cleanup_minutes),
                     'status' => $needsApproval ? 'pending' : $occurrence->status, 'hold_until' => $needsApproval ? now()->addHours($room->pending_hold_hours) : $occurrence->hold_until,
-                    'version' => $occurrence->version + 1,
+                    'version' => $occurrence->version + 1, 'capacity_override' => $override !== null, 'capacity_override_reason' => $override,
                 ])->save();
                 $occurrence->resourceBookings()->update(['blocking_start' => $occurrence->blocking_start, 'blocking_end' => $occurrence->blocking_end]);
                 // Les prestations encore ouvertes suivent la réunion déplacée : échéance 2 h avant le nouveau début.
