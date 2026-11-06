@@ -84,7 +84,7 @@ class CampaignController extends Controller
         if (! in_array($campaign->status, ['draft', 'suspended'], true)) {
             throw new BusinessException('CAMPAIGN_LOCKED', 'Suspendez la campagne avant de la modifier.', 409);
         }
-        $this->expectVersion($request, $campaign->version);
+        $this->expectVersion($request, $campaign);
         $this->assertCampaignInScope($campaign);
         $data = $this->validated($request, false);
         if (isset($data['targets'])) {

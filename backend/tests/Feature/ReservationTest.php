@@ -202,6 +202,30 @@ class ReservationTest extends TestCase
         $this->assertSame(3, Content::query()->where('kind', 'welcome')->where('status', 'archived')->count());
     }
 
+    /**
+     * API-04 : une modification enregistrée par un autre utilisateur entre le contrôle de version et l'écriture n'est pas écrasée.
+     */
+    public function test_concurrent_write_between_version_check_and_save_is_refused_without_overwriting(): void
+    {
+        $created = $this->actingAs($this->agent)->postJson('/api/v1/reservations', $this->payload('10:00', '11:00'))->assertCreated();
+        $occurrence = ReservationOccurrence::query()->findOrFail($created->json('data.occurrences.0.id'));
+        $concurrent = $this->day->setTime(16, 0);
+        $raced = false;
+        ReservationOccurrence::saving(function (ReservationOccurrence $saved) use (&$raced, $concurrent): void {
+            if (! $raced) {
+                $raced = true;
+                DB::table('reservation_occurrences')->where('id', $saved->id)->update(['starts_at' => $concurrent, 'ends_at' => $concurrent->addHour(), 'blocking_start' => $concurrent->subMinutes(15), 'blocking_end' => $concurrent->addMinutes(75), 'version' => DB::raw('version + 1')]);
+            }
+        });
+
+        $newStart = $this->day->setTime(15, 0);
+        $this->actingAs($this->agent)->patchJson("/api/v1/occurrences/{$occurrence->id}", ['start_at' => $newStart->toIso8601String(), 'end_at' => $newStart->addHour()->toIso8601String(), 'expected_version' => 1])
+            ->assertStatus(409)->assertJsonPath('code', 'VERSION_CONFLICT')->assertJsonPath('details.current_version', 2);
+
+        // L'écrivain simulé partage la transaction de la requête, annulée avec elle ; un vrai concurrent aurait déjà validé la sienne.
+        $this->assertFalse($occurrence->refresh()->starts_at->equalTo($newStart), 'La modification fondée sur une version périmée a été appliquée');
+    }
+
     public function test_moving_a_meeting_moves_the_deadline_of_its_services(): void
     {
         $created = $this->actingAs($this->agent)->postJson('/api/v1/reservations', $this->payload('10:00', '11:00'))->assertCreated();

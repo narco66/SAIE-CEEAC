@@ -2,13 +2,14 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\GuardsVersion;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Template extends Model
 {
-    use HasUuids;
+    use GuardsVersion, HasUuids;
 
     /**
      * Les attributs sont alimentés exclusivement par des données validées côté contrôleur ou service.

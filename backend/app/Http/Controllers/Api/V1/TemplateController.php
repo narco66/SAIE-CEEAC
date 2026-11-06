@@ -51,7 +51,7 @@ class TemplateController extends Controller
         if ($template->status === 'archived') {
             throw new BusinessException('TEMPLATE_ARCHIVED', 'Un modèle archivé ne peut plus être modifié.', 409);
         }
-        $this->expectVersion($request, $template->version);
+        $this->expectVersion($request, $template);
         $data = $this->validated($request, false);
         $template->fill($data);
         $template->version++;

@@ -117,7 +117,7 @@ class ContentController extends Controller
     public function update(Request $request, Content $content): JsonResponse
     {
         $this->assertEditable($content);
-        $this->expectVersion($request, $content->version);
+        $this->expectVersion($request, $content);
         $data = $this->validated($request, false);
         $content = $this->workflow->update($content, collect($data)->except('languages')->all(), $data['languages'] ?? [], $this->user());
         $this->ensureQr($content);

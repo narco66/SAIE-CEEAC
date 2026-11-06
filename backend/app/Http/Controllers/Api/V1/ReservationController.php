@@ -229,7 +229,7 @@ class ReservationController extends Controller
             'participant_count' => ['sometimes', 'integer', 'min:1'], 'subject' => ['sometimes', 'string', 'max:200'],
             'reason' => ['nullable', 'string', 'max:500'], 'expected_version' => ['nullable', 'integer'], 'capacity_override_reason' => ['nullable', 'string', 'max:300'],
         ]);
-        $this->expectVersion($request, $occurrence->version);
+        $this->expectVersion($request, $occurrence);
         $updated = $this->service->modify($occurrence, $data, $this->user(), $data['reason'] ?? null);
         $this->syncWelcome($updated);
 
@@ -245,7 +245,7 @@ class ReservationController extends Controller
             'room_id' => ['required', 'uuid', 'exists:rooms,id'], 'time_from' => ['required', 'date_format:H:i'], 'time_to' => ['required', 'date_format:H:i', 'after:time_from'],
             'reason' => ['nullable', 'string', 'max:500'], 'expected_version' => ['nullable', 'integer'],
         ]);
-        $this->expectVersion($request, $occurrence->version);
+        $this->expectVersion($request, $occurrence);
         $updated = $this->service->modifyFollowing($occurrence, $data['room_id'], $data['time_from'], $data['time_to'], $this->user(), $data['reason'] ?? null);
         foreach ($updated as $item) {
             $this->syncWelcome($item);

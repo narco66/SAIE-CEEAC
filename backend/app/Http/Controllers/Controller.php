@@ -9,6 +9,7 @@ use App\Support\BusinessException;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -102,14 +103,19 @@ abstract class Controller
      * API-04 : concurrence optimiste obligatoire — la version lue (If-Match ou expected_version) doit accompagner la
      * modification ; sans elle, la requête est refusée plutôt que d'écraser la modification d'un autre utilisateur.
      */
-    protected function expectVersion(Request $request, int $current): void
+    protected function expectVersion(Request $request, Model $model): void
     {
+        $current = (int) $model->getAttribute('version');
         $expected = $request->header('If-Match') ?? $request->input('expected_version');
         if ($expected === null || $expected === '') {
             throw new BusinessException('VERSION_REQUIRED', 'Version de l’objet manquante : rechargez la page avant de modifier.', 428, ['current_version' => $current]);
         }
         if ((int) trim((string) $expected, '"W/') !== $current) {
             throw new BusinessException('VERSION_CONFLICT', 'L’objet a été modifié par un autre utilisateur. Rechargez la version courante.', 409, ['current_version' => $current]);
+        }
+        // Réservation atomique à l'écriture (GuardsVersion) : ferme la fenêtre entre ce contrôle et l'enregistrement.
+        if (method_exists($model, 'expectVersionOnSave')) {
+            $model->expectVersionOnSave($current);
         }
     }
 }
