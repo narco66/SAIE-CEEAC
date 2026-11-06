@@ -17,13 +17,7 @@ class AuditController extends Controller
     public function index(Request $request): JsonResponse
     {
         $this->authorizePermission('audit.view');
-        $query = AuditLog::query()
-            ->when($request->query('action'), fn ($q, $a) => $q->where('action', 'ilike', "$a%"))
-            ->when($request->query('actor'), fn ($q, $a) => $q->where('actor_label', 'ilike', "%$a%"))
-            ->when($request->query('object_type'), fn ($q, $t) => $q->where('object_type', $t))
-            ->when($request->query('object_id'), fn ($q, $t) => $q->where('object_id', $t))
-            ->when($request->query('outcome'), fn ($q, $o) => $q->where('outcome', $o))
-            ->when($request->query('power'), fn ($q, $p) => $q->where('power', $p))
+        $query = AuditLog::query()->filtered($request->only(['action', 'actor', 'object_type', 'object_id', 'outcome', 'power']))
             ->when($request->query('from'), fn ($q, $f) => $q->where('occurred_at', '>=', $f))
             ->when($request->query('to'), fn ($q, $t) => $q->where('occurred_at', '<=', $t))
             ->orderByDesc('occurred_at')->orderByDesc('id');

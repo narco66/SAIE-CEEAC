@@ -113,8 +113,10 @@ export default function Audit() {
         </Modal>
       )}
       {exporting && (
-        <ExportDialog type="audit_extract" title="Extrait du journal" params={{ action: filters.action || undefined }} initialFrom={filters.from} initialTo={filters.to} onClose={() => setExporting(false)}>
-          {filters.action && <Notice tone="info">Filtre d’action appliqué à l’extrait : « {filters.action} ».</Notice>}
+        <ExportDialog type="audit_extract" title="Extrait du journal" params={{
+          action: filters.action || undefined, actor: filters.actor || undefined, object_type: filters.object_type || undefined, outcome: filters.outcome || undefined, power: filters.power || undefined,
+        }} initialFrom={filters.from} initialTo={filters.to} onClose={() => setExporting(false)}>
+          {[filters.action, filters.actor, filters.object_type, filters.outcome, filters.power].some(Boolean) && <Notice tone="info">Les filtres du journal (acteur, action, type d’objet, résultat, pouvoir) sont appliqués à l’extrait.</Notice>}
         </ExportDialog>
       )}
     </>

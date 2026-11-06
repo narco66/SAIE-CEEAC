@@ -261,8 +261,7 @@ class ExportService
 
     private function auditExtract(array $p, CarbonImmutable $from, CarbonImmutable $to, callable $fmt, string $period, User $user): array
     {
-        $items = AuditLog::query()->whereBetween('occurred_at', [$from, $to])
-            ->when($p['action'] ?? null, fn ($q, $a) => $q->where('action', 'ilike', "$a%"))->when($p['actor_id'] ?? null, fn ($q, $a) => $q->where('actor_id', $a))
+        $items = AuditLog::query()->whereBetween('occurred_at', [$from, $to])->filtered($p)
             ->orderBy('occurred_at')->limit(2000)->get();
         $this->audit->log('audit.exported', null, actor: $user, after: ['count' => $items->count()], objectLabel: 'Extrait du journal');
 

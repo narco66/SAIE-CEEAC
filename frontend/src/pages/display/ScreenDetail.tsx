@@ -211,7 +211,7 @@ function DeviceTab({ s }: { s: ScreenDetailData }) {
       </section>
       <section className="panel">
         <div className="panel-title">
-          <div><h2>Capture de rendu</h2><p>Image transmise par le lecteur, conservée 10 minutes</p></div>
+          <div><h2>Capture de rendu</h2><p>Image transmise par le lecteur, conservée 7 jours</p></div>
           {can('screens.manage') && <Button variant="secondary" icon="image" onClick={requestShot} busy={requesting} disabled={d.status === 'revoked'}>Demander une capture</Button>}
         </div>
         <div className="panel-body">

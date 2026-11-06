@@ -38,7 +38,7 @@ class ExportController extends Controller
         if (! in_array($data['format'], ExportService::TYPES[$data['type']][2], true)) {
             throw new BusinessException('FORMAT_UNAVAILABLE', 'Format non disponible pour ce document.', 422);
         }
-        $params = collect($data['params'] ?? [])->only(['reservation_id', 'occurrence_id', 'campaign_id', 'document_id', 'incident_id', 'from', 'to', 'variant', 'action', 'actor_id', 'floor_id'])->all();
+        $params = collect($data['params'] ?? [])->only(['reservation_id', 'occurrence_id', 'campaign_id', 'document_id', 'incident_id', 'from', 'to', 'variant', 'action', 'actor', 'actor_id', 'object_type', 'outcome', 'power', 'floor_id'])->all();
         $this->service->assertAllowed($this->user(), $data['type'], $params);
         $export = Export::query()->create(['type' => $data['type'], 'format' => $data['format'], 'params' => $params, 'status' => 'pending', 'requested_by' => $this->user()->id]);
         GenerateExport::dispatch($export->id);

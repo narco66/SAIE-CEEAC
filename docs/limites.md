@@ -53,6 +53,11 @@ Défauts corrigés, chacun prouvé par un test qui échouait avant le correctif 
   - types de prestation : l’option « couverts et heure exigés » se règle, et le code est figé après création ;
   - une validation sans validateur éligible est signalée aux administrateurs fonctionnels, apparaît dans leurs tâches, puis est affectée automatiquement dès qu’un validateur est habilité ;
   - la liste « nouveau validateur » et le suppléant retenu sont limités aux validateurs habilités pour la langue et la structure, hors auteur.
+- **6 novembre, priorité 2 (troisième lot)** :
+  - la nouvelle version d’un document publié n’interrompt plus son téléchargement : la version précédente reste servie jusqu’à ce que la nouvelle soit déclarée saine ;
+  - bouton **Archiver** sur la fiche d’un contenu ;
+  - l’extrait PDF09/CSV reprend tous les filtres du journal, et le filtre « type d’objet » ne dépend plus de la casse ;
+  - la conservation des captures de rendu est annoncée à 7 jours, comme le serveur l’applique.
 
 ### Priorité 1 — décisions à prendre (aucune correction faite)
 
@@ -65,13 +70,6 @@ Défauts corrigés, chacun prouvé par un test qui échouait avant le correctif 
 - **Réservations et visites**
   - Le code de présence ne peut être saisi nulle part.
   - Le statut d’une visite ne quitte jamais « Message à valider ».
-- **Contenus et documents**
-  - Une nouvelle version d’un document publié le rend indisponible au téléchargement pendant l’analyse.
-  - L’archivage d’un contenu existe côté serveur mais sans bouton.
-- **Journal et exports**
-  - L’extrait PDF09/CSV ne reprend que le filtre « action ».
-  - Le filtre « type d’objet » est sensible à la casse.
-- **Lecteur** : une capture de rendu est annoncée conservée 10 minutes, alors que le serveur la garde 7 jours.
 
 ### Priorité 3 — libellés et textes
 

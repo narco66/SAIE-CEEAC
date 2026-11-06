@@ -5,7 +5,7 @@ import { api, ApiError, fileUrl, type Paginated } from '../../lib/api'
 import { useAuth } from '../../lib/auth'
 import { useData, useList } from '../../lib/hooks'
 import { CLASS_LABEL, CLASS_TONE, CONTENT_STATUS, fmtBytes, fmtDateTime, fmtRelative, LANG_STATUS, SCAN_STATUS } from '../../lib/format'
-import { Button, EmptyState, ErrorState, Field, Icon, Loading, Modal, Notice, PageHeading, Select, Status, StatusOf, Toolbar, useDebounced, useToast, useUnsavedWarning } from '../../components/ui'
+import { Button, ConfirmDialog, EmptyState, ErrorState, Field, Icon, Loading, Modal, Notice, PageHeading, Select, Status, StatusOf, Toolbar, useDebounced, useToast, useUnsavedWarning } from '../../components/ui'
 import {
   ALL_LANGS, errorText, HISTORY_LABEL, KIND_ICON, KIND_LABEL, LIMITS, LocalDateTime, joinLocal, langLabel, splitLocal, Stepper, TemplatePreview, useReferentials,
   type Asset, type ContentDetail, type MediaItem, type Template,
@@ -121,6 +121,7 @@ export default function ContentEditor() {
   const [pickedAssets, setPickedAssets] = useState<Record<string, Asset>>({})
   const [showErrors, setShowErrors] = useState(false)
   const [submitLangs, setSubmitLangs] = useState<string[]>([])
+  const [archiving, setArchiving] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [uploadingSub, setUploadingSub] = useState<string | null>(null)
 
@@ -547,8 +548,21 @@ export default function ContentEditor() {
           {detail && detail.permissions.validate_languages.length > 0 && detail.languages.some((l) => l.status === 'submitted' && detail.permissions.validate_languages.includes(l.lang)) && (
             <Button variant="secondary" icon="check" onClick={() => navigate(`/affichage/contenus/${detail.id}/validation?lang=${detail.languages.find((l) => l.status === 'submitted' && detail.permissions.validate_languages.includes(l.lang))!.lang}`)}>Valider</Button>
           )}
+          {detail && detail.permissions.archive && !['archived', 'expired'].includes(detail.status) && <Button variant="secondary" icon="trash" onClick={() => setArchiving(true)}>Archiver</Button>}
         </>}
       />
+      {archiving && detail && (
+        <ConfirmDialog title="Archiver le contenu" object={`${detail.reference} · ${detail.title}`} danger
+          consequence={`Le contenu n’est plus diffusé ni programmable, et ses validations en cours sont annulées.${detail.campaigns.some((c) => ['scheduled', 'active'].includes(c.status)) ? ` Les campagnes suivantes cessent de le diffuser : ${detail.campaigns.filter((c) => ['scheduled', 'active'].includes(c.status)).map((c) => c.name).join(', ')}.` : ''}`}
+          confirmLabel="Archiver" reasonLabel="Motif" onClose={() => setArchiving(false)}
+          onConfirm={async (reason) => {
+            await api.post(`/contents/${detail.id}/archive`, { reason: reason || null })
+            client.invalidateQueries({ queryKey: ['contents'] })
+            client.invalidateQueries({ queryKey: ['content', detail.id] })
+            toast.success('Contenu archivé', detail.title)
+            navigate('/affichage/contenus')
+          }} />
+      )}
       {readOnly && <Notice tone="info" icon="shield">Lecture seule : vous ne pouvez pas modifier ce contenu (statut ou périmètre).</Notice>}
       {reopened && !readOnly && <div className="warning-box" style={{ marginTop: 0, marginBottom: 12 }}><Icon name="alert" /><span><strong>Une version est approuvée ou en validation.</strong><small>Toute modification du texte d’une langue — ou du média, de la classification, de l’expiration ou du QR — crée une nouvelle révision à revalider. Les campagnes continuent d’utiliser la dernière version approuvée.</small></span></div>}
       {conflict && (

@@ -62,7 +62,7 @@ Chaque modèle de dalle se teste au pilote, avec un cycle complet d’extinction
 - **Capture de rendu** (PLY-11) :
   - **Demander une capture** (fiche écran, onglet **Lecteur**) ;
   - le lecteur photographie son affichage et le transmet une seule fois ;
-  - l’image est conservée 10 minutes.
+  - l’image est conservée 7 jours, puis supprimée automatiquement.
 
 ## Enrôlement (PLY-02, P06)
 

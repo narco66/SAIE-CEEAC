@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Services\Audit;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -41,6 +42,22 @@ class Document extends Model
     public function versions(): HasMany
     {
         return $this->hasMany(DocumentVersion::class);
+    }
+
+    /**
+     * Rend courante une version déclarée saine si elle est plus récente que la version servie (DOC-03) :
+     * un document publié reste téléchargeable dans sa version précédente pendant l'analyse de la nouvelle.
+     */
+    public static function activateReadyVersion(AssetVersion $file): void
+    {
+        foreach (DocumentVersion::query()->with('document.currentVersion')->where('asset_version_id', $file->id)->get() as $candidate) {
+            $document = $candidate->document;
+            if ($document->current_version_id === $candidate->id || ($document->currentVersion && $document->currentVersion->version > $candidate->version)) {
+                continue;
+            }
+            $document->forceFill(['current_version_id' => $candidate->id] + ($document->status === 'published' ? ['search_text' => $file->text_content] : []))->save();
+            app(Audit::class)->log('document.version_activated', $document, 'Nouvelle version déclarée saine', version: $candidate->version, actor: null);
+        }
     }
 
     public function currentVersion(): BelongsTo

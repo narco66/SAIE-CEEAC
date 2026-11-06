@@ -3,6 +3,7 @@
 namespace App\Jobs;
 
 use App\Models\AssetVersion;
+use App\Models\Document;
 use App\Services\Audit;
 use App\Services\MediaConverter;
 use App\Services\VirusScanner;
@@ -78,6 +79,7 @@ class ProcessAssetVersion implements ShouldQueue
             }
             $version->forceFill($details + ['derivatives' => $derivatives, 'scan_status' => 'ready', 'scan_detail' => trim($scan['detail'].' '.($derivatives['note'] ?? '')), 'processed_at' => now()])->save();
             $this->syncAsset($version, 'ready');
+            Document::activateReadyVersion($version);
             $audit->log('asset.ready', $version->asset, version: $version->version, actor: null);
         } catch (Throwable $e) {
             $this->reject($version, 'Échec contrôlé du traitement : '.mb_substr($e->getMessage(), 0, 200), $audit);

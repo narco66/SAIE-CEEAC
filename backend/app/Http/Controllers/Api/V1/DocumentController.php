@@ -125,7 +125,10 @@ class DocumentController extends Controller
             $version = $assets->store($request->file('file'), ['title' => $document->title, 'classification' => $document->classification, 'owner_structure_id' => $document->owner_structure_id], $this->user(), $asset);
             $number = (int) $document->versions()->max('version') + 1;
             $documentVersion = $document->versions()->create(['version' => $number, 'asset_version_id' => $version->id, 'notes' => $data['notes'] ?? null, 'created_by' => $this->user()->id]);
-            $document->forceFill(['current_version_id' => $documentVersion->id])->save();
+            // Document publié : la version précédente reste servie jusqu'à ce que la nouvelle soit déclarée saine.
+            if ($document->status !== 'published' || $version->refresh()->scan_status === 'ready') {
+                $document->forceFill(['current_version_id' => $documentVersion->id] + ($document->status === 'published' ? ['search_text' => $version->text_content] : []))->save();
+            }
             $this->event($document, 'version_added', $data['notes'] ?? null);
             $this->audit()->log('document.version_added', $document, version: $number);
         });
