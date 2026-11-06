@@ -114,6 +114,16 @@ class ReservationService
         });
     }
 
+    /**
+     * Libère les ressources mobiles et annule les prestations encore ouvertes d'une occurrence qui ne se tient pas
+     * (annulation, refus, délai dépassé, non-présentation, libération automatique) : SAL-03, SAL-08, SAL-13.
+     */
+    public function release(ReservationOccurrence $occurrence): void
+    {
+        $occurrence->resourceBookings()->where('status', 'active')->update(['status' => 'released']);
+        $occurrence->serviceRequests()->whereNotIn('status', ['ready', 'impossible', 'cancelled'])->update(['status' => 'cancelled', 'updated_at' => now()]);
+    }
+
     public function approve(Reservation $reservation, User $user, bool $approve, ?string $reason): void
     {
         DB::transaction(function () use ($reservation, $user, $approve, $reason): void {
@@ -131,10 +141,13 @@ class ReservationService
             }
             foreach ($occurrences as $occurrence) {
                 $occurrence->forceFill(['status' => $approve ? 'confirmed' : 'refused', 'hold_until' => null, 'decided_by' => $user->id, 'decided_at' => now(), 'decision_reason' => $reason, 'version' => $occurrence->version + 1])->save();
+                if (! $approve) {
+                    $this->release($occurrence);
+                }
             }
             Approval::query()->where('object_type', 'reservation')->where('object_id', $reservation->id)->where('status', 'open')
                 ->update(['status' => 'decided', 'decision' => $approve ? 'approved' : 'returned', 'reason' => $reason, 'decided_by' => $user->id, 'decided_at' => now(), 'updated_at' => now()]);
-            $this->notifier->notify($reservation->organizer, $approve ? 'reservation.confirmed' : 'reservation.refused', $approve ? 'Réservation confirmée' : 'Réservation refusée', $reservation->confidential ? 'Réservation confidentielle' : $reservation->subject, "/reservations/{$reservation->id}", 'reservation', $reservation->id, 'decision');
+            $this->notifier->notify($reservation->organizer, $approve ? 'reservation.confirmed' : 'reservation.refused', $approve ? 'Réservation confirmée' : 'Réservation refusée', $reservation->confidential ? 'Réservation confidentielle' : $reservation->subject, "/reservations/{$reservation->id}", 'reservation', $reservation->id, 'decision-'.$occurrences->first()->id.'-'.$occurrences->first()->version);
             $this->audit->log($approve ? 'reservation.approved' : 'reservation.refused', $reservation, $reason);
         });
     }
@@ -171,8 +184,10 @@ class ReservationService
         $before = $occurrence->only(['room_id', 'starts_at', 'ends_at', 'status']);
 
         try {
-            DB::transaction(function () use ($occurrence, $room, $start, $end, $changes, $reservation, $isManager): void {
-                $needsApproval = $room->approval_mode === 'manual' && ! $isManager && ($room->id !== $occurrence->room_id || ! $start->equalTo($occurrence->starts_at) || ! $end->equalTo($occurrence->ends_at));
+            // SAL-07 : l'exemption de validation se juge sur la salle de destination (son gestionnaire), pas sur la salle d'origine.
+            $managesTarget = $this->manages($room, $user);
+            $needsApproval = $room->approval_mode === 'manual' && ! $managesTarget && ($room->id !== $occurrence->room_id || ! $start->equalTo($occurrence->starts_at) || ! $end->equalTo($occurrence->ends_at));
+            DB::transaction(function () use ($occurrence, $room, $start, $end, $changes, $reservation, $needsApproval, $user): void {
                 $occurrence->forceFill([
                     'room_id' => $room->id, 'starts_at' => $start, 'ends_at' => $end,
                     'blocking_start' => $start->subMinutes($room->prep_minutes), 'blocking_end' => $end->addMinutes($room->cleanup_minutes),
@@ -184,6 +199,16 @@ class ReservationService
                 $occurrence->serviceRequests()->whereNotIn('status', ['ready', 'impossible', 'cancelled'])->update(['due_at' => $start->subHours(2), 'updated_at' => now()]);
                 if (isset($changes['participant_count']) || isset($changes['subject'])) {
                     $reservation->forceFill(array_filter(['participant_count' => $changes['participant_count'] ?? null, 'subject' => $changes['subject'] ?? null]) + ['version' => $reservation->version + 1])->save();
+                }
+                // La demande redevenue « en attente » est présentée au gestionnaire de la salle de destination (tâche, rappel, escalade).
+                if ($needsApproval && ! Approval::query()->where('object_type', 'reservation')->where('object_id', $reservation->id)->where('status', 'open')->exists()) {
+                    $manager = $room->manager;
+                    Approval::query()->create([
+                        'object_type' => 'reservation', 'object_id' => $reservation->id, 'title' => $reservation->confidential ? 'Réservation confidentielle' : $reservation->subject,
+                        'requested_by' => $user->id, 'assignee_id' => $manager?->id, 'backup_id' => $manager?->backup_user_id,
+                        'due_at' => now()->addHours((int) config('saie.workflow.reservation_due_hours')),
+                    ]);
+                    DB::afterCommit(fn () => $this->notifier->notify($manager, 'reservation.pending', 'Réservation à valider', $room->name.' · '.$this->localLabel($start), "/reservations/{$reservation->id}", 'reservation', $reservation->id, 'modified-'.$occurrence->id.'-'.$occurrence->version));
                 }
             });
         } catch (QueryException $e) {
@@ -198,6 +223,29 @@ class ReservationService
         $this->audit->log('reservation.modified', $reservation, $reason, before: $before, after: $occurrence->only(['room_id', 'starts_at', 'ends_at', 'status']), version: $occurrence->version);
 
         return $occurrence->refresh();
+    }
+
+    /**
+     * « Cette occurrence et les suivantes » (SAL-06, SAL-07) : même salle et même horaire pour chaque date conservée,
+     * en une seule transaction ; un conflit sur l'une d'elles annule l'ensemble et la série reste inchangée.
+     *
+     * @return list<ReservationOccurrence>
+     */
+    public function modifyFollowing(ReservationOccurrence $occurrence, string $roomId, string $from, string $to, User $user, ?string $reason): array
+    {
+        $tz = config('saie.timezone');
+
+        return DB::transaction(function () use ($occurrence, $roomId, $from, $to, $user, $reason, $tz): array {
+            $following = $occurrence->reservation->occurrences()->whereIn('status', ['pending', 'confirmed'])->where('starts_at', '>=', $occurrence->starts_at)
+                ->orderBy('starts_at')->lockForUpdate()->get();
+            $updated = [];
+            foreach ($following as $item) {
+                $day = CarbonImmutable::instance($item->starts_at)->setTimezone($tz)->format('Y-m-d');
+                $updated[] = $this->modify($item, ['room_id' => $roomId, 'start_at' => CarbonImmutable::parse("$day $from", $tz)->toIso8601String(), 'end_at' => CarbonImmutable::parse("$day $to", $tz)->toIso8601String()], $user, $reason);
+            }
+
+            return $updated;
+        });
     }
 
     /**
@@ -269,8 +317,7 @@ class ReservationService
             $items = $query->lockForUpdate()->get();
             foreach ($items as $item) {
                 $item->forceFill(['status' => 'cancelled', 'cancel_reason' => $reason, 'version' => $item->version + 1])->save();
-                $item->resourceBookings()->update(['status' => 'released']);
-                $item->serviceRequests()->whereNotIn('status', ['impossible'])->update(['status' => 'cancelled']);
+                $this->release($item);
             }
 
             return $items->count();
@@ -297,6 +344,7 @@ class ReservationService
             throw new BusinessException('TOO_EARLY', 'La non-présentation ne peut être déclarée qu’après l’heure de début.', 409);
         }
         $occurrence->forceFill(['status' => 'no_show', 'no_show_reason' => $reason, 'no_show_by' => $user->id, 'no_show_at' => now(), 'version' => $occurrence->version + 1])->save();
+        $this->release($occurrence);
         $this->notifier->notify($occurrence->reservation->organizer, 'reservation.no_show', 'Réservation déclarée non honorée', $occurrence->room->name.' · '.$this->localLabel($occurrence->starts_at), "/reservations/{$occurrence->reservation_id}", 'reservation', $occurrence->reservation_id, 'noshow-'.$occurrence->id);
         $this->audit->log('reservation.no_show', $occurrence->reservation, $reason, version: $occurrence->version);
     }
@@ -339,7 +387,7 @@ class ReservationService
             ->whereHas('reservation', fn ($q) => $q->where('is_priority', false))->get();
         foreach ($occurrences as $occurrence) {
             $occurrence->forceFill(['status' => 'no_show', 'no_show_reason' => 'Libération automatique : présence non confirmée 15 minutes après le début', 'no_show_at' => now(), 'version' => $occurrence->version + 1])->save();
-            $occurrence->resourceBookings()->update(['status' => 'released']);
+            $this->release($occurrence);
             $this->notifier->notify($occurrence->reservation->organizer, 'reservation.auto_released', 'Salle libérée automatiquement', $occurrence->room->name.' · '.$this->localLabel($occurrence->starts_at), "/reservations/{$occurrence->reservation_id}", 'reservation', $occurrence->reservation_id, 'release-'.$occurrence->id);
             $this->audit->log('reservation.auto_released', $occurrence->reservation, 'Présence non confirmée', actor: null);
             $released++;

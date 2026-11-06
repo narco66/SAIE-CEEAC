@@ -38,24 +38,17 @@ export function OccurrenceEditor({ reservation, occurrence, mode, onClose, onDon
     setBusy(true)
     setError(null)
     setProgress(null)
-    const targets = scope === 'this' ? [occurrence] : following
-    let last: Reservation | null = null
-    let done = 0
     try {
-      for (const o of targets) {
-        const d = scope === 'this' ? date : localParts(o.starts_at).date
-        const body = { room_id: roomId, start_at: toIsoFromLocal(d, from), end_at: toIsoFromLocal(d, to), reason: reason.trim() || null, expected_version: o.version }
-        const r = await api.patch<{ data: Reservation }>(`/occurrences/${o.id}`, body)
-        last = r.data
-        done++
-      }
-      if (last) onDone(last)
+      // Série : une seule transaction côté serveur ; un conflit sur une date laisse toute la série inchangée (SAL-06).
+      const r = scope === 'following' && following.length > 1
+        ? await api.post<{ data: Reservation }>(`/occurrences/${occurrence.id}/modify-following`, { room_id: roomId, time_from: from, time_to: to, reason: reason.trim() || null, expected_version: occurrence.version })
+        : await api.patch<{ data: Reservation }>(`/occurrences/${occurrence.id}`, { room_id: roomId, start_at: toIsoFromLocal(date, from), end_at: toIsoFromLocal(date, to), reason: reason.trim() || null, expected_version: occurrence.version })
+      onDone(r.data)
       onClose()
     } catch (e) {
       const err = e instanceof ApiError ? e : new ApiError(500, { message: String(e) })
       setError(err)
-      if (targets.length > 1) setProgress(`${done} occurrence(s) modifiée(s) sur ${targets.length}. L’échec porte sur l’occurrence du ${slotLabel(targets[done]?.starts_at, targets[done]?.ends_at)} ; elle et les suivantes sont conservées à l’identique.`)
-      if (last) onDone(last)
+      if (scope === 'following' && following.length > 1) setProgress(`Aucune des ${following.length} occurrences n’a été modifiée : la série est conservée à l’identique.`)
     } finally {
       setBusy(false)
     }

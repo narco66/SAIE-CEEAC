@@ -148,7 +148,7 @@ class ManifestBuilder
             $manifest['room_panel'] = $this->roomPanelFor($screen->room);
         }
         if ($screen->kind === 'orientation') {
-            $manifest['orientation'] = $this->orientationFor($floor->building_id, $assets);
+            $manifest['orientation'] = $this->orientationFor($floor->building_id, $assets, $screen);
         }
         ksort($assets);
         $manifest['assets'] = array_values($assets);
@@ -368,16 +368,25 @@ class ManifestBuilder
      * @param  array<string, array<string, mixed>>  $assets
      * @return array<string, mixed>
      */
-    private function orientationFor(string $buildingId, array &$assets): array
+    private function orientationFor(string $buildingId, array &$assets, Screen $screen): array
     {
         $floors = Floor::query()->where('building_id', $buildingId)->where('is_active', true)->orderByDesc('level')->get();
         $structures = Structure::query()->where('is_active', true)->where('show_in_orientation', true)->whereIn('floor_id', $floors->pluck('id'))->orderBy('name')->get()->groupBy('floor_id');
         $rooms = Room::query()->where('status', 'active')->whereIn('floor_id', $floors->pluck('id'))->orderBy('name')->get()->groupBy('floor_id');
+        // ACC-01, ACC-02 : seuls les messages en cours de diffusion, ciblant cet écran, d'une réunion confirmée et non confidentielle.
+        $candidates = DB::table('campaign_items')->join('campaigns', 'campaigns.id', '=', 'campaign_items.campaign_id')
+            ->join('contents', 'contents.id', '=', 'campaign_items.content_id')
+            ->join('reservation_occurrences', 'reservation_occurrences.id', '=', 'contents.occurrence_id')
+            ->join('reservations', 'reservations.id', '=', 'reservation_occurrences.reservation_id')
+            ->whereIn('campaigns.status', ['scheduled', 'active'])->where('campaigns.starts_at', '<=', now())->where('campaigns.ends_at', '>', now())
+            ->where('contents.kind', 'welcome')->where('contents.classification', 'public')->whereNotIn('contents.status', ['archived', 'expired', 'suspended'])
+            ->whereIn('reservation_occurrences.status', ['confirmed', 'in_progress'])->where('reservation_occurrences.ends_at', '>', now())->where('reservations.confidential', false)
+            ->get(['campaign_items.campaign_id', 'campaign_items.version_map']);
+        $targeting = $candidates->pluck('campaign_id')->unique()->filter(fn ($id) => app(CampaignService::class)
+            ->resolveTargets(DB::table('campaign_targets')->where('campaign_id', $id)->get()->map(fn ($t) => ['type' => $t->target_type, 'id' => $t->target_id])->all())
+            ->contains('id', $screen->id))->all();
         $welcomes = ContentVersion::query()
-            ->whereIn('id', DB::table('campaign_items')->join('campaigns', 'campaigns.id', '=', 'campaign_items.campaign_id')
-                ->whereIn('campaigns.status', ['scheduled', 'active'])->where('campaigns.ends_at', '>', now())
-                ->join('contents', 'contents.id', '=', 'campaign_items.content_id')->where('contents.kind', 'welcome')->where('contents.classification', 'public')
-                ->pluck('campaign_items.version_map')->flatMap(fn ($map) => array_values(json_decode((string) $map, true) ?? [])))
+            ->whereIn('id', $candidates->whereIn('campaign_id', $targeting)->pluck('version_map')->flatMap(fn ($map) => array_values(json_decode((string) $map, true) ?? [])))
             ->get();
 
         return [

@@ -203,6 +203,7 @@ Route::middleware(['auth:sanctum', 'human', 'throttle:api', 'idempotent'])->grou
     Route::post('reservations/{reservation}/priority', [ReservationController::class, 'priority']);
     Route::post('reservations/{reservation}/welcome', [ReservationController::class, 'welcome']);
     Route::patch('occurrences/{occurrence}', [ReservationController::class, 'modify']);
+    Route::post('occurrences/{occurrence}/modify-following', [ReservationController::class, 'modifyFollowing']);
     Route::post('occurrences/{occurrence}/cancel', [ReservationController::class, 'cancel']);
     Route::post('occurrences/{occurrence}/no-show', [ReservationController::class, 'noShow']);
     Route::post('occurrences/{occurrence}/check-in', [ReservationController::class, 'checkIn']);

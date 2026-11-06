@@ -73,6 +73,14 @@ Défauts corrigés, chacun prouvé par un test qui échouait avant le correctif 
   - fiche PDF03 et bon PDF04 soumis à un contrôle d’objet ; une visite n’est modifiée que dans le périmètre de son auteur ;
   - pile Docker : l’application se connecte avec un compte à moindre privilège (`saie_app`) qui ne peut ni modifier le schéma ni altérer le journal ; le contrôle `preflight` le vérifie.
 
+- **6 novembre, audit — lot R3 (salles et accueil)** :
+  - déplacer une réunion vers une salle à validation manuelle exige l’accord du gestionnaire de cette salle, qui reçoit la tâche et la notification ;
+  - « cette occurrence et les suivantes » est appliqué en une seule transaction : un conflit laisse la série inchangée ;
+  - refus, délai dépassé, non-présentation et libération automatique libèrent les ressources mobiles et annulent les prestations ouvertes ;
+  - un participant muni du code de présence confirme la présence depuis la fiche ;
+  - les bornes d’orientation n’affichent que les bienvenues en cours, qui les ciblent, d’une réunion confirmée et non confidentielle ;
+  - le statut d’une visite suit son message (« Planifiée ») et sa réunion (« Terminée », « Annulée »).
+
 ### Priorité 1 — décisions à prendre (aucune correction faite)
 
 - **Participants des réunions standard** (nom, organisation) : visibles de tout agent qui peut voir les salles. À arbitrer au titre de GOV-02 : restreindre à l’organisateur, aux participants et aux gestionnaires ?
@@ -81,9 +89,6 @@ Défauts corrigés, chacun prouvé par un test qui échouait avant le correctif 
 
 ### Priorité 2 — fonctions qui ne se comportent pas comme annoncé
 
-- **Réservations et visites**
-  - Le code de présence ne peut être saisi nulle part.
-  - Le statut d’une visite ne quitte jamais « Message à valider ».
 
 ### Priorité 3 — libellés et textes
 

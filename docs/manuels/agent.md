@@ -151,7 +151,7 @@ Vous seul (et les gestionnaires de la salle) voyez l’objet, la description et 
 3. Ajustez **Salle**, **Date**, **Début**, **Fin**.
 4. Cliquez sur **Enregistrer la modification**.
 
-Tous les contrôles sont rejoués. En cas d’échec, la réservation initiale est conservée. Dans une salle soumise à validation, un changement de salle ou d’horaire repasse l’occurrence « En attente ».
+Tous les contrôles sont rejoués. En cas d’échec, la réservation initiale est conservée. Pour « Cette occurrence et les suivantes », la modification est appliquée à toutes les dates ou à aucune : si une seule date est en conflit, la série entière reste inchangée. Dans une salle soumise à validation, un changement de salle ou d’horaire repasse l’occurrence « En attente » et le gestionnaire de cette salle reçoit la demande à valider.
 
 ### Annuler une occurrence ou une série
 
@@ -240,7 +240,7 @@ Si un PDF tarde, l’application le signale et le fichier apparaît ensuite dans
 | « La présence se confirme de 15 minutes avant le début jusqu’à la fin de la réunion. » | Réessayez dans la plage indiquée. |
 | « Aucune occurrence annulable. » | L’occurrence est déjà annulée, refusée ou commencée. |
 | « Objet absent ou inaccessible » | Le document ou la réservation n’existe plus, est confidentiel ou n’entre pas dans votre périmètre. |
-| « Seul l’organisateur, ou le titulaire du code de présence, peut confirmer. » | Seul l’organisateur de la réunion (ou le gestionnaire de la salle) confirme la présence. |
+| « Seul l’organisateur, ou le titulaire du code de présence, peut confirmer. » | Seul l’organisateur de la réunion, le gestionnaire de la salle ou un participant muni du code de présence confirme la présence. Demandez le code à l’organisateur, puis utilisez **Confirmer avec un code**. |
 | « Vous n’êtes pas autorisé à effectuer cette action. » | L’action est réservée à l’organisateur ou au gestionnaire. |
 | « … téléchargement et aperçu indisponibles tant que l’analyse n’est pas saine. » | Le fichier est en cours d’analyse antivirus : réessayez plus tard. |
 | « Cet export n’est plus disponible : relancez sa génération. » | Cliquez sur **Relancer** dans **Exports & traitements**. |

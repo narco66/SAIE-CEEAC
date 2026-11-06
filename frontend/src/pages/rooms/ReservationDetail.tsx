@@ -11,7 +11,7 @@ import { CancelOccurrenceDialog, ensureArray, MEMBER_STATES, recurrenceLabel, Se
 
 const CHECK_IN_LEAD_MS = 15 * 60_000
 type Dialog =
-  | { kind: 'edit'; o: Occurrence } | { kind: 'cancel'; o: Occurrence } | { kind: 'noshow'; o: Occurrence } | { kind: 'checkin'; o: Occurrence }
+  | { kind: 'edit'; o: Occurrence } | { kind: 'cancel'; o: Occurrence } | { kind: 'noshow'; o: Occurrence } | { kind: 'checkin'; o: Occurrence } | { kind: 'checkin-code'; o: Occurrence }
   | { kind: 'approve' } | { kind: 'refuse' } | { kind: 'welcome' } | { kind: 'agenda' } | { kind: 'priority' }
 
 /** V28 Détail réservation. N'affiche jamais plus que ce que renvoie l'API (masquage confidentiel côté serveur). */
@@ -43,9 +43,11 @@ export default function ReservationDetail() {
   const presence = r.presence ?? { enabled: false, codes: {}, checked_in: {} }
   const isOrganizer = Object.keys(presence.codes).length > 0
   const checkedCount = occurrences.filter((o) => presence.checked_in[o.id]).length
-  const canCheckIn = (o: Occurrence) => (isOrganizer || perms.no_show) && !presence.checked_in[o.id]
-    && ['confirmed', 'in_progress'].includes(o.status)
+  const inCheckInWindow = (o: Occurrence) => presence.enabled && !presence.checked_in[o.id] && ['confirmed', 'in_progress'].includes(o.status)
     && new Date(o.starts_at).getTime() - CHECK_IN_LEAD_MS <= now && now < new Date(o.ends_at).getTime()
+  const canCheckIn = (o: Occurrence) => (isOrganizer || perms.no_show) && inCheckInWindow(o)
+  // SAL-10 : un participant qui a reçu le code temporaire de l'organisateur confirme la présence avec ce code.
+  const canCheckInWithCode = (o: Occurrence) => !isOrganizer && !perms.no_show && inCheckInWindow(o)
 
   return (
     <>
@@ -126,6 +128,7 @@ export default function ReservationDetail() {
                     <td>
                       <div className="row-actions">
                         {canCheckIn(o) && <Button size="small" icon="check" onClick={() => setDialog({ kind: 'checkin', o })}>Confirmer la présence</Button>}
+                        {canCheckInWithCode(o) && <Button size="small" variant="secondary" icon="check" onClick={() => setDialog({ kind: 'checkin-code', o })}>Confirmer avec un code</Button>}
                         {perms.modify && active && !started && <Button size="small" variant="secondary" icon="edit" onClick={() => setDialog({ kind: 'edit', o })}>Modifier</Button>}
                         {perms.modify && active && !started && <Button size="small" variant="secondary" icon="x" onClick={() => setDialog({ kind: 'cancel', o })}>Annuler</Button>}
                         {perms.no_show && started && ['confirmed', 'in_progress', 'completed'].includes(o.status) && <Button size="small" variant="secondary" icon="alert" onClick={() => setDialog({ kind: 'noshow', o })}>Déclarer non honorée</Button>}
@@ -226,6 +229,12 @@ export default function ReservationDetail() {
           consequence={r.is_priority ? 'La salle pourra de nouveau être libérée automatiquement si la présence n’est pas confirmée.' : 'La salle ne sera jamais libérée automatiquement, même sans confirmation de présence.'}
           confirmLabel={r.is_priority ? 'Retirer la priorité' : 'Déclarer prioritaire'} reasonLabel="Motif" reasonRequired onClose={() => setDialog(null)}
           onConfirm={async (reason) => { const res = await api.post<{ data: Reservation }>(`/reservations/${r.id}/priority`, { is_priority: !r.is_priority, reason }); update(res.data); toast.success(r.is_priority ? 'Priorité retirée' : 'Réunion déclarée prioritaire') }} />
+      )}
+      {dialog?.kind === 'checkin-code' && (
+        <ConfirmDialog title="Confirmer la présence avec un code" object={`${r.reference} · ${slotLabel(dialog.o.starts_at, dialog.o.ends_at)}`}
+          consequence="Saisissez le code de présence communiqué par l’organisateur. La réunion est marquée comme tenue et la confirmation est inscrite au journal."
+          confirmLabel="Confirmer la présence" reasonLabel="Code de présence" reasonRequired onClose={() => setDialog(null)}
+          onConfirm={async (code) => { const res = await api.post<{ data: Reservation }>(`/occurrences/${dialog.o.id}/check-in`, { code: code.trim() }); update(res.data); toast.success('Présence confirmée') }} />
       )}
       {dialog?.kind === 'approve' && (
         <ConfirmDialog title="Approuver la réservation" object={`${r.reference} · ${r.subject}`} consequence="Les occurrences en attente sont confirmées et l’organisateur est notifié."

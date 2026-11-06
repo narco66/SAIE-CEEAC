@@ -235,6 +235,24 @@ class ReservationController extends Controller
         return $this->show($updated->reservation);
     }
 
+    /**
+     * Modification de « cette occurrence et les suivantes » en une seule transaction (SAL-06, SAL-07).
+     */
+    public function modifyFollowing(Request $request, ReservationOccurrence $occurrence): JsonResponse
+    {
+        $data = $request->validate([
+            'room_id' => ['required', 'uuid', 'exists:rooms,id'], 'time_from' => ['required', 'date_format:H:i'], 'time_to' => ['required', 'date_format:H:i', 'after:time_from'],
+            'reason' => ['nullable', 'string', 'max:500'], 'expected_version' => ['nullable', 'integer'],
+        ]);
+        $this->expectVersion($request, $occurrence->version);
+        $updated = $this->service->modifyFollowing($occurrence, $data['room_id'], $data['time_from'], $data['time_to'], $this->user(), $data['reason'] ?? null);
+        foreach ($updated as $item) {
+            $this->syncWelcome($item);
+        }
+
+        return response()->json(['modified' => count($updated)] + $this->show($occurrence->reservation)->getData(true));
+    }
+
     public function cancel(Request $request, ReservationOccurrence $occurrence): JsonResponse
     {
         $data = $request->validate(['scope' => ['required', 'in:this,following,all'], 'reason' => ['required', 'string', 'min:3', 'max:500']]);

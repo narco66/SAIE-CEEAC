@@ -8,6 +8,7 @@ use App\Models\Content;
 use App\Models\Device;
 use App\Models\Incident;
 use App\Models\ReservationOccurrence;
+use App\Models\Visit;
 use App\Services\Audit;
 use App\Services\CampaignService;
 use App\Services\ContentWorkflow;
@@ -52,6 +53,7 @@ class SaieTick extends Command
         $report['réunions_terminées'] = ReservationOccurrence::query()->whereIn('status', ['confirmed', 'in_progress'])->where('ends_at', '<=', now())->update(['status' => 'completed', 'updated_at' => now()]);
         foreach (ReservationOccurrence::query()->with('reservation.organizer', 'room')->where('status', 'pending')->where('hold_until', '<=', now())->get() as $occurrence) {
             $occurrence->forceFill(['status' => 'refused', 'decision_reason' => 'Délai de validation dépassé : créneau libéré', 'version' => $occurrence->version + 1])->save();
+            app(ReservationService::class)->release($occurrence);
             $notifier->notify($occurrence->reservation->organizer, 'reservation.expired', 'Demande de réservation expirée', $occurrence->room->name, "/reservations/{$occurrence->reservation_id}", 'reservation', $occurrence->reservation_id, 'hold-'.$occurrence->id);
             $audit->log('reservation.hold_expired', $occurrence->reservation, 'Délai de blocage dépassé', actor: null);
             // Plus aucune occurrence en attente : la validation n'a plus d'objet (sinon rappels et escalades sur une demande morte).
@@ -62,6 +64,7 @@ class SaieTick extends Command
         }
 
         $report['validations_affectées'] = $workflow->assignPending();
+        $report['visites_mises_à_jour'] = Visit::syncStatuses();
         $report['rappels'] = 0;
         $report['escalades'] = 0;
         foreach (Approval::query()->with(['assignee', 'backup'])->where('status', 'open')->get() as $approval) {

@@ -118,7 +118,7 @@ L’occurrence passe au statut **Non honorée** et l’organisateur est notifié
 
 Sur une salle où la **Libération automatique (SAL-10)** est activée :
 
-- l’organisateur confirme la présence depuis la fiche de la réservation, ou à l’aide du code de présence affiché sur sa fiche ;
+- l’organisateur confirme la présence depuis la fiche de la réservation ; il peut aussi communiquer le code de présence affiché sur sa fiche à un participant, qui confirme avec **Confirmer avec un code** ;
 - vous pouvez aussi confirmer vous-même avec **Confirmer la présence**, sur la ligne de l’occurrence ;
 - la confirmation est possible de 15 minutes avant le début jusqu’à la fin de la réunion ;
 - l’organisateur reçoit un rappel 15 minutes avant le début ;
