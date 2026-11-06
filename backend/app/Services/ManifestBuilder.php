@@ -294,8 +294,10 @@ class ManifestBuilder
             || (self::CLASS_RANK[$version->asset->classification] ?? 2) > $maxRank) {
             return false;
         }
+        // DOC-01 : une vidéo transcodée est diffusée dans sa dérivée H.264/AAC (empreinte, taille et type de la dérivée).
+        $file = $version->broadcastFile();
         $assets[$assetVersionId] = [
-            'id' => $version->id, 'sha256' => $version->sha256, 'size' => (int) $version->size, 'type' => $version->mime, 'kind' => $version->asset->kind,
+            'id' => $version->id, 'sha256' => $file['sha256'], 'size' => $file['size'], 'type' => $file['mime'], 'kind' => $version->asset->kind,
             'lang' => $version->asset->language, 'href' => '/api/v1/device/assets/'.$version->id,
         ];
 

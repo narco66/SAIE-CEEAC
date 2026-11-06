@@ -64,7 +64,15 @@ class MediaConverter
             $target = dirname($version->storage_key).'/derived/h264.mp4';
             @mkdir(dirname(Storage::disk('local')->path($target)), 0750, true);
             $run = Process::timeout(self::TIMEOUT * 5)->run([config('saie.converters.ffmpeg'), '-y', '-i', $source, '-c:v', 'libx264', '-preset', 'veryfast', '-crf', '23', '-c:a', 'aac', '-movflags', '+faststart', Storage::disk('local')->path($target)]);
-            $derived['video']['transcoded'] = $run->successful() ? $target : null;
+            $path = Storage::disk('local')->path($target);
+            // La dérivée diffusée est empreintée comme un original : le lecteur la vérifie avant de l'afficher.
+            $derived['video']['transcoded'] = $run->successful() && is_file($path)
+                ? ['storage_key' => $target, 'sha256' => hash_file('sha256', $path), 'size' => filesize($path), 'mime' => 'video/mp4']
+                : null;
+        }
+        // Vidéo illisible par les lecteurs et non transcodée : refusée plutôt que diffusée en écran noir.
+        if (! $compatible && empty($derived['video']['transcoded'])) {
+            $derived['reject'] = 'Vidéo '.($codecs['video'] ?? 'de codec inconnu').' non lisible par les lecteurs et non transcodée : déposez-la en H.264/AAC (MP4).';
         }
 
         return $derived;

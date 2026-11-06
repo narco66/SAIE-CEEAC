@@ -171,16 +171,17 @@ class DeviceApiController extends Controller
             app(Audit::class)->log('device.asset_denied', $assetVersion->asset, outcome: 'denied', actor: $device);
             abort(403);
         }
+        $file = $assetVersion->broadcastFile();
         $headers = [
-            'Content-Type' => $assetVersion->mime, 'X-Content-SHA256' => $assetVersion->sha256, 'ETag' => '"'.$assetVersion->sha256.'"',
+            'Content-Type' => $file['mime'], 'X-Content-SHA256' => $file['sha256'], 'ETag' => '"'.$file['sha256'].'"',
             'Cache-Control' => 'private, max-age=86400, immutable',
         ];
         // PERF-01 : en production, Nginx envoie le fichier après cette autorisation, sans occuper un processus PHP.
         if ($prefix = config('saie.device.accel_redirect')) {
-            return response('', 200, $headers + ['X-Accel-Redirect' => rtrim($prefix, '/').'/'.ltrim($assetVersion->storage_key, '/')]);
+            return response('', 200, $headers + ['X-Accel-Redirect' => rtrim($prefix, '/').'/'.ltrim($file['storage_key'], '/')]);
         }
 
-        return response()->file(Storage::disk('local')->path($assetVersion->storage_key), $headers);
+        return response()->file(Storage::disk('local')->path($file['storage_key']), $headers);
     }
 
     public function uploadScreenshot(Request $request, DeviceScreenshot $screenshot): JsonResponse

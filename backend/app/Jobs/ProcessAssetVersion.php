@@ -22,7 +22,8 @@ class ProcessAssetVersion implements ShouldQueue
 {
     use Queueable;
 
-    public int $timeout = 120;
+    /** Délai du traitement : couvre le transcodage d'une vidéo (ffmpeg, 600 s au plus). */
+    public int $timeout = 900;
 
     public int $tries = 2;
 
@@ -74,6 +75,11 @@ class ProcessAssetVersion implements ShouldQueue
                 $version->asset->kind === 'video' => $converter->inspectVideo($version),
                 default => null,
             };
+            if (isset($derivatives['reject'])) {
+                $this->reject($version, $derivatives['reject'], $audit);
+
+                return;
+            }
             if (($derivatives['video']['duration_s'] ?? null) !== null) {
                 $details['duration_s'] = $derivatives['video']['duration_s'];
             }
