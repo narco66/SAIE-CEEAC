@@ -1,0 +1,17 @@
+# Dépôt SAIE-CEEAC : backend/ (Laravel, voir backend/.gitignore), frontend/, player/, docs/, infra/
+.DS_Store
+Thumbs.db
+/.idea
+/.vscode
+/.cursor/
+
+/frontend/node_modules
+/frontend/dist
+/frontend/test-results
+/frontend/playwright-report
+/player/node_modules
+/player/dist
+/infra/.env
+/player/dist-release
+/infra/secrets/
+/infra/certs/

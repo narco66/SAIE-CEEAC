@@ -1,0 +1,8 @@
+PHP 8.4.7 (cli) (built: May  6 2025 14:12:45) (ZTS Visual C++ 2022 x64)
+/usr/bin/bash: line 1: psql: command not found
+PostgreSQL 18.6 on x86_64-windows, compiled by msvc-19.44.35229, 64-bit
+reservation_occurrences | occurrences_no_overlap | EXCLUDE USING gist (room_id WITH =, tstzrange(blocking_start, blocking_end, '[)'::text) WITH &&) WHERE (((status)::text = ANY ((ARRAY['pending'::character varying, 'confirmed'::character varying, 'in_progress'::character varying])::text[])))
+resource_bookings | resource_bookings_no_overlap | EXCLUDE USING gist (resource_id WITH =, tstzrange(blocking_start, blocking_end, '[)'::text) WITH &&) WHERE (((status)::text = 'active'::text))
+ext plpgsql 1.0
+ext btree_gist 1.8
+ext pgcrypto 1.4

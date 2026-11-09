@@ -1,0 +1,146 @@
+﻿
+> saie-ceeac-player@1.0.0 test
+> node --experimental-strip-types --test tests/*.test.ts
+
+TAP version 13
+# Subtest: découpage en blocs aux bornes incluses, dernier bloc partiel (PLY-04)
+ok 1 - découpage en blocs aux bornes incluses, dernier bloc partiel (PLY-04)
+  ---
+  duration_ms: 3.1903
+  type: 'test'
+  ...
+# Subtest: reprise : seuls les blocs non conservés sont redemandés
+ok 2 - reprise : seuls les blocs non conservés sont redemandés
+  ---
+  duration_ms: 0.458
+  type: 'test'
+  ...
+# Subtest: un bloc tronqué est refusé
+ok 3 - un bloc tronqué est refusé
+  ---
+  duration_ms: 0.2089
+  type: 'test'
+  ...
+# Subtest: annuaire trié et filtré par niveau et par initiale, accents ignorés (ORI-01)
+ok 4 - annuaire trié et filtré par niveau et par initiale, accents ignorés (ORI-01)
+  ---
+  duration_ms: 16.3434
+  type: 'test'
+  ...
+# Subtest: un niveau sans annuaire ni salle ne produit aucune entrée
+ok 5 - un niveau sans annuaire ni salle ne produit aucune entrée
+  ---
+  duration_ms: 0.2069
+  type: 'test'
+  ...
+# Subtest: une alerte du dernier manifeste vérifié s’affiche avant la fin du téléchargement des médias (PUB-06)
+ok 6 - une alerte du dernier manifeste vérifié s’affiche avant la fin du téléchargement des médias (PUB-06)
+  ---
+  duration_ms: 24.0813
+  type: 'test'
+  ...
+# Subtest: hors ligne, agenda, panneau et bienvenues cessent d’être affichés à l’expiration de l’autorisation (PLY-05)
+ok 7 - hors ligne, agenda, panneau et bienvenues cessent d’être affichés à l’expiration de l’autorisation (PLY-05)
+  ---
+  duration_ms: 0.216
+  type: 'test'
+  ...
+# Subtest: manifeste refusé s’il est expiré, plus ancien ou destiné à un autre lecteur (PLY-03)
+ok 8 - manifeste refusé s’il est expiré, plus ancien ou destiné à un autre lecteur (PLY-03)
+  ---
+  duration_ms: 0.743
+  type: 'test'
+  ...
+# Subtest: dérogation « jours non ouvrés » d’un écran : allumé un jour férié (PLY-08)
+ok 9 - dérogation « jours non ouvrés » d’un écran : allumé un jour férié (PLY-08)
+  ---
+  duration_ms: 0.4879
+  type: 'test'
+  ...
+# Subtest: rotation de clé : la clé suivante annoncée par un manifeste vérifié est reconnue, une clé inconnue jamais (PLY-03)
+ok 10 - rotation de clé : la clé suivante annoncée par un manifeste vérifié est reconnue, une clé inconnue jamais (PLY-03)
+  ---
+  duration_ms: 0.1686
+  type: 'test'
+  ...
+# Subtest: manifeste au contenu identique de version supérieure : renouvellement sans réactivation (PUB-07)
+ok 11 - manifeste au contenu identique de version supérieure : renouvellement sans réactivation (PUB-07)
+  ---
+  duration_ms: 0.1417
+  type: 'test'
+  ...
+# Subtest: alerte critique affichée hors plage si la politique le prévoit, jamais un avertissement (PUB-06, PLY-08)
+ok 12 - alerte critique affichée hors plage si la politique le prévoit, jamais un avertissement (PUB-06, PLY-08)
+  ---
+  duration_ms: 0.6744
+  type: 'test'
+  ...
+# Subtest: hors plage : écran éteint le soir et le week-end
+ok 13 - hors plage : écran éteint le soir et le week-end
+  ---
+  duration_ms: 17.4236
+  type: 'test'
+  ...
+# Subtest: jour non ouvré du référentiel : éteint
+ok 14 - jour non ouvré du référentiel : éteint
+  ---
+  duration_ms: 0.4178
+  type: 'test'
+  ...
+# Subtest: alerte active prioritaire sur les programmes, critique avant information
+ok 15 - alerte active prioritaire sur les programmes, critique avant information
+  ---
+  duration_ms: 0.4318
+  type: 'test'
+  ...
+# Subtest: priorité décroissante puis date de début puis identifiant, rotation à priorité égale
+ok 16 - priorité décroissante puis date de début puis identifiant, rotation à priorité égale
+  ---
+  duration_ms: 1.1286
+  type: 'test'
+  ...
+# Subtest: mode événement : remplace le programme ordinaire quelle que soit sa priorité, puis le rend seul (PUB-12)
+ok 17 - mode événement : remplace le programme ordinaire quelle que soit sa priorité, puis le rend seul (PUB-12)
+  ---
+  duration_ms: 0.869
+  type: 'test'
+  ...
+# Subtest: mode événement : une alerte active passe toujours avant
+ok 18 - mode événement : une alerte active passe toujours avant
+  ---
+  duration_ms: 0.3368
+  type: 'test'
+  ...
+# Subtest: campagne expirée exclue, créneau horaire et jours respectés
+ok 19 - campagne expirée exclue, créneau horaire et jours respectés
+  ---
+  duration_ms: 0.4787
+  type: 'test'
+  ...
+# Subtest: autorisation hors ligne expirée : contenu interne retiré, public conservé (PLY-05)
+ok 20 - autorisation hors ligne expirée : contenu interne retiré, public conservé (PLY-05)
+  ---
+  duration_ms: 0.518
+  type: 'test'
+  ...
+# Subtest: ressource manquante : l’entrée n’est pas lancée (jamais de programme incomplet)
+ok 21 - ressource manquante : l’entrée n’est pas lancée (jamais de programme incomplet)
+  ---
+  duration_ms: 0.5307
+  type: 'test'
+  ...
+# Subtest: repli expiré remplacé par le repli neutre
+ok 22 - repli expiré remplacé par le repli neutre
+  ---
+  duration_ms: 0.5875
+  type: 'test'
+  ...
+1..22
+# tests 22
+# suites 0
+# pass 22
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 276.5318

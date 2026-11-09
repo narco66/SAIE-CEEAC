@@ -1,0 +1,638 @@
+{
+"GOV-01": {
+"prio": "P0",
+"fam": "GOV",
+"statut": "Partiellement conforme",
+"teste": false
+},
+"HAB-01": {
+"prio": "P0",
+"fam": "HAB",
+"statut": "Non conforme",
+"teste": true
+},
+"HAB-02": {
+"prio": "P0",
+"fam": "HAB",
+"statut": "Non conforme",
+"teste": true
+},
+"HAB-03": {
+"prio": "P0",
+"fam": "HAB",
+"statut": "Partiellement conforme",
+"teste": true
+},
+"HAB-04": {
+"prio": "P0",
+"fam": "HAB",
+"statut": "Partiellement conforme",
+"teste": true
+},
+"REF-01": {
+"prio": "P0",
+"fam": "REF",
+"statut": "Partiellement conforme",
+"teste": false
+},
+"REF-02": {
+"prio": "P0",
+"fam": "REF",
+"statut": "Partiellement conforme",
+"teste": true
+},
+"REF-03": {
+"prio": "P0",
+"fam": "REF",
+"statut": "Non conforme",
+"teste": true
+},
+"DOC-01": {
+"prio": "P0",
+"fam": "DOC",
+"statut": "Non conforme",
+"teste": false
+},
+"DOC-02": {
+"prio": "P0",
+"fam": "DOC",
+"statut": "Partiellement conforme",
+"teste": true
+},
+"DOC-03": {
+"prio": "P0",
+"fam": "DOC",
+"statut": "Partiellement conforme",
+"teste": true
+},
+"DOC-04": {
+"prio": "P0",
+"fam": "DOC",
+"statut": "Non conforme",
+"teste": true
+},
+"DOC-05": {
+"prio": "P0",
+"fam": "DOC",
+"statut": "Partiellement conforme",
+"teste": true
+},
+"DOC-06": {
+"prio": "P0",
+"fam": "DOC",
+"statut": "Partiellement conforme",
+"teste": false
+},
+"DOC-07": {
+"prio": "P0",
+"fam": "DOC",
+"statut": "Partiellement conforme",
+"teste": false
+},
+"DOC-08": {
+"prio": "P1",
+"fam": "DOC",
+"statut": "Partiellement conforme",
+"teste": false
+},
+"DOC-09": {
+"prio": "P2",
+"fam": "DOC",
+"statut": "Conforme",
+"teste": true
+},
+"PUB-01": {
+"prio": "P0",
+"fam": "PUB",
+"statut": "Partiellement conforme",
+"teste": true
+},
+"PUB-02": {
+"prio": "P0",
+"fam": "PUB",
+"statut": "Partiellement conforme",
+"teste": true
+},
+"PUB-03": {
+"prio": "P0",
+"fam": "PUB",
+"statut": "Partiellement conforme",
+"teste": false
+},
+"PUB-04": {
+"prio": "P0",
+"fam": "PUB",
+"statut": "Partiellement conforme",
+"teste": false
+},
+"PUB-05": {
+"prio": "P0",
+"fam": "PUB",
+"statut": "Conforme",
+"teste": true
+},
+"PUB-06": {
+"prio": "P0",
+"fam": "PUB",
+"statut": "Partiellement conforme",
+"teste": false
+},
+"PUB-07": {
+"prio": "P0",
+"fam": "PUB",
+"statut": "Partiellement conforme",
+"teste": false
+},
+"PUB-08": {
+"prio": "P0",
+"fam": "PUB",
+"statut": "Partiellement conforme",
+"teste": true
+},
+"PUB-09": {
+"prio": "P0",
+"fam": "PUB",
+"statut": "Partiellement conforme",
+"teste": true
+},
+"PUB-10": {
+"prio": "P1",
+"fam": "PUB",
+"statut": "Conforme",
+"teste": true
+},
+"PUB-11": {
+"prio": "P1",
+"fam": "PUB",
+"statut": "Partiellement conforme",
+"teste": false
+},
+"PUB-12": {
+"prio": "P2",
+"fam": "PUB",
+"statut": "Conforme",
+"teste": true
+},
+"PLY-01": {
+"prio": "P0",
+"fam": "PLY",
+"statut": "Partiellement conforme",
+"teste": false
+},
+"PLY-02": {
+"prio": "P0",
+"fam": "PLY",
+"statut": "Partiellement conforme",
+"teste": true
+},
+"PLY-03": {
+"prio": "P0",
+"fam": "PLY",
+"statut": "Partiellement conforme",
+"teste": true
+},
+"PLY-04": {
+"prio": "P0",
+"fam": "PLY",
+"statut": "Partiellement conforme",
+"teste": false
+},
+"PLY-05": {
+"prio": "P0",
+"fam": "PLY",
+"statut": "Partiellement conforme",
+"teste": true
+},
+"PLY-06": {
+"prio": "P0",
+"fam": "PLY",
+"statut": "Partiellement conforme",
+"teste": true
+},
+"PLY-07": {
+"prio": "P0",
+"fam": "PLY",
+"statut": "Partiellement conforme",
+"teste": true
+},
+"PLY-08": {
+"prio": "P0",
+"fam": "PLY",
+"statut": "Partiellement conforme",
+"teste": true
+},
+"PLY-09": {
+"prio": "P1",
+"fam": "PLY",
+"statut": "Partiellement conforme",
+"teste": false
+},
+"PLY-10": {
+"prio": "P0",
+"fam": "PLY",
+"statut": "Partiellement conforme",
+"teste": false
+},
+"PLY-11": {
+"prio": "P1",
+"fam": "PLY",
+"statut": "Conforme",
+"teste": false
+},
+"PLY-12": {
+"prio": "P1",
+"fam": "PLY",
+"statut": "Partiellement conforme",
+"teste": false
+},
+"SAL-01": {
+"prio": "P0",
+"fam": "SAL",
+"statut": "Partiellement conforme",
+"teste": true
+},
+"SAL-02": {
+"prio": "P0",
+"fam": "SAL",
+"statut": "Partiellement conforme",
+"teste": false
+},
+"SAL-03": {
+"prio": "P0",
+"fam": "SAL",
+"statut": "Partiellement conforme",
+"teste": true
+},
+"SAL-04": {
+"prio": "P0",
+"fam": "SAL",
+"statut": "Partiellement conforme",
+"teste": true
+},
+"SAL-05": {
+"prio": "P0",
+"fam": "SAL",
+"statut": "Conforme",
+"teste": true
+},
+"SAL-06": {
+"prio": "P0",
+"fam": "SAL",
+"statut": "Non conforme",
+"teste": true
+},
+"SAL-07": {
+"prio": "P0",
+"fam": "SAL",
+"statut": "Non conforme",
+"teste": true
+},
+"SAL-08": {
+"prio": "P0",
+"fam": "SAL",
+"statut": "Partiellement conforme",
+"teste": true
+},
+"SAL-09": {
+"prio": "P0",
+"fam": "SAL",
+"statut": "Partiellement conforme",
+"teste": true
+},
+"SAL-10": {
+"prio": "P1",
+"fam": "SAL",
+"statut": "Partiellement conforme",
+"teste": true
+},
+"SAL-11": {
+"prio": "P1",
+"fam": "SAL",
+"statut": "Partiellement conforme",
+"teste": true
+},
+"SAL-12": {
+"prio": "P0",
+"fam": "SAL",
+"statut": "Conforme",
+"teste": true
+},
+"SAL-13": {
+"prio": "P1",
+"fam": "SAL",
+"statut": "Partiellement conforme",
+"teste": false
+},
+"SAL-14": {
+"prio": "P1",
+"fam": "SAL",
+"statut": "Partiellement conforme",
+"teste": true
+},
+"SAL-15": {
+"prio": "P2",
+"fam": "SAL",
+"statut": "Conforme",
+"teste": true
+},
+"ACC-01": {
+"prio": "P1",
+"fam": "ACC",
+"statut": "Non conforme",
+"teste": false
+},
+"ACC-02": {
+"prio": "P1",
+"fam": "ACC",
+"statut": "Partiellement conforme",
+"teste": false
+},
+"ACC-03": {
+"prio": "P2",
+"fam": "ACC",
+"statut": "Conforme",
+"teste": true
+},
+"NOT-01": {
+"prio": "P0",
+"fam": "NOT",
+"statut": "Partiellement conforme",
+"teste": true
+},
+"NOT-02": {
+"prio": "P0",
+"fam": "NOT",
+"statut": "Partiellement conforme",
+"teste": true
+},
+"NOT-03": {
+"prio": "P1",
+"fam": "NOT",
+"statut": "Partiellement conforme",
+"teste": true
+},
+"TAB-01": {
+"prio": "P0",
+"fam": "TAB",
+"statut": "Partiellement conforme",
+"teste": false
+},
+"TAB-02": {
+"prio": "P0",
+"fam": "TAB",
+"statut": "Partiellement conforme",
+"teste": true
+},
+"UX-01": {
+"prio": "P0",
+"fam": "UX",
+"statut": "Partiellement conforme",
+"teste": true
+},
+"UX-02": {
+"prio": "P0",
+"fam": "UX",
+"statut": "Partiellement conforme",
+"teste": false
+},
+"UX-03": {
+"prio": "P0",
+"fam": "UX",
+"statut": "Partiellement conforme",
+"teste": false
+},
+"TECH-01": {
+"prio": "P0",
+"fam": "TECH",
+"statut": "Partiellement conforme",
+"teste": false
+},
+"TECH-02": {
+"prio": "P0",
+"fam": "TECH",
+"statut": "Partiellement conforme",
+"teste": false
+},
+"TECH-03": {
+"prio": "P0",
+"fam": "TECH",
+"statut": "Partiellement conforme",
+"teste": false
+},
+"TECH-04": {
+"prio": "P0",
+"fam": "TECH",
+"statut": "Partiellement conforme",
+"teste": false
+},
+"DATA-01": {
+"prio": "P0",
+"fam": "DATA",
+"statut": "Conforme",
+"teste": true
+},
+"DATA-02": {
+"prio": "P0",
+"fam": "DATA",
+"statut": "Conforme",
+"teste": true
+},
+"DATA-03": {
+"prio": "P0",
+"fam": "DATA",
+"statut": "Partiellement conforme",
+"teste": false
+},
+"API-01": {
+"prio": "P0",
+"fam": "API",
+"statut": "Conforme",
+"teste": false
+},
+"API-02": {
+"prio": "P0",
+"fam": "API",
+"statut": "Partiellement conforme",
+"teste": false
+},
+"API-03": {
+"prio": "P0",
+"fam": "API",
+"statut": "Non conforme",
+"teste": false
+},
+"API-04": {
+"prio": "P0",
+"fam": "API",
+"statut": "Partiellement conforme",
+"teste": false
+},
+"API-05": {
+"prio": "P0",
+"fam": "API",
+"statut": "Partiellement conforme",
+"teste": false
+},
+"API-06": {
+"prio": "P0",
+"fam": "API",
+"statut": "Partiellement conforme",
+"teste": false
+},
+"API-07": {
+"prio": "P1",
+"fam": "API",
+"statut": "Partiellement conforme",
+"teste": false
+},
+"SEC-01": {
+"prio": "P0",
+"fam": "SEC",
+"statut": "Non conforme",
+"teste": true
+},
+"SEC-02": {
+"prio": "P0",
+"fam": "SEC",
+"statut": "Partiellement conforme",
+"teste": true
+},
+"SEC-03": {
+"prio": "P0",
+"fam": "SEC",
+"statut": "Non conforme",
+"teste": true
+},
+"SEC-04": {
+"prio": "P0",
+"fam": "SEC",
+"statut": "Partiellement conforme",
+"teste": true
+},
+"SEC-05": {
+"prio": "P0",
+"fam": "SEC",
+"statut": "Non conforme",
+"teste": true
+},
+"SEC-06": {
+"prio": "P0",
+"fam": "SEC",
+"statut": "Partiellement conforme",
+"teste": false
+},
+"SEC-07": {
+"prio": "P0",
+"fam": "SEC",
+"statut": "Non implémenté",
+"teste": false
+},
+"GOV-02": {
+"prio": "P0",
+"fam": "GOV",
+"statut": "Partiellement conforme",
+"teste": false
+},
+"PERF-01": {
+"prio": "P0",
+"fam": "PERF",
+"statut": "Non conforme",
+"teste": false
+},
+"CONT-01": {
+"prio": "P0",
+"fam": "CONT",
+"statut": "Partiellement conforme",
+"teste": false
+},
+"CONT-02": {
+"prio": "P0",
+"fam": "CONT",
+"statut": "Partiellement conforme",
+"teste": true
+},
+"INF-01": {
+"prio": "P0",
+"fam": "INF",
+"statut": "Non vérifiable",
+"teste": false
+},
+"INF-02": {
+"prio": "P0",
+"fam": "INF",
+"statut": "Non vérifiable",
+"teste": false
+},
+"QUAL-01": {
+"prio": "P0",
+"fam": "QUAL",
+"statut": "Partiellement conforme",
+"teste": true
+},
+"QUAL-02": {
+"prio": "P0",
+"fam": "QUAL",
+"statut": "Non vérifiable",
+"teste": false
+},
+"LIV-01": {
+"prio": "P0",
+"fam": "LIV",
+"statut": "Partiellement conforme",
+"teste": true
+},
+"LIV-02": {
+"prio": "P0",
+"fam": "LIV",
+"statut": "Partiellement conforme",
+"teste": false
+},
+"LIV-03": {
+"prio": "P0",
+"fam": "LIV",
+"statut": "Partiellement conforme",
+"teste": true
+},
+"EXP-01": {
+"prio": "P0",
+"fam": "EXP",
+"statut": "Partiellement conforme",
+"teste": false
+},
+"EXP-02": {
+"prio": "P0",
+"fam": "EXP",
+"statut": "Non conforme",
+"teste": false
+},
+"EXP-03": {
+"prio": "P0",
+"fam": "EXP",
+"statut": "Non applicable",
+"teste": false
+},
+"EXP-04": {
+"prio": "P0",
+"fam": "EXP",
+"statut": "Non vérifiable",
+"teste": false
+},
+"EXP-05": {
+"prio": "P0",
+"fam": "EXP",
+"statut": "Partiellement conforme",
+"teste": false
+},
+"EXP-06": {
+"prio": "P1",
+"fam": "EXP",
+"statut": "Non implémenté",
+"teste": false
+},
+"GOV-03": {
+"prio": "P1",
+"fam": "GOV",
+"statut": "Non applicable",
+"teste": false
+}
+}

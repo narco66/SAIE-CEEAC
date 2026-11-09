@@ -1,0 +1,20 @@
+# Liste blanche du contexte de l'image web (contexte : racine du dépôt, BuildKit) : sources du frontend et du lecteur,
+# configuration Nginx et point d'entrée public de Laravel. Les dépendances sont réinstallées dans le conteneur (npm ci).
+*
+!frontend/
+!player/
+!infra/nginx.conf
+!infra/nginx/
+!backend/public/
+**/node_modules/
+**/dist/
+**/dist-release/
+**/test-results/
+**/playwright-report/
+**/.env
+**/.env.*
+frontend/e2e/
+player/agent/
+player/tests/
+backend/public/storage
+backend/public/hot

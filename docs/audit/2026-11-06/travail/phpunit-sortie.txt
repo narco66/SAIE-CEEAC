@@ -1,0 +1,2 @@
+{"tool":"phpunit","result":"passed","tests":111,"passed":111,"assertions":565,"duration_ms":29264}
+code_sortie=0

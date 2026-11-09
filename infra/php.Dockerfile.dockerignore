@@ -1,0 +1,30 @@
+# Liste blanche du contexte de l'image PHP (contexte : racine du dépôt, BuildKit). Aucun secret, aucune donnée ni dépendance
+# locale n'entre dans l'image (SEC-05) : la configuration et les clés sont montées à l'exécution, les dépendances réinstallées.
+*
+!backend/
+!infra/php/
+backend/.env
+backend/.env.*
+!backend/.env.example
+backend/auth.json
+backend/vendor/
+backend/node_modules/
+backend/public/build/
+backend/public/hot
+backend/public/storage
+backend/storage/app/**
+backend/storage/framework/cache/**
+backend/storage/framework/sessions/**
+backend/storage/framework/testing/**
+backend/storage/framework/views/**
+backend/storage/logs/**
+backend/storage/pail/
+backend/storage/*.key
+backend/bootstrap/cache/*.php
+backend/tests/
+backend/phpunit.xml
+backend/.phpunit.cache/
+backend/.phpunit.result.cache
+backend/.ai/
+backend/boost.json
+**/*.log

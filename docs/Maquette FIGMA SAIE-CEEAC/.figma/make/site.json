@@ -1,0 +1,10 @@
+{
+  "description": "Centralizes CEEAC digital signage, institutional content, room bookings, visitor information, and alerts to help staff manage communications and keep displays synchronized.",
+  "robots": {
+    "index": false
+  },
+  "accessibility": {
+    "addBypassLinks": false,
+    "ignoreReducedMotion": false
+  }
+}

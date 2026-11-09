@@ -1,0 +1,189 @@
+# Pile de production SAIE-CEEAC : PostgreSQL 18, Redis, ClamAV, API Laravel (PHP-FPM), workers, planificateur, Nginx en HTTPS.
+# Procédure complète : docs/exploitation/mise-en-service.md. Aucun secret n'est versionné :
+#   infra/.env                       configuration (modèle : infra/.env.example)
+#   infra/secrets/manifest-ed25519.pem   clé de signature des manifestes (propriétaire uid 33, droits 600)
+#   infra/certs/fullchain.pem, privkey.pem   certificat TLS fourni par la DSI
+# Déploiement (versions et empreintes des images obligatoires : SAIE_VERSION et SAIE_IMAGE_* dans infra/.env) :
+#   docker compose -f infra/docker-compose.yml build
+#   docker compose -f infra/docker-compose.yml --profile deploy run --rm migrate
+#   docker compose -f infra/docker-compose.yml --profile deploy run --rm preflight      (doit se terminer sans contrôle bloquant)
+#   docker compose -f infra/docker-compose.yml up -d
+# Essai local avec Mailpit : ajouter --profile local et MAIL_HOST=mailpit, MAIL_PORT=1025 dans infra/.env.
+name: saie-ceeac
+
+x-app: &app
+  image: saie-ceeac/php:${SAIE_VERSION:?Définir SAIE_VERSION (étiquette de la version validée, ex. 2026.11.1)}
+  build: { context: .., dockerfile: infra/php.Dockerfile, target: app, args: { PHP_IMAGE: "${SAIE_IMAGE_PHP:?Renseigner SAIE_IMAGE_PHP dans infra/.env (étiquette@sha256:…)}" } }
+  env_file: [.env]
+  environment:
+    DB_HOST: postgres
+    DB_PORT: 5432
+    # Compte applicatif à moindre privilège (SEC-04) ; le service « migrate » utilise le propriétaire du schéma.
+    DB_USERNAME: saie_app
+    DB_PASSWORD: ${SAIE_APP_PASSWORD:?définir SAIE_APP_PASSWORD dans infra/.env}
+    REDIS_HOST: redis
+    REDIS_PASSWORD: ${REDIS_PASSWORD:?définir REDIS_PASSWORD dans infra/.env}
+    SAIE_AV_DRIVER: clamd
+    SAIE_CLAMD_HOST: clamav
+    SAIE_CLAMD_PORT: 3310
+    SAIE_MANIFEST_KEY_PATH: /run/secrets/saie/manifest-ed25519.pem
+    QUEUE_CONNECTION: redis
+    SAIE_ACCEL_REDIRECT: /protected-storage/
+    CACHE_STORE: redis
+  volumes:
+    - storage:/var/www/html/storage
+    # Seule la clé de signature est montée : les mots de passe de la base (infra/secrets/db-*) n'entrent jamais ici.
+    - ./secrets/manifest-ed25519.pem:/run/secrets/saie/manifest-ed25519.pem:ro
+  networks: [internal, default]
+  security_opt: ["no-new-privileges:true"]
+  restart: unless-stopped
+  depends_on:
+    postgres: { condition: service_healthy }
+    redis: { condition: service_started }
+    clamav: { condition: service_started }
+
+services:
+  postgres:
+    image: ${SAIE_IMAGE_POSTGRES:?Renseigner SAIE_IMAGE_POSTGRES dans infra/.env (étiquette@sha256:…)}
+    # Archivage continu des WAL (CONT-01) : bascule au moins toutes les heures pour un RPO ≤ 1 h.
+    command: ["postgres", "-c", "wal_level=replica", "-c", "archive_mode=on", "-c", "archive_timeout=3600",
+              "-c", "archive_command=test ! -f /wal/%f && cp %p /wal/%f"]
+    environment:
+      POSTGRES_DB: saie_ceeac
+      # Superutilisateur réservé à l'administration de la base ; jamais utilisé par l'application.
+      POSTGRES_USER: saie_admin
+      # Mots de passe du superutilisateur et du propriétaire : secrets Docker, jamais transmis aux conteneurs applicatifs.
+      POSTGRES_PASSWORD_FILE: /run/secrets/db_admin_password
+      SAIE_APP_PASSWORD: ${SAIE_APP_PASSWORD:?définir SAIE_APP_PASSWORD dans infra/.env}
+    secrets: [db_admin_password, db_owner_password]
+    # Joignable seulement depuis le réseau interne de la pile.
+    networks: [internal]
+    volumes:
+      - pgdata:/var/lib/postgresql
+      - walarchive:/wal
+      - ./postgres/10-roles.sh:/docker-entrypoint-initdb.d/10-roles.sh:ro
+    healthcheck: { test: ["CMD-SHELL", "pg_isready -U saie_admin -d saie_ceeac"], interval: 5s, retries: 20 }
+    restart: unless-stopped
+  # Sauvegarde nocturne (CONT-01, CONT-02) : base complète, stockage applicatif, empreintes, rétention 14 jours ;
+  # état lu par la supervision. Copie hors site chiffrée du volume « backups » par l'outil de la DSI.
+  backup:
+    image: ${SAIE_IMAGE_POSTGRES:?Renseigner SAIE_IMAGE_POSTGRES dans infra/.env (étiquette@sha256:…)}
+    entrypoint: ["/bin/sh", "/backup.sh"]
+    secrets: [db_admin_password]
+    networks: [internal]
+    volumes:
+      - ./backup/backup.sh:/backup.sh:ro
+      - backups:/backups
+      - walarchive:/wal
+      - storage:/storage
+    depends_on:
+      postgres: { condition: service_healthy }
+    restart: unless-stopped
+
+  redis:
+    image: ${SAIE_IMAGE_REDIS:?Renseigner SAIE_IMAGE_REDIS dans infra/.env (étiquette@sha256:…)}
+    # Mot de passe exigé (ASVS 5.0 V13) : la file d'attente transporte des tâches que les workers exécutent.
+    command: ["redis-server", "--appendonly", "yes", "--maxmemory-policy", "noeviction", "--requirepass", "${REDIS_PASSWORD:?définir REDIS_PASSWORD dans infra/.env}"]
+    volumes: [redisdata:/data]
+    networks: [internal]
+    restart: unless-stopped
+  clamav:
+    image: ${SAIE_IMAGE_CLAMAV:?Renseigner SAIE_IMAGE_CLAMAV dans infra/.env (étiquette@sha256:…)}
+    volumes: [clamdb:/var/lib/clamav]
+    networks: [internal, default]
+    restart: unless-stopped
+  mailpit:
+    # Profil « local » uniquement (essai sans serveur de courrier) : jamais démarré en production.
+    image: ${SAIE_IMAGE_MAILPIT:-axllent/mailpit:latest}
+    profiles: [local]
+    ports: ["8025:8025"]
+
+  api:
+    <<: *app
+    command: ["php-fpm"]
+  worker:
+    <<: *app
+    command: ["php", "artisan", "queue:work", "--queue=default,notifications,exports", "--tries=3", "--max-time=3600"]
+  # Conversions et analyses (DOC-01, SEC-03) : file « media » seule, réseau interne sans accès Internet,
+  # sans clé de signature, mémoire et processus plafonnés.
+  worker-media:
+    <<: *app
+    image: saie-ceeac/php-media:${SAIE_VERSION:?Définir SAIE_VERSION (étiquette de la version validée, ex. 2026.11.1)}
+    build: { context: .., dockerfile: infra/php.Dockerfile, target: media, args: { PHP_IMAGE: "${SAIE_IMAGE_PHP:?Renseigner SAIE_IMAGE_PHP dans infra/.env (étiquette@sha256:…)}" } }
+    command: ["php", "artisan", "queue:work", "--queue=media", "--tries=2", "--max-time=3600", "--memory=1024"]
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USERNAME: saie_app
+      DB_PASSWORD: ${SAIE_APP_PASSWORD:?définir SAIE_APP_PASSWORD dans infra/.env}
+      REDIS_HOST: redis
+      REDIS_PASSWORD: ${REDIS_PASSWORD:?définir REDIS_PASSWORD dans infra/.env}
+      SAIE_AV_DRIVER: clamd
+      SAIE_CLAMD_HOST: clamav
+      SAIE_CLAMD_PORT: 3310
+      QUEUE_CONNECTION: redis
+      CACHE_STORE: redis
+      SAIE_SOFFICE_PATH: /usr/bin/soffice
+      SAIE_FFMPEG_PATH: /usr/bin/ffmpeg
+      SAIE_FFPROBE_PATH: /usr/bin/ffprobe
+    volumes:
+      - storage:/var/www/html/storage
+    networks: [internal]
+    mem_limit: 2g
+    cpus: 2
+    pids_limit: 256
+  scheduler:
+    <<: *app
+    command: ["php", "artisan", "schedule:work"]
+
+  # Tâches ponctuelles de déploiement (profil « deploy ») : sauvegarde préalable obligatoire avant migrate (TECH-04).
+  migrate:
+    <<: *app
+    profiles: [deploy]
+    restart: "no"
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USERNAME: saie
+      REDIS_HOST: redis
+      REDIS_PASSWORD: ${REDIS_PASSWORD:?définir REDIS_PASSWORD dans infra/.env}
+      SAIE_MANIFEST_KEY_PATH: /run/secrets/saie/manifest-ed25519.pem
+    secrets: [db_owner_password]
+    # Le mot de passe du propriétaire est lu dans le secret Docker au moment de la migration, jamais dans infra/.env.
+    command: ["sh", "-c", "DB_PASSWORD=$$(cat /run/secrets/db_owner_password) php artisan migrate --force --no-interaction"]
+  preflight:
+    <<: *app
+    profiles: [deploy]
+    restart: "no"
+    command: ["php", "artisan", "saie:preflight"]
+
+  web:
+    image: saie-ceeac/web:${SAIE_VERSION:?Définir SAIE_VERSION (étiquette de la version validée, ex. 2026.11.1)}
+    build: { context: .., dockerfile: infra/web.Dockerfile, args: { NODE_IMAGE: "${SAIE_IMAGE_NODE:?Renseigner SAIE_IMAGE_NODE dans infra/.env (étiquette@sha256:…)}", NGINX_IMAGE: "${SAIE_IMAGE_NGINX:?Renseigner SAIE_IMAGE_NGINX dans infra/.env (étiquette@sha256:…)}" } }
+    ports: ["80:80", "443:443"]
+    volumes:
+      - ./certs:/etc/nginx/certs:ro
+      - player-releases:/srv/player-releases:ro
+      # Lecture seule, servi uniquement via l'emplacement interne /protected-storage/ après autorisation par l'API.
+      - storage:/srv/saie-storage:ro
+    depends_on: [api]
+    restart: unless-stopped
+
+secrets:
+  db_admin_password: { file: ./secrets/db-admin-password }
+  db_owner_password: { file: ./secrets/db-owner-password }
+
+networks:
+  # Réseau sans sortie vers l'extérieur : base, Redis, antivirus et worker de conversion.
+  internal:
+    internal: true
+  default: {}
+
+volumes:
+  pgdata: {}
+  walarchive: {}
+  backups: {}
+  redisdata: {}
+  clamdb: {}
+  storage: {}
+  player-releases: {}

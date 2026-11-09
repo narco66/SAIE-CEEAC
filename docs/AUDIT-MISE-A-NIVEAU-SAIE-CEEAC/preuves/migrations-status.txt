@@ -1,0 +1,37 @@
+﻿
+ Migration name .. Batch / Status 
+ 0001_01_01_000000_create_users_table .. [1] Ran 
+ 0001_01_01_000001_create_cache_table .. [1] Ran 
+ 0001_01_01_000002_create_jobs_table .. [1] Ran 
+ 2026_11_04_084511_create_personal_access_tokens_table .. [1] Ran 
+ 2026_11_04_100000_create_referential_tables .. [1] Ran 
+ 2026_11_04_100100_create_screen_and_device_tables .. [1] Ran 
+ 2026_11_04_100200_create_media_and_document_tables .. [1] Ran 
+ 2026_11_04_100300_create_room_tables .. [1] Ran 
+ 2026_11_04_100400_create_publication_tables .. [1] Ran 
+ 2026_11_04_100500_create_operation_tables .. [1] Ran 
+ 2026_11_05_090000_add_presence_and_integrations .. [1] Ran 
+ 2026_11_05_100000_create_player_releases .. [1] Ran 
+ 2026_11_05_110000_add_derivatives_to_asset_versions .. [1] Ran 
+ 2026_11_05_135216_add_catering_details_to_service_requests .. [1] Ran 
+ 2026_11_05_135609_create_document_broadcasts_table .. [1] Ran 
+ 2026_11_05_140120_add_kind_to_campaigns .. [1] Ran 
+ 2026_11_06_120417_purge_secret_idempotent_responses .. [1] Ran 
+ 2026_11_06_120437_add_mfa_last_step_to_users_table .. [1] Ran 
+ 2026_11_06_121652_revoke_audit_write_from_app_role .. [1] Ran 
+ 2026_11_06_125937_add_operating_window_to_screen_groups_table .. [1] Ran 
+ 2026_11_06_141329_restrict_device_proof_deletion .. [1] Ran 
+ 2026_11_06_153209_add_version_to_editable_objects .. [1] Ran 
+ 2026_11_06_200851_create_campaign_transmissions_table .. [2] Ran 
+ 2026_11_06_201301_add_hardware_details_to_screens_table .. [3] Ran 
+ 2026_11_06_201302_add_category_to_incidents_table .. [3] Ran 
+ 2026_11_06_204827_create_calendar_subscriptions_table .. [4] Ran 
+ 2026_11_06_205512_add_pending_command_to_devices_table .. [5] Ran 
+ 2026_11_06_212632_add_maintenance_content_and_readonly_roles .. [6] Ran 
+ 2026_11_06_213823_add_approval_to_alerts_table .. [7] Ran 
+ 2026_11_06_214108_add_approval_levels_to_content_workflow .. [8] Ran 
+ 2026_11_06_214432_add_tags_and_rights_to_assets_table .. [9] Ran 
+ 2026_11_06_214809_create_maintenance_plans_table .. [10] Ran 
+ 2026_11_06_215100_create_playlists_tables .. [11] Ran 
+ 2026_11_06_215633_add_wayfinding_details .. [12] Ran 
+
