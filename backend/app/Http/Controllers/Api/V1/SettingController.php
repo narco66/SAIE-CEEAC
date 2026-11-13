@@ -142,6 +142,8 @@ class SettingController extends Controller
     public function update(Request $request): JsonResponse
     {
         $data = $request->validate(['key' => ['required', 'in:'.implode(',', array_keys(self::KEYS))], 'value' => ['present'], 'reason' => ['required', 'string', 'min:5', 'max:300']]);
+        // Le droit sur la clé est vérifié avant la valeur : un compte non habilité ne peut pas sonder la validation.
+        $this->authorizePermission(self::KEYS[$data['key']][2] ? 'settings.technical' : 'settings.manage');
         $request->validate(array_merge(['value' => self::RULES[$data['key']]], $data['key'] === 'operating.default_window' ? [
             'value.days' => ['required', 'array', 'min:1'], 'value.days.*' => ['integer', 'between:1,7'],
             'value.on' => ['required', 'date_format:H:i'], 'value.off' => ['required', 'date_format:H:i', 'after:value.on'],

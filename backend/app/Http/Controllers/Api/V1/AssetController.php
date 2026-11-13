@@ -201,6 +201,10 @@ class AssetController extends Controller
         if (! $this->canEdit($asset)) {
             $this->deny('Média hors périmètre');
         }
+        // DOC-02/03, PUB-02 : un média à la corbeille ne revit pas par une nouvelle version ou une modification.
+        if ($asset->status === 'trashed') {
+            throw new BusinessException('INVALID_TRANSITION', 'Ce média est à la corbeille : il n’est plus modifiable.', 409);
+        }
     }
 
     private function usageCount(Asset $asset): int

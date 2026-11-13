@@ -76,6 +76,18 @@ class RoleController extends Controller
         }
         $role = Role::query()->where('code', $data['role_code'])->firstOrFail();
         $this->preventEscalation($role);
+        if (User::query()->whereKey($data['user_id'])->value('status') !== 'active') {
+            throw new BusinessException('USER_INACTIVE', 'Un rôle ne s’attribue qu’à un compte actif.', 422);
+        }
+        // Doublon : même rôle, même périmètre, encore actif.
+        $duplicate = RoleAssignment::query()->where('user_id', $data['user_id'])->where('role_id', $role->id)->whereNull('revoked_at')
+            ->where(fn ($q) => $q->whereNull('ends_at')->orWhere('ends_at', '>', now()));
+        foreach (['structure_id', 'site_id', 'zone_id', 'floor_id', 'group_id', 'building_id', 'screen_id'] as $field) {
+            ($data[$field] ?? null) === null ? $duplicate->whereNull($field) : $duplicate->where($field, $data[$field]);
+        }
+        if ($duplicate->exists()) {
+            throw new BusinessException('ASSIGNMENT_EXISTS', 'Ce compte détient déjà ce rôle sur ce périmètre.', 409);
+        }
         $assignment = RoleAssignment::query()->create([
             'user_id' => $data['user_id'], 'role_id' => $role->id, 'structure_id' => $data['structure_id'] ?? null, 'site_id' => $data['site_id'] ?? null, 'zone_id' => $data['zone_id'] ?? null,
             'floor_id' => $data['floor_id'] ?? null, 'group_id' => $data['group_id'] ?? null, 'building_id' => $data['building_id'] ?? null, 'screen_id' => $data['screen_id'] ?? null,
@@ -96,6 +108,9 @@ class RoleController extends Controller
             $this->refuseSelfChange();
         }
         $this->assertMayAdminister($assignment->user, 'lui retirer un rôle');
+        if ($assignment->revoked_at) {
+            throw new BusinessException('INVALID_TRANSITION', 'Ce rôle est déjà retiré.', 409);
+        }
         $assignment->forceFill(['revoked_at' => now()])->save();
         $this->access()->flush();
         $this->audit()->log('role.revoked', $assignment->user, $data['reason'], after: ['role' => $assignment->role->code]);
@@ -143,6 +158,9 @@ class RoleController extends Controller
             $this->refuseSelfChange();
         }
         $this->assertMayAdminister($extension->user, 'lui retirer un pouvoir');
+        if ($extension->revoked_at) {
+            throw new BusinessException('INVALID_TRANSITION', 'Ce pouvoir est déjà retiré.', 409);
+        }
         $extension->forceFill(['revoked_at' => now()])->save();
         $this->access()->flush();
         $this->audit()->log('power.revoked', $extension->user, $data['reason'], power: $extension->power);

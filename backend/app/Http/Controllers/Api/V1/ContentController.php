@@ -275,7 +275,7 @@ class ContentController extends Controller
             'owner_structure_id' => ['nullable', 'uuid', 'exists:structures,id'],
             'classification' => [$req, 'in:public,interne,restreint'],
             'priority' => ['sometimes', 'integer', 'between:1,100'],
-            'template_id' => ['nullable', 'uuid', 'exists:templates,id'],
+            'template_id' => ['nullable', 'uuid', $creating || $request->input('template_id') !== $request->route('content')?->template_id ? Rule::exists('templates', 'id')->where('status', 'active') : 'exists:templates,id'],
             'media' => ['nullable', 'array', 'max:6'],
             'media.*.asset_version_id' => ['required', 'uuid', 'exists:asset_versions,id'],
             'media.*.pages' => ['nullable', 'array', 'max:50'], 'media.*.pages.*' => ['integer', 'min:1'],
@@ -310,6 +310,9 @@ class ContentController extends Controller
         foreach (AssetVersion::query()->with('asset')->whereIn('id', $versionIds)->get() as $version) {
             if (! $version->asset || ! $assets->canView($version->asset, $this->user())) {
                 $this->deny('Média hors de portée de l’auteur');
+            }
+            if ($version->asset->status === 'trashed') {
+                throw new BusinessException('MEDIA_TRASHED', 'Le média « '.$version->asset->title.' » est à la corbeille : choisissez-en un autre.', 422);
             }
         }
         $documentId = $data['qr']['document_id'] ?? null;

@@ -281,9 +281,13 @@ class CampaignController extends Controller
         $this->authorizePermission('fallback.manage');
         $data = $request->validate(['zone_id' => ['required', 'uuid', 'exists:display_zones,id'], 'content_version_id' => ['required', 'uuid', 'exists:content_versions,id'], 'valid_until' => ['required', 'date', 'after:now']]);
         $this->campaigns->assertTargetsInScope([['type' => 'zone', 'id' => $data['zone_id']]], $this->user(), 'fallback.manage');
-        $version = ContentVersion::query()->findOrFail($data['content_version_id']);
+        $version = ContentVersion::query()->with('content')->findOrFail($data['content_version_id']);
         if ($version->classification !== 'public') {
             throw new BusinessException('FALLBACK_NOT_PUBLIC', 'Un contenu de repli doit être public et approuvé (PUB-05).', 422);
+        }
+        // PUB-01 : un contenu archivé, expiré ou suspendu est retiré de la diffusion, repli compris.
+        if (! in_array($version->content?->status, ['approved', 'scheduled', 'broadcasting'], true)) {
+            throw new BusinessException('FALLBACK_NOT_ELIGIBLE', 'Ce contenu n’est pas diffusable (archivé, expiré, suspendu ou non approuvé).', 422);
         }
         $fallback = FallbackContent::query()->create($data + ['created_by' => $this->user()->id, 'is_active' => true]);
         $this->audit()->log('fallback.created', $fallback);

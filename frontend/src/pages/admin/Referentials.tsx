@@ -93,7 +93,19 @@ export default function Referentials() {
             : <FlatList type={tab} d={query.data} onEdit={setEditing} onToggle={(type, item) => setToggling({ type, item })} />
       )}
       {editing && query.data && <RefForm {...editing} d={query.data} onClose={() => setEditing(null)} />}
-      {toggling && (
+      {toggling && toggling.type === 'holidays' && (
+        <ConfirmDialog
+          title="Supprimer ce jour non ouvré" object={nameOf(toggling.item)} danger
+          consequence="La date ne sera plus comptée comme non ouvrée. La suppression est inscrite au journal."
+          confirmLabel="Supprimer" onClose={() => setToggling(null)}
+          onConfirm={async () => {
+            await api.delete(`/referentials/holidays/${toggling.item.id}`)
+            await client.invalidateQueries({ queryKey: ['referentials'] })
+            toast.success('Jour non ouvré supprimé')
+          }}
+        />
+      )}
+      {toggling && toggling.type !== 'holidays' && (
         <ConfirmDialog
           title={toggling.item.is_active === false ? `Réactiver ce ${DEFS[toggling.type].singular}` : `Désactiver ce ${DEFS[toggling.type].singular}`}
           object={nameOf(toggling.item)}
@@ -102,9 +114,12 @@ export default function Referentials() {
           confirmLabel={toggling.item.is_active === false ? 'Réactiver' : 'Désactiver'}
           onClose={() => setToggling(null)}
           onConfirm={async () => {
-            await api.patch(`/referentials/${toggling.type}/${toggling.item.id}`, { is_active: toggling.item.is_active === false })
+            const res = await api.patch<{ meta?: { usage?: Record<string, number> } }>(`/referentials/${toggling.type}/${toggling.item.id}`, { is_active: toggling.item.is_active === false })
             await client.invalidateQueries({ queryKey: ['referentials'] })
-            toast.success(toggling.item.is_active === false ? 'Élément réactivé' : 'Élément désactivé')
+            // V36 : les éléments rattachés restent actifs ; ils sont signalés pour être traités.
+            const usage = Object.entries(res?.meta?.usage ?? {}).filter(([, n]) => n > 0).map(([what, n]) => `${n} ${what}`)
+            if (usage.length) toast.success('Élément désactivé', `Encore actifs et rattachés : ${usage.join(', ')}. Désactivez-les ou rattachez-les ailleurs si nécessaire.`)
+            else toast.success(toggling.item.is_active === false ? 'Élément réactivé' : 'Élément désactivé')
           }}
         />
       )}
@@ -120,6 +135,7 @@ function RowActions({ type, item, onEdit, onToggle, addChild }: Handlers & { typ
       {addChild && <Button size="small" variant="ghost" icon="plus" onClick={() => onEdit({ type: addChild.type, preset: addChild.preset })} ariaLabel={`Ajouter ${addChild.label} à ${nameOf(item)}`}>{addChild.label}</Button>}
       <Button size="small" variant="secondary" icon="edit" onClick={() => onEdit({ type, item })} ariaLabel={`Modifier ${nameOf(item)}`} />
       {DEFS[type].activable && <Button size="small" variant="secondary" onClick={() => onToggle(type, item)}>{item.is_active === false ? 'Réactiver' : 'Désactiver'}</Button>}
+      {type === 'holidays' && <Button size="small" variant="secondary" onClick={() => onToggle(type, item)} ariaLabel={`Supprimer ${nameOf(item)}`}>Supprimer</Button>}
     </span>
   )
 }
@@ -317,7 +333,8 @@ function RefForm({ type, item, preset, d, onClose }: Editing & { d: RefData; onC
               ) : f.kind === 'select' ? (
                 <select className="input" value={String(value ?? '')} onChange={(e) => set(e.target.value)} aria-invalid={!!err}>
                   <option value="">{f.required ? '— Choisir —' : '— Aucun —'}</option>
-                  {(f.options?.(d) ?? []).filter((o) => o.value !== item?.id).map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+                  {(f.options?.(d) ?? []).filter((o) => o.value !== item?.id && !(type === 'structures' && f.name === 'parent_id' && item && descendantsOf(d.structures ?? [], item.id).has(o.value)))
+                    .filter((o) => !o.label.endsWith('(inactif)') || o.value === value).map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
                 </select>
               ) : f.kind === 'textarea' ? (
                 <textarea value={String(value ?? '')} onChange={(e) => set(e.target.value)} aria-invalid={!!err} />
@@ -335,4 +352,12 @@ function RefForm({ type, item, preset, d, onClose }: Editing & { d: RefData; onC
       <div className="footer-note" style={{ marginTop: 12 }}><Icon name="shield" size={14} /> Modification tracée dans le journal (avant / après)</div>
     </Modal>
   )
+}
+
+/** Sous-structures (directes et indirectes) : jamais proposées comme parent, pour ne pas créer de cycle. */
+function descendantsOf(structures: RefItem[], id: string): Set<string> {
+  const found = new Set<string>()
+  const walk = (parent: string) => structures.filter((s) => s.parent_id === parent && !found.has(s.id)).forEach((s) => { found.add(s.id); walk(s.id) })
+  walk(id)
+  return found
 }

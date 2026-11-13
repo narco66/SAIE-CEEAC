@@ -94,6 +94,7 @@ class ExportController extends Controller
             throw new BusinessException('INVALID_TRANSITION', 'Seul un export en attente peut être annulé.', 409);
         }
         $export->forceFill(['status' => 'cancelled'])->save();
+        $this->audit()->log('export.cancelled', $export);
 
         return response()->json(['data' => $this->present($export)]);
     }
@@ -105,6 +106,7 @@ class ExportController extends Controller
             throw new BusinessException('INVALID_TRANSITION', 'Cet export ne peut pas être relancé.', 409);
         }
         $export->forceFill(['status' => 'pending', 'progress' => 0, 'error' => null, 'file_key' => null])->save();
+        $this->audit()->log('export.retried', $export);
         GenerateExport::dispatch($export->id);
 
         return response()->json(['data' => $this->present($export)], 202);

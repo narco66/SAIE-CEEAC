@@ -7,6 +7,7 @@ use App\Models\Content;
 use App\Models\Document;
 use App\Models\Reservation;
 use App\Models\UserNotification;
+use App\Services\ContentAccess;
 use App\Services\DocumentAccess;
 use App\Support\Present;
 use Illuminate\Http\JsonResponse;
@@ -55,10 +56,14 @@ class NotificationController extends Controller
         abort_unless($notification->user_id === $this->user()->id, 404);
         $notification->forceFill(['read_at' => $notification->read_at ?? now()])->save();
         $allowed = match ($notification->object_type) {
-            'content' => $this->can('contents.view') && Content::query()->whereKey($notification->object_id)->exists(),
+            'content' => $this->can('contents.view') && app(ContentAccess::class)->scope(Content::query(), $this->user())->whereKey($notification->object_id)->exists(),
+            'incident' => $this->can('supervision.view') || $this->can('incidents.manage'),
+            'alert' => $this->can('alerts.view') || $this->can('alerts.manage'),
+            null => true,
             'reservation' => ($r = Reservation::query()->find($notification->object_id)) && ($r->organizer_id === $this->user()->id || $this->can('reservations.approve')),
             'document' => ($d = Document::query()->find($notification->object_id)) && app(DocumentAccess::class)->canView($d, $this->user()),
-            default => true,
+            // NOT-01 : un type de cible inconnu n'est jamais ouvert sans contrôle.
+            default => false,
         };
         if (! $allowed) {
             $this->deny('Cible de notification inaccessible');

@@ -6,17 +6,18 @@ import { useAuth } from '../../lib/auth'
 import { useData } from '../../lib/hooks'
 import { addDays, fmtTime, localParts, OCC_STATUS, toIsoFromLocal, todayLocal } from '../../lib/format'
 import NewRoomDialog from './NewRoomDialog'
+import MobileResources from './MobileResources'
 import { Button, EmptyState, ErrorState, Field, Icon, Loading, Notice, PageHeading, Status, StatusOf, Tabs, useDebounced } from '../../components/ui'
 import { availabilityTone, BUSY_LABEL, TZ_LABEL, useOccurrenceIndex, useReferentials, type Busy, type CalendarRow, type Reservation, type Room } from './shared'
 
-type Tab = 'catalogue' | 'calendar' | 'agenda' | 'approvals'
+type Tab = 'catalogue' | 'calendar' | 'agenda' | 'approvals' | 'resources'
 
 /** V30 Catalogue des salles : la disponibilité affichée est datée (maintenant ou sur le créneau choisi). */
 export default function Rooms() {
   const { can, me, hasRole } = useAuth()
   const navigate = useNavigate()
   const [params, setParams] = useSearchParams()
-  const tab = (params.get('vue') === 'agenda' ? 'agenda' : 'catalogue') as Tab
+  const tab = (params.get('vue') === 'agenda' ? 'agenda' : params.get('vue') === 'ressources' && can('rooms.manage') ? 'resources' : 'catalogue') as Tab
   const approvals = useQuery({
     queryKey: ['reservations', 'to_validate', 'count'],
     queryFn: ({ signal }) => api.get<Paginated<Reservation>>('/reservations', { scope: 'to_validate', per_page: 1 }, signal),
@@ -29,6 +30,7 @@ export default function Rooms() {
     { value: 'agenda', label: 'Agenda & événements' },
   ]
   if (can('reservations.approve')) items.push({ value: 'approvals', label: 'À valider', count: approvals.data?.meta.total ?? null })
+  if (can('rooms.manage')) items.push({ value: 'resources', label: 'Ressources mobiles' })
 
   const [creatingRoom, setCreatingRoom] = useState(false)
   const onTab = (v: Tab) => {
@@ -36,6 +38,7 @@ export default function Rooms() {
     if (v === 'approvals') return navigate('/reservations/a-valider')
     const next = new URLSearchParams(params)
     if (v === 'agenda') next.set('vue', 'agenda')
+    else if (v === 'resources') next.set('vue', 'ressources')
     else next.delete('vue')
     setParams(next, { replace: true })
   }
@@ -53,7 +56,7 @@ export default function Rooms() {
       />
       {creatingRoom && <NewRoomDialog onClose={() => setCreatingRoom(false)} />}
       <Tabs value={tab} onChange={onTab} items={items} />
-      {tab === 'catalogue' ? <Catalogue /> : <MeetingAgendas />}
+      {tab === 'catalogue' ? <Catalogue /> : tab === 'resources' ? <MobileResources /> : <MeetingAgendas />}
     </>
   )
 }

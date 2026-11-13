@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { Link } from 'react-router'
 import { api, type ApiError } from '../../lib/api'
 import { useAuth } from '../../lib/auth'
 import { useList } from '../../lib/hooks'
@@ -12,7 +13,7 @@ import { useScreenGroups } from '../display/shared'
 import './admin.css'
 
 interface Assignment {
-  id: string; code: string; name: string; structure: string | null; structure_id: string | null; zone_id: string | null; floor_id?: string | null; group_id?: string | null; building_id?: string | null; screen_id?: string | null; languages: string[] | null
+  id: string; code: string; name: string; structure: string | null; structure_id: string | null; site_id?: string | null; zone_id: string | null; floor_id?: string | null; group_id?: string | null; building_id?: string | null; screen_id?: string | null; languages: string[] | null
   starts_at: string | null; ends_at: string | null; revoked_at: string | null; active: boolean; reason: string | null
 }
 interface PowerGrant { id: string; power: string; scope: { zone_ids?: string[]; service_types?: string[]; all?: boolean } | null; starts_at: string | null; ends_at: string | null; revoked_at: string | null; active: boolean }
@@ -205,6 +206,7 @@ function UserDetail({ id, onClose }: { id: string; onClose: () => void }) {
     <Modal title={u?.name ?? 'Utilisateur'} kicker="DÉTAIL DU COMPTE" onClose={onClose} wide>
       {query.isLoading ? <Loading /> : query.isError || !u ? <ErrorState error={query.error} onRetry={() => query.refetch()} /> : (
         <>
+          {can('audit.view') && <p className="small" style={{ marginTop: 0 }}><Link to={`/administration/journaux?object_id=${u.id}`}>Historique du compte (rôles, pouvoirs, actions d’administration)</Link></p>}
           <div className="grid-2">
             <dl className="kv">
               <dt>Adresse</dt><dd>{u.email}</dd>
@@ -279,7 +281,7 @@ function AssignmentsTab({ user, onChanged }: { user: UserRow; onChanged: () => P
   const refs = useReferentials()
   const roles = useRoles()
   const [revoking, setRevoking] = useState<Assignment | null>(null)
-  const [form, setForm] = useState({ role_code: '', structure_id: '', zone_id: '', floor_id: '', group_id: '', building_id: '', screen_id: '', languages: [] as string[], starts_at: '', ends_at: '', reason: '' })
+  const [form, setForm] = useState({ role_code: '', structure_id: '', site_id: '', zone_id: '', floor_id: '', group_id: '', building_id: '', screen_id: '', languages: [] as string[], starts_at: '', ends_at: '', reason: '' })
   const screens = useQuery({ queryKey: ['screens-lite'], queryFn: ({ signal }) => api.get<{ data: { id: string; code: string; name: string }[] }>('/screens', { per_page: 500 }, signal).then((r) => r.data) })
   const groups = useScreenGroups()
   const [busy, setBusy] = useState(false)
@@ -292,12 +294,12 @@ function AssignmentsTab({ user, onChanged }: { user: UserRow; onChanged: () => P
     setError(null)
     try {
       await api.post('/role-assignments', {
-        user_id: user.id, role_code: form.role_code, structure_id: form.structure_id || null, zone_id: form.zone_id || null, floor_id: form.floor_id || null, group_id: form.group_id || null, building_id: form.building_id || null, screen_id: form.screen_id || null,
+        user_id: user.id, role_code: form.role_code, structure_id: form.structure_id || null, site_id: form.site_id || null, zone_id: form.zone_id || null, floor_id: form.floor_id || null, group_id: form.group_id || null, building_id: form.building_id || null, screen_id: form.screen_id || null,
         languages: form.role_code === 'validateur' && form.languages.length ? form.languages : null,
         starts_at: localInputToIso(form.starts_at), ends_at: localInputToIso(form.ends_at), reason: form.reason,
       })
       toast.success('Rôle attribué')
-      setForm({ role_code: '', structure_id: '', zone_id: '', floor_id: '', group_id: '', building_id: '', screen_id: '', languages: [], starts_at: '', ends_at: '', reason: '' })
+      setForm({ role_code: '', structure_id: '', site_id: '', zone_id: '', floor_id: '', group_id: '', building_id: '', screen_id: '', languages: [], starts_at: '', ends_at: '', reason: '' })
       await onChanged()
     } catch (e) {
       setError(asApiError(e))
@@ -317,7 +319,7 @@ function AssignmentsTab({ user, onChanged }: { user: UserRow; onChanged: () => P
               return (
                 <tr key={r.id} className={r.active ? '' : 'inactive-row'}>
                   <td><strong>{r.name}</strong>{r.reason && <small>Motif : {r.reason}</small>}</td>
-                  <td>{r.structure ?? 'Toutes structures'}{r.zone_id && <small>Zone : {zoneName(r.zone_id)}</small>}{r.floor_id && <small>Niveau : {refs.data?.floors.find((f) => f.id === r.floor_id)?.label ?? r.floor_id}</small>}{r.group_id && <small>Groupe : {groups.data?.find((g) => g.id === r.group_id)?.name ?? r.group_id}</small>}{r.building_id && <small>Bâtiment : {String(refs.data?.buildings.find((b) => b.id === r.building_id)?.name ?? r.building_id)}</small>}{r.screen_id && <small>Écran : {screens.data?.find((x) => x.id === r.screen_id)?.code ?? r.screen_id}</small>}</td>
+                  <td>{r.structure ?? 'Toutes structures'}{r.site_id && <small>Site : {String(refs.data?.sites.find((s) => s.id === r.site_id)?.name ?? r.site_id)}</small>}{r.zone_id && <small>Zone : {zoneName(r.zone_id)}</small>}{r.floor_id && <small>Niveau : {refs.data?.floors.find((f) => f.id === r.floor_id)?.label ?? r.floor_id}</small>}{r.group_id && <small>Groupe : {groups.data?.find((g) => g.id === r.group_id)?.name ?? r.group_id}</small>}{r.building_id && <small>Bâtiment : {String(refs.data?.buildings.find((b) => b.id === r.building_id)?.name ?? r.building_id)}</small>}{r.screen_id && <small>Écran : {screens.data?.find((x) => x.id === r.screen_id)?.code ?? r.screen_id}</small>}</td>
                   <td>{r.languages?.length ? r.languages.map((l) => l.toUpperCase()).join(', ') : '—'}</td>
                   <td>{fmtDate(r.starts_at)}</td>
                   <td>{r.ends_at ? fmtDate(r.ends_at) : 'Sans échéance'}</td>
@@ -344,6 +346,12 @@ function AssignmentsTab({ user, onChanged }: { user: UserRow; onChanged: () => P
               <select className="input" value={form.structure_id} onChange={(e) => setForm({ ...form, structure_id: e.target.value })}>
                 <option value="">Toutes structures</option>
                 {(refs.data?.structures ?? []).filter((s) => s.is_active !== false).map((s) => <option key={s.id} value={s.id}>{String(s.name)}</option>)}
+              </select>
+            </Field>
+            <Field label="Site" error={error?.field('site_id')} help="Limite le rôle aux bâtiments de ce site.">
+              <select className="input" value={form.site_id} onChange={(e) => setForm({ ...form, site_id: e.target.value })}>
+                <option value="">Tous les sites</option>
+                {(refs.data?.sites ?? []).filter((s) => s.is_active !== false).map((s) => <option key={s.id} value={s.id}>{String(s.name)}</option>)}
               </select>
             </Field>
             <Field label="Zone de diffusion" error={error?.field('zone_id')}>

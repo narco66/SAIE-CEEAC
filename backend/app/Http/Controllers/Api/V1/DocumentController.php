@@ -111,6 +111,7 @@ class DocumentController extends Controller
     public function update(Request $request, Document $document): JsonResponse
     {
         $this->assertManage($document);
+        $this->assertNotTrashed($document);
         $this->expectVersion($request, $document);
         $data = $this->validated($request, false);
         // ASVS 5.0 V8.2 : un document ne peut être transféré qu'à une structure du périmètre de gestion de l'auteur de la modification.
@@ -144,6 +145,7 @@ class DocumentController extends Controller
     public function addVersion(Request $request, Document $document, AssetService $assets): JsonResponse
     {
         $this->assertManage($document);
+        $this->assertNotTrashed($document);
         $data = $request->validate(['file' => ['required', 'file'], 'notes' => ['nullable', 'string', 'max:500']]);
         DB::transaction(function () use ($request, $document, $assets, $data): void {
             $asset = $document->currentVersion?->assetVersion?->asset;
@@ -172,6 +174,7 @@ class DocumentController extends Controller
     public function requestPublication(Document $document, Notifier $notifier): JsonResponse
     {
         $this->assertManage($document);
+        $this->assertNotTrashed($document);
         if ($document->status === 'published') {
             throw new BusinessException('DOCUMENT_PUBLISHED', 'Le document est déjà publié.', 409);
         }
@@ -187,6 +190,10 @@ class DocumentController extends Controller
     public function publish(Document $document): JsonResponse
     {
         $this->assertManage($document);
+        // PUB-02, DOC-06 : un document à la corbeille n'est pas republié (une republication d'un document publié reste admise).
+        if ($document->status === 'trashed') {
+            throw new BusinessException('INVALID_TRANSITION', 'Ce document est à la corbeille : restaurez-le avant de le publier.', 409);
+        }
         // PUB-06 (activée le 8 novembre, réglage « Double validation des documents ») : avec la double validation, l'auteur du document ne le publie pas lui-même.
         if (Setting::effective('documents.four_eyes') && $document->author_id === $this->user()->id) {
             $this->audit()->log('access.denied', $document, 'Auto-publication d’un document', outcome: 'denied');
@@ -218,6 +225,9 @@ class DocumentController extends Controller
     {
         $this->assertManage($document);
         $data = $request->validate(['reason' => ['required', 'string', 'min:5', 'max:300']]);
+        if ($document->status !== 'published') {
+            throw new BusinessException('INVALID_TRANSITION', 'Seul un document publié peut être dépublié.', 409);
+        }
         $document->forceFill(['status' => 'unpublished', 'unpublished_at' => now()])->save();
         AccessLink::query()->where('target_type', 'document')->where('target_id', $document->id)->update(['expires_at' => now()]);
         $this->event($document, 'unpublished', $data['reason']);
@@ -357,6 +367,36 @@ class DocumentController extends Controller
             'structures' => Structure::query()->whereIn('id', $broadcast->structure_ids)->orderBy('name')->pluck('name')->all(),
             'recipients_count' => $broadcast->recipients_count, 'excluded_count' => $broadcast->excluded_count, 'created_by' => Present::userRef($broadcast->creator),
         ];
+    }
+
+    /**
+     * DOC-06 : un document à la corbeille n'est plus modifié ni republié tant qu'il n'a pas été restauré.
+     */
+    private function assertNotTrashed(Document $document): void
+    {
+        if ($document->status === 'trashed') {
+            throw new BusinessException('INVALID_TRANSITION', 'Ce document est à la corbeille : restaurez-le avant de le modifier.', 409);
+        }
+    }
+
+    /**
+     * Restauration depuis la corbeille (DOC-06) : retour en brouillon, motif tracé.
+     */
+    public function restore(Request $request, Document $document): JsonResponse
+    {
+        $this->authorizePermission('documents.manage');
+        if (Gate::forUser($this->user())->denies('manage', $document)) {
+            $this->deny('Document hors périmètre');
+        }
+        $data = $request->validate(['reason' => ['required', 'string', 'min:5', 'max:300']]);
+        if ($document->status !== 'trashed') {
+            throw new BusinessException('INVALID_TRANSITION', 'Ce document n’est pas à la corbeille.', 409);
+        }
+        $document->forceFill(['status' => 'draft', 'version' => $document->version + 1])->save();
+        $this->event($document, 'restored', $data['reason']);
+        $this->audit()->log('document.restored', $document, $data['reason']);
+
+        return response()->json(['data' => ['id' => $document->id, 'status' => $document->status]]);
     }
 
     private function assertManage(Document $document): void

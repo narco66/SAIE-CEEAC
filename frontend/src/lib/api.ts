@@ -142,7 +142,7 @@ export const api = {
   post: <T>(path: string, body?: unknown, idempotent = true) => request<T>('POST', path, { body, idempotent }),
   patch: <T>(path: string, body?: unknown, headers?: Record<string, string>) => request<T>('PATCH', path, { body, headers }),
   put: <T>(path: string, body?: unknown) => request<T>('PUT', path, { body }),
-  delete: <T>(path: string) => request<T>('DELETE', path),
+  delete: <T>(path: string, body?: unknown) => request<T>('DELETE', path, body === undefined ? undefined : { body }),
   upload: <T>(path: string, form: FormData, onProgress?: (ratio: number) => void) => (onProgress ? uploadWithProgress<T>(path, form, onProgress) : request<T>('POST', path, { body: form, idempotent: true })),
 }
 

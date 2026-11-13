@@ -38,6 +38,7 @@ export default function Campaigns() {
   const [q, setQ] = useState('')
   const search = useDebounced(q)
   const [suspending, setSuspending] = useState<Campaign | null>(null)
+  const [archiving, setArchiving] = useState<Campaign | null>(null)
   const [busy, setBusy] = useState<string | null>(null)
   const exporter = useExportRequest()
 
@@ -51,14 +52,14 @@ export default function Campaigns() {
     list.setPage(1)
   }
 
-  const act = async (c: Campaign, action: 'publish' | 'resume' | 'archive', label: string) => {
+  const act = async (c: Campaign, action: 'publish' | 'resume', label: string) => {
     setBusy(c.id + action)
     try {
       await api.post(`/campaigns/${c.id}/${action}`)
       client.invalidateQueries({ queryKey: ['campaigns'] })
       toast.success(label, `${c.reference} · ${c.name}`)
     } catch (e) {
-      toast.error(e, action === 'publish' ? 'Programmation impossible' : action === 'archive' ? 'Archivage impossible' : 'Reprise impossible')
+      toast.error(e, action === 'publish' ? 'Programmation impossible' : 'Reprise impossible')
     } finally {
       setBusy(null)
     }
@@ -74,7 +75,7 @@ export default function Campaigns() {
           {manage && c.status === 'draft' && <button role="menuitem" disabled={busy !== null} onClick={() => { close(); act(c, 'publish', 'Campagne programmée') }}><Icon name="play" size={15} /> Publier / programmer</button>}
           {manage && ['scheduled', 'active'].includes(c.status) && <button role="menuitem" className="danger" onClick={() => { close(); setSuspending(c) }}><Icon name="x" size={15} /> Suspendre…</button>}
           {manage && c.status === 'suspended' && <button role="menuitem" disabled={busy !== null} onClick={() => { close(); act(c, 'resume', 'Campagne reprise') }}><Icon name="refresh" size={15} /> Reprendre</button>}
-          {manage && (['draft', 'suspended', 'expired'].includes(c.status) || new Date(c.ends_at).getTime() < Date.now()) && c.status !== 'archived' && <button role="menuitem" disabled={busy !== null} onClick={() => { close(); act(c, 'archive', 'Campagne archivée') }}><Icon name="folder" size={15} /> Archiver</button>}
+          {manage && (['draft', 'suspended', 'expired'].includes(c.status) || new Date(c.ends_at).getTime() < Date.now()) && c.status !== 'archived' && <button role="menuitem" disabled={busy !== null} onClick={() => { close(); setArchiving(c) }}><Icon name="folder" size={15} /> Archiver…</button>}
           <button role="menuitem" disabled={exporter.busy !== null} onClick={() => { close(); exporter.run('campaign_order', 'pdf', { campaign_id: c.id }) }}><Icon name="download" size={15} /> Bon de programmation (PDF04)</button>
         </>
       )}
@@ -147,6 +148,21 @@ export default function Campaigns() {
         {view === 'list' && <Pagination meta={list.meta} onPage={list.setPage} />}
       </section>
       <p className="muted small" style={{ marginTop: 10 }}><Icon name="info" size={13} /> Le taux de reçus mesure la réception du programme par les terminaux ; il ne prouve ni l’allumage de l’écran ni qu’une personne a vu le message.</p>
+      {archiving && (
+        <ConfirmDialog
+          title="Archiver la campagne"
+          object={`${archiving.reference} · ${archiving.name}`}
+          consequence="La campagne sort des listes courantes et n’est plus diffusée ni modifiable. Son suivi de diffusion et son journal restent consultables."
+          confirmLabel="Archiver"
+          reasonLabel="Motif (facultatif)"
+          onClose={() => setArchiving(null)}
+          onConfirm={async (reason) => {
+            await api.post(`/campaigns/${archiving.id}/archive`, { reason: reason.trim() || null })
+            client.invalidateQueries({ queryKey: ['campaigns'] })
+            toast.success('Campagne archivée', `${archiving.reference} · ${archiving.name}`)
+          }}
+        />
+      )}
       {suspending && (
         <ConfirmDialog
           title="Suspendre la campagne"

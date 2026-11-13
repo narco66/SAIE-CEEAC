@@ -142,22 +142,26 @@ class DashboardController extends Controller
 
     public function search(Request $request): JsonResponse
     {
-        $term = trim((string) $request->query('q', ''));
-        if (mb_strlen($term) < 2) {
+        $raw = trim((string) $request->query('q', ''));
+        if (mb_strlen($raw) < 2) {
             return response()->json(['data' => []]);
         }
+        // Les jokers saisis (% et _) sont recherchés littéralement.
+        $term = addcslashes($raw, '%_\\');
         $results = collect();
         if ($this->can('contents.view')) {
             $results = $results->merge(app(ContentAccess::class)->scope(Content::query(), $this->user())->where(fn ($q) => $q->where('title', 'ilike', "%$term%")->orWhere('reference', 'ilike', "%$term%"))->limit(5)->get()->map(fn ($c) => ['type' => 'content', 'label' => $c->title, 'sub' => $c->reference, 'link' => "/affichage/contenus/{$c->id}/edition"]));
         }
         if ($this->can('documents.view')) {
-            $results = $results->merge(app(DocumentAccess::class)->scope(Document::query(), $this->user())->whereRaw("search_vector @@ websearch_to_tsquery('french', ?)", [$term])->limit(5)->get()->map(fn ($d) => ['type' => 'document', 'label' => $d->title, 'sub' => $d->reference, 'link' => "/documents/{$d->id}"]));
+            $results = $results->merge(app(DocumentAccess::class)->scope(Document::query(), $this->user())->whereRaw("search_vector @@ websearch_to_tsquery('french', ?)", [$raw])->limit(5)->get()->map(fn ($d) => ['type' => 'document', 'label' => $d->title, 'sub' => $d->reference, 'link' => "/documents/{$d->id}"]));
         }
         if ($this->can('rooms.view')) {
-            $results = $results->merge(Room::query()->where('name', 'ilike', "%$term%")->limit(5)->get()->map(fn ($r) => ['type' => 'room', 'label' => $r->name, 'sub' => $r->capacity.' places', 'link' => "/salles/{$r->id}"]));
+            $results = $results->merge(Room::query()->where('status', 'active')->where('name', 'ilike', "%$term%")->limit(5)->get()->map(fn ($r) => ['type' => 'room', 'label' => $r->name, 'sub' => $r->capacity.' places', 'link' => "/salles/{$r->id}"]));
         }
         if ($this->can('screens.view')) {
-            $results = $results->merge(Screen::query()->where(fn ($q) => $q->where('code', 'ilike', "%$term%")->orWhere('name', 'ilike', "%$term%"))->limit(5)->get()->map(fn ($s) => ['type' => 'screen', 'label' => $s->code, 'sub' => $s->name, 'link' => "/affichage/ecrans/{$s->id}"]));
+            // HAB-01, DATA-01 : aucun écran hors périmètre dans les résultats.
+            $scope = $this->screenScopeFor('screens.view');
+            $results = $results->merge(Screen::query()->when($scope !== null, fn ($q) => $q->whereIn('id', $scope))->where(fn ($q) => $q->where('code', 'ilike', "%$term%")->orWhere('name', 'ilike', "%$term%"))->limit(5)->get()->map(fn ($s) => ['type' => 'screen', 'label' => $s->code, 'sub' => $s->name, 'link' => "/affichage/ecrans/{$s->id}"]));
         }
 
         return response()->json(['data' => $results->values()]);

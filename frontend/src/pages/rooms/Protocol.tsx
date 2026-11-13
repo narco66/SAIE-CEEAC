@@ -5,12 +5,12 @@ import { api, ApiError, type Paginated } from '../../lib/api'
 import { useAuth } from '../../lib/auth'
 import { useData } from '../../lib/hooks'
 import { fmtDate, fmtLongDate, fmtTime, LANG_LABEL } from '../../lib/format'
-import { Button, EmptyState, ErrorState, Field, Icon, Loading, Notice, PageHeading, Status, useDialogFocus, useToast, useUnsavedWarning } from '../../components/ui'
+import { Button, ConfirmDialog, EmptyState, ErrorState, Field, Icon, Loading, Modal, Notice, PageHeading, Status, useDialogFocus, useToast, useUnsavedWarning } from '../../components/ui'
 import { FlowProgress, MEMBER_STATES, slotLabel, TZ_LABEL, useReferentials, type Occurrence, type Reservation, type Room } from './shared'
 
 interface Visit {
   id: string; reference: string; name: string; institution: string | null; visitors_count: number; status: string
-  languages: string[]; flags: string[]; notes: string | null
+  languages: string[]; flags: string[]; notes: string | null; updated_at?: string | null
   occurrence: { id: string; status: string; starts_at: string; ends_at: string; room: string; floor: string; reservation_id: string; reservation_reference: string; confidential: boolean } | null
   content: { id: string; reference: string; status: string; languages: { lang: string; status: string; title: string }[] } | null
 }
@@ -25,6 +25,8 @@ export default function Protocol() {
   const navigate = useNavigate()
   const { me, can } = useAuth()
   const [preparing, setPreparing] = useState(false)
+  const [editingVisit, setEditingVisit] = useState<Visit | null>(null)
+  const [cancellingVisit, setCancellingVisit] = useState<Visit | null>(null)
   const visits = useData<Visit[]>(['visits'], '/visits')
   const refs = useReferentials()
   const rooms = useQuery({
@@ -48,6 +50,8 @@ export default function Protocol() {
 
   return (
     <>
+      {editingVisit && <VisitForm visit={editingVisit} onClose={() => setEditingVisit(null)} />}
+      {cancellingVisit && <CancelVisit visit={cancellingVisit} onClose={() => setCancellingVisit(null)} />}
       <PageHeading title="Accueil et protocole" description={`Visites, délégations et messages de bienvenue liés aux réservations confirmées · ${TZ_LABEL}`} demo={me.demo_mode}
         actions={<Button icon="plus" onClick={() => setPreparing(true)}>Préparer une visite</Button>} />
 
@@ -99,6 +103,12 @@ export default function Protocol() {
                       {v.content && <small>Message {v.content.reference} · {v.content.languages.map((l) => l.lang.toUpperCase()).join(' / ')}</small>}
                     </span>
                     <Status tone={tone}>{label}</Status>
+                    {can('visits.manage') && !['done', 'cancelled'].includes(v.status) && (
+                      <span style={{ display: 'flex', gap: 6 }}>
+                        <Button size="small" variant="secondary" onClick={() => setEditingVisit(v)}>Modifier</Button>
+                        <Button size="small" variant="secondary" onClick={() => setCancellingVisit(v)}>Annuler</Button>
+                      </span>
+                    )}
                   </div>
                 )
               })}
@@ -359,5 +369,58 @@ function VisitFlow({ onClose }: { onClose: () => void }) {
         </footer>
       </div>
     </div>
+  )
+}
+
+const visitHeaders = (visit: Visit): Record<string, string> => (visit.updated_at ? { 'If-Unmodified-Since': visit.updated_at } : {})
+
+/** Modification d'une visite (§30) : identité de la délégation, effectif et notes ; le serveur borne les transitions. */
+function VisitForm({ visit, onClose }: { visit: Visit; onClose: () => void }) {
+  const client = useQueryClient()
+  const toast = useToast()
+  const [form, setForm] = useState({ name: visit.name, institution: visit.institution ?? '', visitors_count: String(visit.visitors_count ?? ''), notes: visit.notes ?? '' })
+  const [error, setError] = useState<ApiError | null>(null)
+  const [busy, setBusy] = useState(false)
+  const submit = async () => {
+    setBusy(true)
+    setError(null)
+    try {
+      await api.patch(`/visits/${visit.id}`, { name: form.name.trim(), institution: form.institution.trim() || null, visitors_count: Number(form.visitors_count) || null, notes: form.notes.trim() || null }, visitHeaders(visit))
+      await client.invalidateQueries({ queryKey: ['visits'] })
+      toast.success('Visite mise à jour', form.name)
+      onClose()
+    } catch (e) {
+      setError(e instanceof ApiError ? e : new ApiError(500, { message: String(e) }))
+    } finally {
+      setBusy(false)
+    }
+  }
+  return (
+    <Modal title="Modifier la visite" kicker={visit.reference} onClose={onClose} footer={<>
+      <Button variant="secondary" onClick={onClose}>Annuler</Button><Button icon="check" busy={busy} disabled={!form.name.trim()} onClick={submit}>Enregistrer</Button>
+    </>}>
+      <div className="form-grid">
+        <Field label="Délégation ou visiteur" required error={error?.field('name')}><input value={form.name} maxLength={160} onChange={(e) => setForm({ ...form, name: e.target.value })} /></Field>
+        <Field label="Institution" error={error?.field('institution')}><input value={form.institution} maxLength={160} onChange={(e) => setForm({ ...form, institution: e.target.value })} /></Field>
+        <Field label="Nombre de visiteurs" error={error?.field('visitors_count')}><input type="number" min={1} value={form.visitors_count} onChange={(e) => setForm({ ...form, visitors_count: e.target.value })} /></Field>
+        <Field label="Notes" error={error?.field('notes')} wide><textarea rows={3} maxLength={1000} value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} /></Field>
+      </div>
+      {error && !Object.keys(error.errors).length && <Notice tone="danger">{error.message}</Notice>}
+    </Modal>
+  )
+}
+
+function CancelVisit({ visit, onClose }: { visit: Visit; onClose: () => void }) {
+  const client = useQueryClient()
+  const toast = useToast()
+  return (
+    <ConfirmDialog title="Annuler la visite" object={`${visit.reference} · ${visit.name}`} danger
+      consequence="La visite passe à l’état « Annulée » et n’est plus modifiable. Le motif est inscrit au journal."
+      confirmLabel="Annuler la visite" reasonLabel="Motif de l’annulation" reasonRequired onClose={onClose}
+      onConfirm={async (reason) => {
+        await api.patch(`/visits/${visit.id}`, { status: 'cancelled', reason }, visitHeaders(visit))
+        await client.invalidateQueries({ queryKey: ['visits'] })
+        toast.success('Visite annulée', visit.name)
+      }} />
   )
 }

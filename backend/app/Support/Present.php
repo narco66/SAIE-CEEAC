@@ -319,7 +319,7 @@ class Present
             'hold_until' => self::date($o->hold_until), 'decision_reason' => $o->decision_reason, 'cancel_reason' => $o->cancel_reason,
             'no_show_reason' => $o->no_show_reason, 'no_show_at' => self::date($o->no_show_at), 'checked_in_at' => self::date($o->checked_in_at),
             'room' => $o->relationLoaded('room') && $o->room ? ['id' => $o->room->id, 'code' => $o->room->code, 'name' => $o->room->name, 'floor' => $o->room->floor?->label, 'capacity' => $o->room->capacity] : ['id' => $o->room_id],
-            'services' => $o->relationLoaded('serviceRequests') ? $o->serviceRequests->map(fn ($s) => ['id' => $s->id, 'type' => $s->serviceType?->name, 'label' => $s->label(), 'headcount' => $s->headcount, 'serve_time' => $s->serve_time, 'status' => $s->status, 'details' => $s->details])->values() : [],
+            'services' => $o->relationLoaded('serviceRequests') ? $o->serviceRequests->map(fn ($s) => ['id' => $s->id, 'type' => $s->serviceType?->name, 'label' => $s->label(), 'headcount' => $s->headcount, 'serve_time' => $s->serve_time, 'status' => $s->status, 'details' => $s->details, 'response_note' => $s->response_note])->values() : [],
         ];
     }
 }

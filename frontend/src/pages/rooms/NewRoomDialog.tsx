@@ -14,7 +14,7 @@ export default function NewRoomDialog({ onClose }: { onClose: () => void }) {
   const client = useQueryClient()
   const navigate = useNavigate()
   const toast = useToast()
-  const [form, setForm] = useState({ code: '', name: '', floor_id: '', capacity: '10', approval_mode: 'manual', location_text: '' })
+  const [form, setForm] = useState({ code: '', name: '', floor_id: '', capacity: '10', approval_mode: 'manual', manager_id: '', location_text: '' })
   const [error, setError] = useState<ApiError | null>(null)
   const [busy, setBusy] = useState(false)
   const set = (k: keyof typeof form, v: string) => setForm({ ...form, [k]: v })
@@ -22,7 +22,7 @@ export default function NewRoomDialog({ onClose }: { onClose: () => void }) {
     setBusy(true)
     setError(null)
     try {
-      const res = await api.post<{ data: { id: string; name: string } }>('/rooms', { ...form, capacity: Number(form.capacity), location_text: form.location_text || null })
+      const res = await api.post<{ data: { id: string; name: string } }>('/rooms', { ...form, capacity: Number(form.capacity), manager_id: form.manager_id || null, location_text: form.location_text || null })
       await client.invalidateQueries({ queryKey: ['rooms'] })
       await client.invalidateQueries({ queryKey: ['referentials'] })
       toast.success('Salle créée', res.data.name)
@@ -50,6 +50,12 @@ export default function NewRoomDialog({ onClose }: { onClose: () => void }) {
         <Field label="Capacité (personnes)" required error={error?.field('capacity')}><input type="number" min={1} max={2000} value={form.capacity} onChange={(e) => set('capacity', e.target.value)} /></Field>
         <Field label="Validation des réservations" error={error?.field('approval_mode')}>
           <select value={form.approval_mode} onChange={(e) => set('approval_mode', e.target.value)}><option value="manual">Par un gestionnaire</option><option value="auto">Automatique</option></select>
+        </Field>
+        <Field label="Gestionnaire" required={form.approval_mode === 'manual'} error={error?.field('manager_id')} help="Reçoit et valide les demandes de réservation">
+          <select value={form.manager_id} onChange={(e) => set('manager_id', e.target.value)}>
+            <option value="">— Aucun —</option>
+            {(refs.data?.users ?? []).map((u) => <option key={u.id} value={u.id}>{u.name}</option>)}
+          </select>
         </Field>
         <Field label="Situation" error={error?.field('location_text')} help="Ex. « aile B, porte 204 »"><input value={form.location_text} maxLength={200} onChange={(e) => set('location_text', e.target.value)} /></Field>
       </div>

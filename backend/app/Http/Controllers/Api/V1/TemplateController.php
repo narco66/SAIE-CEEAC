@@ -78,6 +78,9 @@ class TemplateController extends Controller
     public function archive(Template $template): JsonResponse
     {
         $this->authorizePermission('templates.manage');
+        if ($template->status === 'archived') {
+            throw new BusinessException('INVALID_TRANSITION', 'Ce modèle est déjà archivé.', 409);
+        }
         $template->forceFill(['status' => 'archived'])->save();
         $this->audit()->log('template.archived', $template, power: 'modeles');
 

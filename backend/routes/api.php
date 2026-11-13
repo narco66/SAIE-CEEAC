@@ -186,6 +186,7 @@ Route::middleware(['auth:sanctum', 'human', 'throttle:api', 'idempotent'])->grou
     Route::post('documents/{document}/request-publication', [DocumentController::class, 'requestPublication']);
     Route::post('documents/{document}/unpublish', [DocumentController::class, 'unpublish']);
     Route::post('documents/{document}/trash', [DocumentController::class, 'trash']);
+    Route::post('documents/{document}/restore', [DocumentController::class, 'restore']);
     Route::get('documents/{document}/versions/{version}/download', [DocumentController::class, 'download']);
     Route::get('documents/{document}/reads', [DocumentController::class, 'reads']);
     Route::get('documents/{document}/broadcasts', [DocumentController::class, 'broadcasts']);
@@ -248,6 +249,8 @@ Route::middleware(['auth:sanctum', 'human', 'throttle:api', 'idempotent'])->grou
     Route::delete('room-blocks/{block}', [RoomController::class, 'unblock']);
     Route::get('mobile-resources', [RoomController::class, 'resources']);
     Route::post('mobile-resources', [RoomController::class, 'storeResource']);
+    Route::delete('referentials/holidays/{id}', [ReferentialController::class, 'destroyHoliday']);
+    Route::patch('mobile-resources/{resource}', [RoomController::class, 'updateResource']);
 
     Route::get('reservations', [ReservationController::class, 'index']);
     Route::post('reservations/check', [ReservationController::class, 'check']);

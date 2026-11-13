@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from 'react'
+import { useSearchParams } from 'react-router'
 import { useList } from '../../lib/hooks'
 import { fmtDateTime, LANG_LABEL } from '../../lib/format'
 import { Button, EmptyState, ErrorState, Kv, Loading, Modal, Notice, PageHeading, Pagination, Status } from '../../components/ui'
@@ -14,19 +15,22 @@ interface AuditRow {
 
 const OUTCOME: Record<string, [string, string]> = { success: ['Succès', 'success'], denied: ['Refusé', 'danger'], failure: ['Échec', 'warning'] }
 const ACTION_PREFIXES = ['auth', 'account', 'user', 'role', 'power', 'content', 'campaign', 'alert', 'reservation', 'document', 'asset', 'device', 'screen', 'incident', 'export', 'import', 'referential', 'setting']
-const EMPTY = { from: '', to: '', actor: '', action: '', object_type: '', outcome: '', power: '' }
+const EMPTY = { from: '', to: '', actor: '', action: '', object_type: '', object_id: '', outcome: '', power: '' }
 
 /** V38 Journal d'audit : lecture seule, filtres serveur, détail avant/après ; aucune édition possible. */
 export default function Audit() {
   const { can } = useAuth()
-  const [draft, setDraft] = useState(EMPTY)
-  const [filters, setFilters] = useState(EMPTY)
+  const [params] = useSearchParams()
+  // Lien profond depuis une fiche (compte, rôle) : filtres initiaux lus dans l'adresse.
+  const initial = { ...EMPTY, action: params.get('action') ?? '', object_type: params.get('object_type') ?? '', object_id: params.get('object_id') ?? '' }
+  const [draft, setDraft] = useState(initial)
+  const [filters, setFilters] = useState(initial)
   const [detail, setDetail] = useState<AuditRow | null>(null)
   const [exporting, setExporting] = useState(false)
   const bounds = periodBounds(filters.from, filters.to)
   const list = useList<AuditRow>('audit', '/audit-logs', {
     ...bounds, actor: filters.actor || undefined, action: filters.action || undefined, object_type: filters.object_type || undefined,
-    outcome: filters.outcome || undefined, power: filters.power || undefined,
+    object_id: filters.object_id || undefined, outcome: filters.outcome || undefined, power: filters.power || undefined,
   }, 50)
 
   const apply = (e: FormEvent) => {
@@ -43,6 +47,11 @@ export default function Audit() {
         actions={can('audit.view') && can('exports.create') && <Button variant="secondary" icon="download" onClick={() => setExporting(true)}>Extrait PDF09 / CSV</Button>}
       />
       <section className="panel table-panel">
+        {filters.object_id && (
+          <div style={{ marginBottom: 10 }}>
+            <Notice tone="info">Journal limité à un objet précis (<span className="mono">{filters.object_id}</span>). « Réinitialiser » retire ce filtre.</Notice>
+          </div>
+        )}
         <form className="filters-grid" onSubmit={apply} aria-label="Filtres du journal">
           <label>Du<input className="input" type="date" value={draft.from} max={draft.to || undefined} onChange={(e) => setDraft({ ...draft, from: e.target.value })} /></label>
           <label>Au<input className="input" type="date" value={draft.to} min={draft.from || undefined} onChange={(e) => setDraft({ ...draft, to: e.target.value })} /></label>

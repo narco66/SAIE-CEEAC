@@ -219,6 +219,9 @@ class ContentWorkflow
 
     public function archive(Content $content, User $user, ?string $reason): void
     {
+        if ($content->status === 'archived') {
+            throw new BusinessException('INVALID_TRANSITION', 'Ce contenu est déjà archivé.', 409);
+        }
         $content->forceFill(['status' => 'archived', 'archived_at' => now()])->save();
         Approval::query()->where('object_type', 'content')->where('object_id', $content->id)->where('status', 'open')->update(['status' => 'cancelled', 'updated_at' => now()]);
         $this->event($content, 'archived', null, 'archived', $user, $reason);
@@ -330,6 +333,9 @@ class ContentWorkflow
             $version = AssetVersion::query()->with('asset')->find($item['asset_version_id'] ?? null);
             if (! $version || $version->scan_status !== 'ready') {
                 throw new BusinessException('MEDIA_NOT_READY', 'Un média n’est pas déclaré sain : soumission impossible.', 422);
+            }
+            if ($version->asset->status === 'trashed') {
+                throw new BusinessException('MEDIA_TRASHED', 'Le média « '.$version->asset->title.' » est à la corbeille : remplacez-le avant de soumettre.', 422);
             }
             if ($version->asset->rightsExpired()) {
                 throw new BusinessException('MEDIA_RIGHTS_EXPIRED', 'Les droits d’usage du média « '.$version->asset->title.' » ont expiré : remplacez-le ou prolongez les droits.', 422);

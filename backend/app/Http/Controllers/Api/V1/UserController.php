@@ -48,10 +48,11 @@ class UserController extends Controller
     public function store(Request $request): JsonResponse
     {
         $this->authorizePermission('users.manage');
+        $this->normalizeEmail($request);
         $data = $request->validate([
-            'name' => ['required', 'string', 'max:120'], 'email' => ['required', 'email', 'max:160', 'unique:users,email'], 'structure_id' => ['nullable', 'uuid', 'exists:structures,id'],
-            'title' => ['nullable', 'string', 'max:120'], 'backup_user_id' => ['nullable', 'uuid', 'exists:users,id'], 'locale' => ['sometimes', 'in:fr,en,pt,es'],
-        ]);
+            'name' => ['required', 'string', 'max:120'], 'email' => ['required', 'email', 'max:160', 'unique:users,email'], 'structure_id' => ['nullable', 'uuid', Rule::exists('structures', 'id')->where('is_active', true)],
+            'title' => ['nullable', 'string', 'max:120'], 'backup_user_id' => ['nullable', 'uuid', Rule::exists('users', 'id')->where('status', 'active')], 'locale' => ['sometimes', 'in:fr,en,pt,es'],
+        ], ['structure_id.exists' => 'Cette structure est désactivée ou inconnue.', 'backup_user_id.exists' => 'Le suppléant doit être un compte actif.']);
         $user = User::query()->create($data + ['email' => mb_strtolower($data['email']), 'password' => Str::password(32), 'must_change_password' => true, 'status' => 'active', 'source' => 'local']);
         Password::sendResetLink(['email' => $user->email]);
         $this->audit()->log('user.created', $user, after: collect($data)->except('email')->all());
@@ -62,11 +63,12 @@ class UserController extends Controller
     public function update(Request $request, User $user): JsonResponse
     {
         $this->authorizePermission('users.manage');
+        $this->normalizeEmail($request);
         $data = $request->validate([
             'name' => ['sometimes', 'string', 'max:120'], 'email' => ['sometimes', 'email', 'max:160', Rule::unique('users', 'email')->ignore($user->id)],
-            'structure_id' => ['nullable', 'uuid', 'exists:structures,id'], 'title' => ['nullable', 'string', 'max:120'],
-            'backup_user_id' => ['nullable', 'uuid', 'exists:users,id', Rule::notIn([$user->id])],
-        ]);
+            'structure_id' => ['nullable', 'uuid', $request->input('structure_id') === $user->structure_id ? 'exists:structures,id' : Rule::exists('structures', 'id')->where('is_active', true)], 'title' => ['nullable', 'string', 'max:120'],
+            'backup_user_id' => ['nullable', 'uuid', $request->input('backup_user_id') === $user->backup_user_id ? 'exists:users,id' : Rule::exists('users', 'id')->where('status', 'active'), Rule::notIn([$user->id])],
+        ], ['structure_id.exists' => 'Cette structure est désactivée ou inconnue.', 'backup_user_id.exists' => 'Le suppléant doit être un compte actif.']);
         if ($user->source !== 'local' && (isset($data['name']) || isset($data['email']))) {
             throw new BusinessException('IDENTITY_MANAGED_BY_DIRECTORY', 'Identité gérée par l’annuaire : modification impossible ici.', 422);
         }
@@ -153,6 +155,16 @@ class UserController extends Controller
         return $this->show($user);
     }
 
+    /**
+     * Les adresses sont enregistrées en minuscules : l'unicité se contrôle sur la même forme (sinon doublon en 409 générique).
+     */
+    private function normalizeEmail(Request $request): void
+    {
+        if (is_string($request->input('email'))) {
+            $request->merge(['email' => mb_strtolower(trim($request->input('email')))]);
+        }
+    }
+
     private function warnAccountHolder(string $email, string $what): void
     {
         Mail::raw("$what\n\nSi vous n’êtes pas à l’origine de cette demande, prévenez immédiatement la DSI.", fn (Message $m) => $m->to($email)->subject('[SAIE-CEEAC] Sécurité de votre compte'));
@@ -188,7 +200,7 @@ class UserController extends Controller
             'id' => $u->id, 'version' => $u->version, 'name' => $u->name, 'email' => $u->email, 'initials' => $u->initials(), 'title' => $u->title, 'status' => $u->status, 'source' => $u->source,
             'structure' => $u->structure ? ['id' => $u->structure->id, 'name' => $u->structure->name] : null, 'backup' => Present::userRef($u->backup),
             'roles' => $u->relationLoaded('roleAssignments') ? $u->roleAssignments->map(fn ($a) => [
-                'id' => $a->id, 'code' => $a->role->code, 'name' => $a->role->name, 'structure' => $a->structure?->name, 'structure_id' => $a->structure_id, 'zone_id' => $a->zone_id, 'floor_id' => $a->floor_id, 'group_id' => $a->group_id, 'building_id' => $a->building_id, 'screen_id' => $a->screen_id, 'languages' => $a->languages,
+                'id' => $a->id, 'code' => $a->role->code, 'name' => $a->role->name, 'structure' => $a->structure?->name, 'structure_id' => $a->structure_id, 'site_id' => $a->site_id, 'zone_id' => $a->zone_id, 'floor_id' => $a->floor_id, 'group_id' => $a->group_id, 'building_id' => $a->building_id, 'screen_id' => $a->screen_id, 'languages' => $a->languages,
                 'starts_at' => Present::date($a->starts_at), 'ends_at' => Present::date($a->ends_at), 'revoked_at' => Present::date($a->revoked_at), 'active' => $active($a), 'reason' => $a->reason,
             ])->values() : [],
             'powers' => $u->relationLoaded('roleExtensions') ? $u->roleExtensions->map(fn ($e) => [

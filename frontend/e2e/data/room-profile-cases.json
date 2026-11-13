@@ -1,0 +1,1210 @@
+{
+  "generated_at": "2026-11-10T05:02:41.687Z",
+  "sources": [
+    "backend/app/Models/ScreenProfile.php (SETTINGS)",
+    "backend/app/Http/Controllers/Api/V1/RoomController.php (validateRoomFields)",
+    "backend/.env (SAIE_DEVICE_SERVERS seulement)"
+  ],
+  "reason": "Jeu d’essai des configurations (recette locale)",
+  "allowed_servers": 0,
+  "profile": {
+    "settings": 13,
+    "cases": [
+      {
+        "id": "profil.volume_max#1",
+        "key": "volume_max",
+        "value": 0,
+        "expect": "accepted",
+        "why": "Borne basse (0)"
+      },
+      {
+        "id": "profil.volume_max#2",
+        "key": "volume_max",
+        "value": 100,
+        "expect": "accepted",
+        "why": "Borne haute (100)"
+      },
+      {
+        "id": "profil.volume_max#3",
+        "key": "volume_max",
+        "value": 50,
+        "expect": "accepted",
+        "why": "Valeur médiane"
+      },
+      {
+        "id": "profil.volume_max#4",
+        "key": "volume_max",
+        "value": -1,
+        "expect": "rejected",
+        "why": "Sous la borne basse (-1)"
+      },
+      {
+        "id": "profil.volume_max#5",
+        "key": "volume_max",
+        "value": 101,
+        "expect": "rejected",
+        "why": "Au-dessus de la borne haute (101)"
+      },
+      {
+        "id": "profil.volume_max#6",
+        "key": "volume_max",
+        "value": "douze",
+        "expect": "rejected",
+        "why": "Texte au lieu d’un entier"
+      },
+      {
+        "id": "profil.volume_max#7",
+        "key": "volume_max",
+        "value": null,
+        "expect": "accepted",
+        "why": "Réglage retiré (comportement par défaut)"
+      },
+      {
+        "id": "profil.languages#1",
+        "key": "languages",
+        "value": [
+          "fr"
+        ],
+        "expect": "accepted",
+        "why": "Une seule langue"
+      },
+      {
+        "id": "profil.languages#2",
+        "key": "languages",
+        "value": [
+          "fr",
+          "en",
+          "pt",
+          "es"
+        ],
+        "expect": "accepted",
+        "why": "Les quatre langues"
+      },
+      {
+        "id": "profil.languages#3",
+        "key": "languages",
+        "value": [],
+        "expect": "rejected",
+        "why": "Aucune langue"
+      },
+      {
+        "id": "profil.languages#4",
+        "key": "languages",
+        "value": [
+          "fr",
+          "fr"
+        ],
+        "expect": "rejected",
+        "why": "Langue en double"
+      },
+      {
+        "id": "profil.languages#5",
+        "key": "languages",
+        "value": [
+          "de"
+        ],
+        "expect": "rejected",
+        "why": "Langue non prise en charge"
+      },
+      {
+        "id": "profil.languages#6",
+        "key": "languages",
+        "value": null,
+        "expect": "accepted",
+        "why": "Réglage retiré (comportement par défaut)"
+      },
+      {
+        "id": "profil.language_rotation_s#1",
+        "key": "language_rotation_s",
+        "value": 6,
+        "expect": "accepted",
+        "why": "Borne basse (6)"
+      },
+      {
+        "id": "profil.language_rotation_s#2",
+        "key": "language_rotation_s",
+        "value": 60,
+        "expect": "accepted",
+        "why": "Borne haute (60)"
+      },
+      {
+        "id": "profil.language_rotation_s#3",
+        "key": "language_rotation_s",
+        "value": 33,
+        "expect": "accepted",
+        "why": "Valeur médiane"
+      },
+      {
+        "id": "profil.language_rotation_s#4",
+        "key": "language_rotation_s",
+        "value": 5,
+        "expect": "rejected",
+        "why": "Sous la borne basse (5)"
+      },
+      {
+        "id": "profil.language_rotation_s#5",
+        "key": "language_rotation_s",
+        "value": 61,
+        "expect": "rejected",
+        "why": "Au-dessus de la borne haute (61)"
+      },
+      {
+        "id": "profil.language_rotation_s#6",
+        "key": "language_rotation_s",
+        "value": "douze",
+        "expect": "rejected",
+        "why": "Texte au lieu d’un entier"
+      },
+      {
+        "id": "profil.language_rotation_s#7",
+        "key": "language_rotation_s",
+        "value": null,
+        "expect": "accepted",
+        "why": "Réglage retiré (comportement par défaut)"
+      },
+      {
+        "id": "profil.sync_interval_s#1",
+        "key": "sync_interval_s",
+        "value": 15,
+        "expect": "accepted",
+        "why": "Borne basse (15)"
+      },
+      {
+        "id": "profil.sync_interval_s#2",
+        "key": "sync_interval_s",
+        "value": 600,
+        "expect": "accepted",
+        "why": "Borne haute (600)"
+      },
+      {
+        "id": "profil.sync_interval_s#3",
+        "key": "sync_interval_s",
+        "value": 308,
+        "expect": "accepted",
+        "why": "Valeur médiane"
+      },
+      {
+        "id": "profil.sync_interval_s#4",
+        "key": "sync_interval_s",
+        "value": 14,
+        "expect": "rejected",
+        "why": "Sous la borne basse (14)"
+      },
+      {
+        "id": "profil.sync_interval_s#5",
+        "key": "sync_interval_s",
+        "value": 601,
+        "expect": "rejected",
+        "why": "Au-dessus de la borne haute (601)"
+      },
+      {
+        "id": "profil.sync_interval_s#6",
+        "key": "sync_interval_s",
+        "value": "douze",
+        "expect": "rejected",
+        "why": "Texte au lieu d’un entier"
+      },
+      {
+        "id": "profil.sync_interval_s#7",
+        "key": "sync_interval_s",
+        "value": null,
+        "expect": "accepted",
+        "why": "Réglage retiré (comportement par défaut)"
+      },
+      {
+        "id": "profil.heartbeat_interval_s#1",
+        "key": "heartbeat_interval_s",
+        "value": 15,
+        "expect": "accepted",
+        "why": "Borne basse (15)"
+      },
+      {
+        "id": "profil.heartbeat_interval_s#2",
+        "key": "heartbeat_interval_s",
+        "value": 60,
+        "expect": "accepted",
+        "why": "Borne haute (60)"
+      },
+      {
+        "id": "profil.heartbeat_interval_s#3",
+        "key": "heartbeat_interval_s",
+        "value": 38,
+        "expect": "accepted",
+        "why": "Valeur médiane"
+      },
+      {
+        "id": "profil.heartbeat_interval_s#4",
+        "key": "heartbeat_interval_s",
+        "value": 14,
+        "expect": "rejected",
+        "why": "Sous la borne basse (14)"
+      },
+      {
+        "id": "profil.heartbeat_interval_s#5",
+        "key": "heartbeat_interval_s",
+        "value": 61,
+        "expect": "rejected",
+        "why": "Au-dessus de la borne haute (61)"
+      },
+      {
+        "id": "profil.heartbeat_interval_s#6",
+        "key": "heartbeat_interval_s",
+        "value": "douze",
+        "expect": "rejected",
+        "why": "Texte au lieu d’un entier"
+      },
+      {
+        "id": "profil.heartbeat_interval_s#7",
+        "key": "heartbeat_interval_s",
+        "value": null,
+        "expect": "accepted",
+        "why": "Réglage retiré (comportement par défaut)"
+      },
+      {
+        "id": "profil.reconnect_max_s#1",
+        "key": "reconnect_max_s",
+        "value": 10,
+        "expect": "accepted",
+        "why": "Borne basse (10)"
+      },
+      {
+        "id": "profil.reconnect_max_s#2",
+        "key": "reconnect_max_s",
+        "value": 600,
+        "expect": "accepted",
+        "why": "Borne haute (600)"
+      },
+      {
+        "id": "profil.reconnect_max_s#3",
+        "key": "reconnect_max_s",
+        "value": 305,
+        "expect": "accepted",
+        "why": "Valeur médiane"
+      },
+      {
+        "id": "profil.reconnect_max_s#4",
+        "key": "reconnect_max_s",
+        "value": 9,
+        "expect": "rejected",
+        "why": "Sous la borne basse (9)"
+      },
+      {
+        "id": "profil.reconnect_max_s#5",
+        "key": "reconnect_max_s",
+        "value": 601,
+        "expect": "rejected",
+        "why": "Au-dessus de la borne haute (601)"
+      },
+      {
+        "id": "profil.reconnect_max_s#6",
+        "key": "reconnect_max_s",
+        "value": "douze",
+        "expect": "rejected",
+        "why": "Texte au lieu d’un entier"
+      },
+      {
+        "id": "profil.reconnect_max_s#7",
+        "key": "reconnect_max_s",
+        "value": null,
+        "expect": "accepted",
+        "why": "Réglage retiré (comportement par défaut)"
+      },
+      {
+        "id": "profil.standby_outside_window#1",
+        "key": "standby_outside_window",
+        "value": true,
+        "expect": "accepted",
+        "why": "Activé"
+      },
+      {
+        "id": "profil.standby_outside_window#2",
+        "key": "standby_outside_window",
+        "value": false,
+        "expect": "accepted",
+        "why": "Désactivé"
+      },
+      {
+        "id": "profil.standby_outside_window#3",
+        "key": "standby_outside_window",
+        "value": "peut-être",
+        "expect": "rejected",
+        "why": "Valeur non booléenne"
+      },
+      {
+        "id": "profil.standby_outside_window#4",
+        "key": "standby_outside_window",
+        "value": null,
+        "expect": "accepted",
+        "why": "Réglage retiré (comportement par défaut)"
+      },
+      {
+        "id": "profil.fullscreen#1",
+        "key": "fullscreen",
+        "value": true,
+        "expect": "accepted",
+        "why": "Activé"
+      },
+      {
+        "id": "profil.fullscreen#2",
+        "key": "fullscreen",
+        "value": false,
+        "expect": "accepted",
+        "why": "Désactivé"
+      },
+      {
+        "id": "profil.fullscreen#3",
+        "key": "fullscreen",
+        "value": "peut-être",
+        "expect": "rejected",
+        "why": "Valeur non booléenne"
+      },
+      {
+        "id": "profil.fullscreen#4",
+        "key": "fullscreen",
+        "value": null,
+        "expect": "accepted",
+        "why": "Réglage retiré (comportement par défaut)"
+      },
+      {
+        "id": "profil.brightness#1",
+        "key": "brightness",
+        "value": 0,
+        "expect": "accepted",
+        "why": "Borne basse (0)"
+      },
+      {
+        "id": "profil.brightness#2",
+        "key": "brightness",
+        "value": 100,
+        "expect": "accepted",
+        "why": "Borne haute (100)"
+      },
+      {
+        "id": "profil.brightness#3",
+        "key": "brightness",
+        "value": 50,
+        "expect": "accepted",
+        "why": "Valeur médiane"
+      },
+      {
+        "id": "profil.brightness#4",
+        "key": "brightness",
+        "value": -1,
+        "expect": "rejected",
+        "why": "Sous la borne basse (-1)"
+      },
+      {
+        "id": "profil.brightness#5",
+        "key": "brightness",
+        "value": 101,
+        "expect": "rejected",
+        "why": "Au-dessus de la borne haute (101)"
+      },
+      {
+        "id": "profil.brightness#6",
+        "key": "brightness",
+        "value": "douze",
+        "expect": "rejected",
+        "why": "Texte au lieu d’un entier"
+      },
+      {
+        "id": "profil.brightness#7",
+        "key": "brightness",
+        "value": null,
+        "expect": "accepted",
+        "why": "Réglage retiré (comportement par défaut)"
+      },
+      {
+        "id": "profil.contrast#1",
+        "key": "contrast",
+        "value": 0,
+        "expect": "accepted",
+        "why": "Borne basse (0)"
+      },
+      {
+        "id": "profil.contrast#2",
+        "key": "contrast",
+        "value": 100,
+        "expect": "accepted",
+        "why": "Borne haute (100)"
+      },
+      {
+        "id": "profil.contrast#3",
+        "key": "contrast",
+        "value": 50,
+        "expect": "accepted",
+        "why": "Valeur médiane"
+      },
+      {
+        "id": "profil.contrast#4",
+        "key": "contrast",
+        "value": -1,
+        "expect": "rejected",
+        "why": "Sous la borne basse (-1)"
+      },
+      {
+        "id": "profil.contrast#5",
+        "key": "contrast",
+        "value": 101,
+        "expect": "rejected",
+        "why": "Au-dessus de la borne haute (101)"
+      },
+      {
+        "id": "profil.contrast#6",
+        "key": "contrast",
+        "value": "douze",
+        "expect": "rejected",
+        "why": "Texte au lieu d’un entier"
+      },
+      {
+        "id": "profil.contrast#7",
+        "key": "contrast",
+        "value": null,
+        "expect": "accepted",
+        "why": "Réglage retiré (comportement par défaut)"
+      },
+      {
+        "id": "profil.software_rotation#1",
+        "key": "software_rotation",
+        "value": true,
+        "expect": "accepted",
+        "why": "Activé"
+      },
+      {
+        "id": "profil.software_rotation#2",
+        "key": "software_rotation",
+        "value": false,
+        "expect": "accepted",
+        "why": "Désactivé"
+      },
+      {
+        "id": "profil.software_rotation#3",
+        "key": "software_rotation",
+        "value": "peut-être",
+        "expect": "rejected",
+        "why": "Valeur non booléenne"
+      },
+      {
+        "id": "profil.software_rotation#4",
+        "key": "software_rotation",
+        "value": null,
+        "expect": "accepted",
+        "why": "Réglage retiré (comportement par défaut)"
+      },
+      {
+        "id": "profil.idle_standby_min#1",
+        "key": "idle_standby_min",
+        "value": 1,
+        "expect": "accepted",
+        "why": "Borne basse (1)"
+      },
+      {
+        "id": "profil.idle_standby_min#2",
+        "key": "idle_standby_min",
+        "value": 240,
+        "expect": "accepted",
+        "why": "Borne haute (240)"
+      },
+      {
+        "id": "profil.idle_standby_min#3",
+        "key": "idle_standby_min",
+        "value": 121,
+        "expect": "accepted",
+        "why": "Valeur médiane"
+      },
+      {
+        "id": "profil.idle_standby_min#4",
+        "key": "idle_standby_min",
+        "value": 0,
+        "expect": "rejected",
+        "why": "Sous la borne basse (0)"
+      },
+      {
+        "id": "profil.idle_standby_min#5",
+        "key": "idle_standby_min",
+        "value": 241,
+        "expect": "rejected",
+        "why": "Au-dessus de la borne haute (241)"
+      },
+      {
+        "id": "profil.idle_standby_min#6",
+        "key": "idle_standby_min",
+        "value": "douze",
+        "expect": "rejected",
+        "why": "Texte au lieu d’un entier"
+      },
+      {
+        "id": "profil.idle_standby_min#7",
+        "key": "idle_standby_min",
+        "value": null,
+        "expect": "accepted",
+        "why": "Réglage retiré (comportement par défaut)"
+      },
+      {
+        "id": "profil.server_url#1",
+        "key": "server_url",
+        "value": "https://serveur-non-declare.example",
+        "expect": "rejected",
+        "why": "Serveur non déclaré (aucun serveur déclaré sur ce poste)"
+      },
+      {
+        "id": "profil.server_url#2",
+        "key": "server_url",
+        "value": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+        "expect": "rejected",
+        "why": "Adresse trop longue"
+      },
+      {
+        "id": "profil.server_url#3",
+        "key": "server_url",
+        "value": null,
+        "expect": "accepted",
+        "why": "Réglage retiré (comportement par défaut)"
+      }
+    ],
+    "fields": [
+      {
+        "id": "profil.code#minuscules",
+        "field": "code",
+        "value": "essai-config",
+        "expect": "rejected",
+        "why": "Code en minuscules (majuscules, chiffres et tirets seulement)"
+      },
+      {
+        "id": "profil.code#long",
+        "field": "code",
+        "value": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+        "expect": "rejected",
+        "why": "Code trop long"
+      },
+      {
+        "id": "profil.name#long",
+        "field": "name",
+        "value": "nnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnn",
+        "expect": "rejected",
+        "why": "Nom trop long"
+      },
+      {
+        "id": "profil.description#max",
+        "field": "description",
+        "value": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+        "expect": "accepted",
+        "why": "Description de longueur maximale"
+      },
+      {
+        "id": "profil.description#long",
+        "field": "description",
+        "value": "ddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+        "expect": "rejected",
+        "why": "Description trop longue"
+      }
+    ]
+  },
+  "room": {
+    "cases": [
+      {
+        "id": "salle.capacity#1",
+        "field": "capacity",
+        "payload": {
+          "capacity": 1
+        },
+        "expect": "accepted",
+        "why": "Borne basse (1)",
+        "effect": "room_capacity"
+      },
+      {
+        "id": "salle.capacity#2",
+        "field": "capacity",
+        "payload": {
+          "capacity": 2000
+        },
+        "expect": "accepted",
+        "why": "Borne haute (2000)",
+        "effect": "room_capacity"
+      },
+      {
+        "id": "salle.capacity#3",
+        "field": "capacity",
+        "payload": {
+          "capacity": 1001
+        },
+        "expect": "accepted",
+        "why": "Valeur médiane",
+        "effect": "room_capacity"
+      },
+      {
+        "id": "salle.capacity#4",
+        "field": "capacity",
+        "payload": {
+          "capacity": 0
+        },
+        "expect": "rejected",
+        "why": "Sous la borne basse (0)"
+      },
+      {
+        "id": "salle.capacity#5",
+        "field": "capacity",
+        "payload": {
+          "capacity": 2001
+        },
+        "expect": "rejected",
+        "why": "Au-dessus de la borne haute (2001)"
+      },
+      {
+        "id": "salle.capacity#6",
+        "field": "capacity",
+        "payload": {
+          "capacity": "douze"
+        },
+        "expect": "rejected",
+        "why": "Texte au lieu d’un entier"
+      },
+      {
+        "id": "salle.min_minutes#1",
+        "field": "min_minutes",
+        "payload": {
+          "min_minutes": 15
+        },
+        "expect": "accepted",
+        "why": "Borne basse (15)",
+        "constraint": "min_lte_max",
+        "effect": "room_min_duration"
+      },
+      {
+        "id": "salle.min_minutes#2",
+        "field": "min_minutes",
+        "payload": {
+          "min_minutes": 600
+        },
+        "expect": "accepted",
+        "why": "Borne haute (600)",
+        "constraint": "min_lte_max",
+        "effect": "room_min_duration"
+      },
+      {
+        "id": "salle.min_minutes#3",
+        "field": "min_minutes",
+        "payload": {
+          "min_minutes": 308
+        },
+        "expect": "accepted",
+        "why": "Valeur médiane",
+        "constraint": "min_lte_max",
+        "effect": "room_min_duration"
+      },
+      {
+        "id": "salle.min_minutes#4",
+        "field": "min_minutes",
+        "payload": {
+          "min_minutes": 14
+        },
+        "expect": "rejected",
+        "why": "Sous la borne basse (14)"
+      },
+      {
+        "id": "salle.min_minutes#5",
+        "field": "min_minutes",
+        "payload": {
+          "min_minutes": 601
+        },
+        "expect": "rejected",
+        "why": "Au-dessus de la borne haute (601)"
+      },
+      {
+        "id": "salle.min_minutes#6",
+        "field": "min_minutes",
+        "payload": {
+          "min_minutes": "douze"
+        },
+        "expect": "rejected",
+        "why": "Texte au lieu d’un entier"
+      },
+      {
+        "id": "salle.max_minutes#1",
+        "field": "max_minutes",
+        "payload": {
+          "max_minutes": 15
+        },
+        "expect": "accepted",
+        "why": "Borne basse (15)",
+        "constraint": "max_gte_min",
+        "effect": "room_max_duration"
+      },
+      {
+        "id": "salle.max_minutes#2",
+        "field": "max_minutes",
+        "payload": {
+          "max_minutes": 720
+        },
+        "expect": "accepted",
+        "why": "Borne haute (720)",
+        "constraint": "max_gte_min",
+        "effect": "room_max_duration"
+      },
+      {
+        "id": "salle.max_minutes#3",
+        "field": "max_minutes",
+        "payload": {
+          "max_minutes": 368
+        },
+        "expect": "accepted",
+        "why": "Valeur médiane",
+        "constraint": "max_gte_min",
+        "effect": "room_max_duration"
+      },
+      {
+        "id": "salle.max_minutes#4",
+        "field": "max_minutes",
+        "payload": {
+          "max_minutes": 14
+        },
+        "expect": "rejected",
+        "why": "Sous la borne basse (14)"
+      },
+      {
+        "id": "salle.max_minutes#5",
+        "field": "max_minutes",
+        "payload": {
+          "max_minutes": 721
+        },
+        "expect": "rejected",
+        "why": "Au-dessus de la borne haute (721)"
+      },
+      {
+        "id": "salle.max_minutes#6",
+        "field": "max_minutes",
+        "payload": {
+          "max_minutes": "douze"
+        },
+        "expect": "rejected",
+        "why": "Texte au lieu d’un entier"
+      },
+      {
+        "id": "salle.lead_days#1",
+        "field": "lead_days",
+        "payload": {
+          "lead_days": 1
+        },
+        "expect": "accepted",
+        "why": "Borne basse (1)",
+        "effect": "room_lead_days"
+      },
+      {
+        "id": "salle.lead_days#2",
+        "field": "lead_days",
+        "payload": {
+          "lead_days": 365
+        },
+        "expect": "accepted",
+        "why": "Borne haute (365)",
+        "effect": "room_lead_days"
+      },
+      {
+        "id": "salle.lead_days#3",
+        "field": "lead_days",
+        "payload": {
+          "lead_days": 183
+        },
+        "expect": "accepted",
+        "why": "Valeur médiane",
+        "effect": "room_lead_days"
+      },
+      {
+        "id": "salle.lead_days#4",
+        "field": "lead_days",
+        "payload": {
+          "lead_days": 0
+        },
+        "expect": "rejected",
+        "why": "Sous la borne basse (0)"
+      },
+      {
+        "id": "salle.lead_days#5",
+        "field": "lead_days",
+        "payload": {
+          "lead_days": 366
+        },
+        "expect": "rejected",
+        "why": "Au-dessus de la borne haute (366)"
+      },
+      {
+        "id": "salle.lead_days#6",
+        "field": "lead_days",
+        "payload": {
+          "lead_days": "douze"
+        },
+        "expect": "rejected",
+        "why": "Texte au lieu d’un entier"
+      },
+      {
+        "id": "salle.prep_minutes#1",
+        "field": "prep_minutes",
+        "payload": {
+          "prep_minutes": 0
+        },
+        "expect": "accepted",
+        "why": "Borne basse (0)"
+      },
+      {
+        "id": "salle.prep_minutes#2",
+        "field": "prep_minutes",
+        "payload": {
+          "prep_minutes": 240
+        },
+        "expect": "accepted",
+        "why": "Borne haute (240)"
+      },
+      {
+        "id": "salle.prep_minutes#3",
+        "field": "prep_minutes",
+        "payload": {
+          "prep_minutes": 120
+        },
+        "expect": "accepted",
+        "why": "Valeur médiane"
+      },
+      {
+        "id": "salle.prep_minutes#4",
+        "field": "prep_minutes",
+        "payload": {
+          "prep_minutes": -1
+        },
+        "expect": "rejected",
+        "why": "Sous la borne basse (-1)"
+      },
+      {
+        "id": "salle.prep_minutes#5",
+        "field": "prep_minutes",
+        "payload": {
+          "prep_minutes": 241
+        },
+        "expect": "rejected",
+        "why": "Au-dessus de la borne haute (241)"
+      },
+      {
+        "id": "salle.prep_minutes#6",
+        "field": "prep_minutes",
+        "payload": {
+          "prep_minutes": "douze"
+        },
+        "expect": "rejected",
+        "why": "Texte au lieu d’un entier"
+      },
+      {
+        "id": "salle.cleanup_minutes#1",
+        "field": "cleanup_minutes",
+        "payload": {
+          "cleanup_minutes": 0
+        },
+        "expect": "accepted",
+        "why": "Borne basse (0)"
+      },
+      {
+        "id": "salle.cleanup_minutes#2",
+        "field": "cleanup_minutes",
+        "payload": {
+          "cleanup_minutes": 240
+        },
+        "expect": "accepted",
+        "why": "Borne haute (240)"
+      },
+      {
+        "id": "salle.cleanup_minutes#3",
+        "field": "cleanup_minutes",
+        "payload": {
+          "cleanup_minutes": 120
+        },
+        "expect": "accepted",
+        "why": "Valeur médiane"
+      },
+      {
+        "id": "salle.cleanup_minutes#4",
+        "field": "cleanup_minutes",
+        "payload": {
+          "cleanup_minutes": -1
+        },
+        "expect": "rejected",
+        "why": "Sous la borne basse (-1)"
+      },
+      {
+        "id": "salle.cleanup_minutes#5",
+        "field": "cleanup_minutes",
+        "payload": {
+          "cleanup_minutes": 241
+        },
+        "expect": "rejected",
+        "why": "Au-dessus de la borne haute (241)"
+      },
+      {
+        "id": "salle.cleanup_minutes#6",
+        "field": "cleanup_minutes",
+        "payload": {
+          "cleanup_minutes": "douze"
+        },
+        "expect": "rejected",
+        "why": "Texte au lieu d’un entier"
+      },
+      {
+        "id": "salle.pending_hold_hours#1",
+        "field": "pending_hold_hours",
+        "payload": {
+          "pending_hold_hours": 1
+        },
+        "expect": "accepted",
+        "why": "Borne basse (1)"
+      },
+      {
+        "id": "salle.pending_hold_hours#2",
+        "field": "pending_hold_hours",
+        "payload": {
+          "pending_hold_hours": 168
+        },
+        "expect": "accepted",
+        "why": "Borne haute (168)"
+      },
+      {
+        "id": "salle.pending_hold_hours#3",
+        "field": "pending_hold_hours",
+        "payload": {
+          "pending_hold_hours": 85
+        },
+        "expect": "accepted",
+        "why": "Valeur médiane"
+      },
+      {
+        "id": "salle.pending_hold_hours#4",
+        "field": "pending_hold_hours",
+        "payload": {
+          "pending_hold_hours": 0
+        },
+        "expect": "rejected",
+        "why": "Sous la borne basse (0)"
+      },
+      {
+        "id": "salle.pending_hold_hours#5",
+        "field": "pending_hold_hours",
+        "payload": {
+          "pending_hold_hours": 169
+        },
+        "expect": "rejected",
+        "why": "Au-dessus de la borne haute (169)"
+      },
+      {
+        "id": "salle.pending_hold_hours#6",
+        "field": "pending_hold_hours",
+        "payload": {
+          "pending_hold_hours": "douze"
+        },
+        "expect": "rejected",
+        "why": "Texte au lieu d’un entier"
+      },
+      {
+        "id": "salle.auto_release_enabled#1",
+        "field": "auto_release_enabled",
+        "payload": {
+          "auto_release_enabled": true
+        },
+        "expect": "accepted",
+        "why": "Activé"
+      },
+      {
+        "id": "salle.auto_release_enabled#2",
+        "field": "auto_release_enabled",
+        "payload": {
+          "auto_release_enabled": false
+        },
+        "expect": "accepted",
+        "why": "Désactivé"
+      },
+      {
+        "id": "salle.auto_release_enabled#3",
+        "field": "auto_release_enabled",
+        "payload": {
+          "auto_release_enabled": "peut-être"
+        },
+        "expect": "rejected",
+        "why": "Valeur non booléenne"
+      },
+      {
+        "id": "salle.opening#1",
+        "field": "opening",
+        "payload": {
+          "open_from": "07:30",
+          "open_to": "19:00"
+        },
+        "expect": "accepted",
+        "why": "Horaires de bureau",
+        "effect": "room_hours"
+      },
+      {
+        "id": "salle.opening#2",
+        "field": "opening",
+        "payload": {
+          "open_from": "00:00",
+          "open_to": "23:59"
+        },
+        "expect": "accepted",
+        "why": "Journée entière",
+        "effect": "room_hours"
+      },
+      {
+        "id": "salle.opening#3",
+        "field": "opening",
+        "payload": {
+          "open_from": "13:00",
+          "open_to": "17:00"
+        },
+        "expect": "accepted",
+        "why": "Après-midi seulement",
+        "effect": "room_hours"
+      },
+      {
+        "id": "salle.opening#4",
+        "field": "opening",
+        "payload": {
+          "open_from": "18:00",
+          "open_to": "08:00"
+        },
+        "expect": "rejected",
+        "why": "Fermeture avant l’ouverture"
+      },
+      {
+        "id": "salle.opening#5",
+        "field": "opening",
+        "payload": {
+          "open_from": "10:00",
+          "open_to": "10:00"
+        },
+        "expect": "rejected",
+        "why": "Ouverture et fermeture identiques"
+      },
+      {
+        "id": "salle.opening#6",
+        "field": "opening",
+        "payload": {
+          "open_from": "25:00",
+          "open_to": "26:00"
+        },
+        "expect": "rejected",
+        "why": "Heure inexistante"
+      },
+      {
+        "id": "salle.opening#7",
+        "field": "opening",
+        "payload": {
+          "open_to": "05:00"
+        },
+        "expect": "rejected",
+        "why": "Fermeture seule, avant l’ouverture en place (07:30)"
+      },
+      {
+        "id": "salle.opening#8",
+        "field": "opening",
+        "payload": {
+          "open_to": "20:30"
+        },
+        "expect": "accepted",
+        "why": "Fermeture seule, après l’ouverture en place",
+        "effect": "room_hours"
+      },
+      {
+        "id": "salle.opening#9",
+        "field": "opening",
+        "payload": {
+          "open_from": "06:00"
+        },
+        "expect": "accepted",
+        "why": "Ouverture seule, avant la fermeture en place",
+        "effect": "room_hours"
+      },
+      {
+        "id": "salle.opening#10",
+        "field": "opening",
+        "payload": {
+          "open_from": "19:30"
+        },
+        "expect": "rejected",
+        "why": "Ouverture seule, après la fermeture en place (19:00)"
+      },
+      {
+        "id": "salle.status#1",
+        "field": "status",
+        "payload": {
+          "status": "inactive"
+        },
+        "expect": "accepted",
+        "why": "Salle mise hors service",
+        "effect": "room_status"
+      },
+      {
+        "id": "salle.status#2",
+        "field": "status",
+        "payload": {
+          "status": "active"
+        },
+        "expect": "accepted",
+        "why": "Salle réservable",
+        "effect": "room_status"
+      },
+      {
+        "id": "salle.status#3",
+        "field": "status",
+        "payload": {
+          "status": "fermee"
+        },
+        "expect": "rejected",
+        "why": "État inconnu"
+      },
+      {
+        "id": "salle.approval_mode#1",
+        "field": "approval_mode",
+        "payload": {
+          "approval_mode": "auto"
+        },
+        "expect": "accepted",
+        "why": "Confirmation automatique",
+        "effect": "room_approval"
+      },
+      {
+        "id": "salle.approval_mode#2",
+        "field": "approval_mode",
+        "payload": {
+          "approval_mode": "manual",
+          "manager_id": "$CURRENT_USER"
+        },
+        "expect": "accepted",
+        "why": "Validation par un gestionnaire désigné",
+        "effect": "room_approval"
+      },
+      {
+        "id": "salle.approval_mode#3",
+        "field": "approval_mode",
+        "payload": {
+          "approval_mode": "manual",
+          "manager_id": null
+        },
+        "expect": "rejected",
+        "why": "Validation manuelle sans gestionnaire"
+      },
+      {
+        "id": "salle.approval_mode#4",
+        "field": "approval_mode",
+        "payload": {
+          "approval_mode": "tacite"
+        },
+        "expect": "rejected",
+        "why": "Mode inconnu"
+      },
+      {
+        "id": "salle.manager_id#1",
+        "field": "manager_id",
+        "payload": {
+          "manager_id": "00000000-0000-4000-8000-000000000000"
+        },
+        "expect": "rejected",
+        "why": "Gestionnaire inexistant"
+      }
+    ]
+  },
+  "total": 145
+}

@@ -78,6 +78,7 @@ export interface Referentials {
   locations: { id: string; name: string; floor_id: string; zone_id: string; floor?: { id: string; label: string; level: number } | null; zone?: { id: string; name: string; code: string } | null; is_active?: boolean }[]
   rooms?: { id: string; code: string; name: string; floor_id: string; location_id?: string | null }[]
   screen_categories?: { id: string; code: string; name: string; is_active?: boolean }[]
+  users?: { id: string; name: string; structure_id?: string | null }[]
 }
 
 export const CRITICALITY_LABEL: Record<string, string> = { low: 'Faible', normal: 'Normale', high: 'Élevée', critical: 'Critique' }

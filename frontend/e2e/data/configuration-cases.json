@@ -1,0 +1,2344 @@
+{
+  "generated_at": "2026-11-10T05:02:41.680Z",
+  "source": "backend/app/Http/Controllers/Api/V1/SettingController.php (KEYS, RULES)",
+  "reason": "Jeu d’essai des configurations (recette locale)",
+  "settings": 44,
+  "total": 228,
+  "cases": [
+    {
+      "id": "identity.institution_name#1",
+      "key": "identity.institution_name",
+      "tab": "Identité",
+      "type": "string",
+      "technical": false,
+      "value": "Commission de la CEEAC – essai de configuration",
+      "expect": "accepted",
+      "why": "Texte ordinaire avec accents"
+    },
+    {
+      "id": "identity.institution_name#2",
+      "key": "identity.institution_name",
+      "tab": "Identité",
+      "type": "string",
+      "technical": false,
+      "value": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "expect": "accepted",
+      "why": "Longueur maximale (160)"
+    },
+    {
+      "id": "identity.institution_name#3",
+      "key": "identity.institution_name",
+      "tab": "Identité",
+      "type": "string",
+      "technical": false,
+      "value": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "expect": "rejected",
+      "why": "Trop long (161)"
+    },
+    {
+      "id": "identity.institution_name#4",
+      "key": "identity.institution_name",
+      "tab": "Identité",
+      "type": "string",
+      "technical": false,
+      "value": "",
+      "expect": "rejected",
+      "why": "Valeur obligatoire vide"
+    },
+    {
+      "id": "display.tagline#1",
+      "key": "display.tagline",
+      "tab": "Diffusion",
+      "type": "string",
+      "technical": false,
+      "value": "Commission de la CEEAC – essai de configuration",
+      "expect": "accepted",
+      "why": "Texte ordinaire avec accents"
+    },
+    {
+      "id": "display.tagline#2",
+      "key": "display.tagline",
+      "tab": "Diffusion",
+      "type": "string",
+      "technical": false,
+      "value": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "expect": "accepted",
+      "why": "Longueur maximale (200)"
+    },
+    {
+      "id": "display.tagline#3",
+      "key": "display.tagline",
+      "tab": "Diffusion",
+      "type": "string",
+      "technical": false,
+      "value": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "expect": "rejected",
+      "why": "Trop long (201)"
+    },
+    {
+      "id": "display.tagline#4",
+      "key": "display.tagline",
+      "tab": "Diffusion",
+      "type": "string",
+      "technical": false,
+      "value": null,
+      "expect": "accepted",
+      "why": "Valeur facultative effacée"
+    },
+    {
+      "id": "devices.enroll_cidrs#1",
+      "key": "devices.enroll_cidrs",
+      "tab": "Sécurité des lecteurs",
+      "type": "string",
+      "technical": true,
+      "value": "",
+      "expect": "accepted",
+      "why": "Liste vide : enrôlement ouvert",
+      "effect": "enrollment_allowed"
+    },
+    {
+      "id": "devices.enroll_cidrs#2",
+      "key": "devices.enroll_cidrs",
+      "tab": "Sécurité des lecteurs",
+      "type": "string",
+      "technical": true,
+      "value": "127.0.0.1",
+      "expect": "accepted",
+      "why": "Poste local autorisé",
+      "effect": "enrollment_allowed"
+    },
+    {
+      "id": "devices.enroll_cidrs#3",
+      "key": "devices.enroll_cidrs",
+      "tab": "Sécurité des lecteurs",
+      "type": "string",
+      "technical": true,
+      "value": "10.255.255.0/24",
+      "expect": "accepted",
+      "why": "Réseau étranger au poste",
+      "effect": "enrollment_refused"
+    },
+    {
+      "id": "devices.enroll_cidrs#4",
+      "key": "devices.enroll_cidrs",
+      "tab": "Sécurité des lecteurs",
+      "type": "string",
+      "technical": true,
+      "value": "10.20.0.0/16, 192.168.1.10, ::1",
+      "expect": "accepted",
+      "why": "Plusieurs réseaux IPv4 et IPv6"
+    },
+    {
+      "id": "devices.enroll_cidrs#5",
+      "key": "devices.enroll_cidrs",
+      "tab": "Sécurité des lecteurs",
+      "type": "string",
+      "technical": true,
+      "value": "pas-une-adresse",
+      "expect": "rejected",
+      "why": "Texte qui n’est pas une adresse"
+    },
+    {
+      "id": "devices.enroll_cidrs#6",
+      "key": "devices.enroll_cidrs",
+      "tab": "Sécurité des lecteurs",
+      "type": "string",
+      "technical": true,
+      "value": "10.0.0.0/16; 10.1.0.0/16",
+      "expect": "rejected",
+      "why": "Séparateur « ; » non admis"
+    },
+    {
+      "id": "devices.signed_requests#1",
+      "key": "devices.signed_requests",
+      "tab": "Sécurité des lecteurs",
+      "type": "boolean",
+      "technical": true,
+      "value": true,
+      "expect": "accepted",
+      "why": "Activé"
+    },
+    {
+      "id": "devices.signed_requests#2",
+      "key": "devices.signed_requests",
+      "tab": "Sécurité des lecteurs",
+      "type": "boolean",
+      "technical": true,
+      "value": false,
+      "expect": "accepted",
+      "why": "Désactivé"
+    },
+    {
+      "id": "devices.signed_requests#3",
+      "key": "devices.signed_requests",
+      "tab": "Sécurité des lecteurs",
+      "type": "boolean",
+      "technical": true,
+      "value": "peut-être",
+      "expect": "rejected",
+      "why": "Valeur non booléenne"
+    },
+    {
+      "id": "devices.secure_storage#1",
+      "key": "devices.secure_storage",
+      "tab": "Sécurité des lecteurs",
+      "type": "boolean",
+      "technical": true,
+      "value": true,
+      "expect": "accepted",
+      "why": "Activé"
+    },
+    {
+      "id": "devices.secure_storage#2",
+      "key": "devices.secure_storage",
+      "tab": "Sécurité des lecteurs",
+      "type": "boolean",
+      "technical": true,
+      "value": false,
+      "expect": "accepted",
+      "why": "Désactivé"
+    },
+    {
+      "id": "devices.secure_storage#3",
+      "key": "devices.secure_storage",
+      "tab": "Sécurité des lecteurs",
+      "type": "boolean",
+      "technical": true,
+      "value": "peut-être",
+      "expect": "rejected",
+      "why": "Valeur non booléenne"
+    },
+    {
+      "id": "referentials.restricted#1",
+      "key": "referentials.restricted",
+      "tab": "Sécurité des lecteurs",
+      "type": "boolean",
+      "technical": true,
+      "value": true,
+      "expect": "accepted",
+      "why": "Activé",
+      "effect": "referentials_directory"
+    },
+    {
+      "id": "referentials.restricted#2",
+      "key": "referentials.restricted",
+      "tab": "Sécurité des lecteurs",
+      "type": "boolean",
+      "technical": true,
+      "value": false,
+      "expect": "accepted",
+      "why": "Désactivé",
+      "effect": "referentials_directory"
+    },
+    {
+      "id": "referentials.restricted#3",
+      "key": "referentials.restricted",
+      "tab": "Sécurité des lecteurs",
+      "type": "boolean",
+      "technical": true,
+      "value": "peut-être",
+      "expect": "rejected",
+      "why": "Valeur non booléenne"
+    },
+    {
+      "id": "display.default_slide_s#1",
+      "key": "display.default_slide_s",
+      "tab": "Diffusion",
+      "type": "integer",
+      "technical": false,
+      "value": 10,
+      "expect": "accepted",
+      "why": "Borne basse (10)",
+      "effect": "referentials_default_slide"
+    },
+    {
+      "id": "display.default_slide_s#2",
+      "key": "display.default_slide_s",
+      "tab": "Diffusion",
+      "type": "integer",
+      "technical": false,
+      "value": 300,
+      "expect": "accepted",
+      "why": "Borne haute (300)",
+      "effect": "referentials_default_slide"
+    },
+    {
+      "id": "display.default_slide_s#3",
+      "key": "display.default_slide_s",
+      "tab": "Diffusion",
+      "type": "integer",
+      "technical": false,
+      "value": 155,
+      "expect": "accepted",
+      "why": "Valeur médiane",
+      "effect": "referentials_default_slide"
+    },
+    {
+      "id": "display.default_slide_s#4",
+      "key": "display.default_slide_s",
+      "tab": "Diffusion",
+      "type": "integer",
+      "technical": false,
+      "value": 9,
+      "expect": "rejected",
+      "why": "Sous la borne basse (9)"
+    },
+    {
+      "id": "display.default_slide_s#5",
+      "key": "display.default_slide_s",
+      "tab": "Diffusion",
+      "type": "integer",
+      "technical": false,
+      "value": 301,
+      "expect": "rejected",
+      "why": "Au-dessus de la borne haute (301)"
+    },
+    {
+      "id": "display.default_slide_s#6",
+      "key": "display.default_slide_s",
+      "tab": "Diffusion",
+      "type": "integer",
+      "technical": false,
+      "value": "douze",
+      "expect": "rejected",
+      "why": "Texte au lieu d’un entier"
+    },
+    {
+      "id": "operating.default_window#1",
+      "key": "operating.default_window",
+      "tab": "Fonctionnement et audio",
+      "type": "array",
+      "technical": true,
+      "value": {
+        "days": [
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "on": "07:00",
+        "off": "19:00"
+      },
+      "expect": "accepted",
+      "why": "Plage ouvrée du lundi au vendredi"
+    },
+    {
+      "id": "operating.default_window#2",
+      "key": "operating.default_window",
+      "tab": "Fonctionnement et audio",
+      "type": "array",
+      "technical": true,
+      "value": {
+        "days": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7
+        ],
+        "on": "00:00",
+        "off": "23:59"
+      },
+      "expect": "accepted",
+      "why": "Plage maximale, tous les jours"
+    },
+    {
+      "id": "operating.default_window#3",
+      "key": "operating.default_window",
+      "tab": "Fonctionnement et audio",
+      "type": "array",
+      "technical": true,
+      "value": {
+        "days": [],
+        "on": "07:00",
+        "off": "19:00"
+      },
+      "expect": "rejected",
+      "why": "Aucun jour choisi"
+    },
+    {
+      "id": "operating.default_window#4",
+      "key": "operating.default_window",
+      "tab": "Fonctionnement et audio",
+      "type": "array",
+      "technical": true,
+      "value": {
+        "days": [
+          1,
+          2
+        ],
+        "on": "19:00",
+        "off": "07:00"
+      },
+      "expect": "rejected",
+      "why": "Extinction avant l’allumage"
+    },
+    {
+      "id": "operating.default_window#5",
+      "key": "operating.default_window",
+      "tab": "Fonctionnement et audio",
+      "type": "array",
+      "technical": true,
+      "value": {
+        "days": [
+          8
+        ],
+        "on": "07:00",
+        "off": "19:00"
+      },
+      "expect": "rejected",
+      "why": "Jour inexistant (8)"
+    },
+    {
+      "id": "operating.default_window#6",
+      "key": "operating.default_window",
+      "tab": "Fonctionnement et audio",
+      "type": "array",
+      "technical": true,
+      "value": {
+        "days": [
+          1
+        ],
+        "off": "19:00"
+      },
+      "expect": "rejected",
+      "why": "Heure d’allumage absente"
+    },
+    {
+      "id": "operating.audio_max_volume#1",
+      "key": "operating.audio_max_volume",
+      "tab": "Fonctionnement et audio",
+      "type": "integer",
+      "technical": true,
+      "value": 0,
+      "expect": "accepted",
+      "why": "Borne basse (0)"
+    },
+    {
+      "id": "operating.audio_max_volume#2",
+      "key": "operating.audio_max_volume",
+      "tab": "Fonctionnement et audio",
+      "type": "integer",
+      "technical": true,
+      "value": 100,
+      "expect": "accepted",
+      "why": "Borne haute (100)"
+    },
+    {
+      "id": "operating.audio_max_volume#3",
+      "key": "operating.audio_max_volume",
+      "tab": "Fonctionnement et audio",
+      "type": "integer",
+      "technical": true,
+      "value": 50,
+      "expect": "accepted",
+      "why": "Valeur médiane"
+    },
+    {
+      "id": "operating.audio_max_volume#4",
+      "key": "operating.audio_max_volume",
+      "tab": "Fonctionnement et audio",
+      "type": "integer",
+      "technical": true,
+      "value": -1,
+      "expect": "rejected",
+      "why": "Sous la borne basse (-1)"
+    },
+    {
+      "id": "operating.audio_max_volume#5",
+      "key": "operating.audio_max_volume",
+      "tab": "Fonctionnement et audio",
+      "type": "integer",
+      "technical": true,
+      "value": 101,
+      "expect": "rejected",
+      "why": "Au-dessus de la borne haute (101)"
+    },
+    {
+      "id": "operating.audio_max_volume#6",
+      "key": "operating.audio_max_volume",
+      "tab": "Fonctionnement et audio",
+      "type": "integer",
+      "technical": true,
+      "value": "douze",
+      "expect": "rejected",
+      "why": "Texte au lieu d’un entier"
+    },
+    {
+      "id": "rooms.pending_hold_hours#1",
+      "key": "rooms.pending_hold_hours",
+      "tab": "Salles",
+      "type": "integer",
+      "technical": false,
+      "value": 1,
+      "expect": "accepted",
+      "why": "Borne basse (1)"
+    },
+    {
+      "id": "rooms.pending_hold_hours#2",
+      "key": "rooms.pending_hold_hours",
+      "tab": "Salles",
+      "type": "integer",
+      "technical": false,
+      "value": 168,
+      "expect": "accepted",
+      "why": "Borne haute (168)"
+    },
+    {
+      "id": "rooms.pending_hold_hours#3",
+      "key": "rooms.pending_hold_hours",
+      "tab": "Salles",
+      "type": "integer",
+      "technical": false,
+      "value": 85,
+      "expect": "accepted",
+      "why": "Valeur médiane"
+    },
+    {
+      "id": "rooms.pending_hold_hours#4",
+      "key": "rooms.pending_hold_hours",
+      "tab": "Salles",
+      "type": "integer",
+      "technical": false,
+      "value": 0,
+      "expect": "rejected",
+      "why": "Sous la borne basse (0)"
+    },
+    {
+      "id": "rooms.pending_hold_hours#5",
+      "key": "rooms.pending_hold_hours",
+      "tab": "Salles",
+      "type": "integer",
+      "technical": false,
+      "value": 169,
+      "expect": "rejected",
+      "why": "Au-dessus de la borne haute (169)"
+    },
+    {
+      "id": "rooms.pending_hold_hours#6",
+      "key": "rooms.pending_hold_hours",
+      "tab": "Salles",
+      "type": "integer",
+      "technical": false,
+      "value": "douze",
+      "expect": "rejected",
+      "why": "Texte au lieu d’un entier"
+    },
+    {
+      "id": "rooms.no_show_auto#1",
+      "key": "rooms.no_show_auto",
+      "tab": "Salles",
+      "type": "boolean",
+      "technical": false,
+      "value": true,
+      "expect": "accepted",
+      "why": "Activé"
+    },
+    {
+      "id": "rooms.no_show_auto#2",
+      "key": "rooms.no_show_auto",
+      "tab": "Salles",
+      "type": "boolean",
+      "technical": false,
+      "value": false,
+      "expect": "accepted",
+      "why": "Désactivé"
+    },
+    {
+      "id": "rooms.no_show_auto#3",
+      "key": "rooms.no_show_auto",
+      "tab": "Salles",
+      "type": "boolean",
+      "technical": false,
+      "value": "peut-être",
+      "expect": "rejected",
+      "why": "Valeur non booléenne"
+    },
+    {
+      "id": "channels.smtp_enabled#1",
+      "key": "channels.smtp_enabled",
+      "tab": "Canaux",
+      "type": "boolean",
+      "technical": true,
+      "value": true,
+      "expect": "accepted",
+      "why": "Activé"
+    },
+    {
+      "id": "channels.smtp_enabled#2",
+      "key": "channels.smtp_enabled",
+      "tab": "Canaux",
+      "type": "boolean",
+      "technical": true,
+      "value": false,
+      "expect": "accepted",
+      "why": "Désactivé"
+    },
+    {
+      "id": "channels.smtp_enabled#3",
+      "key": "channels.smtp_enabled",
+      "tab": "Canaux",
+      "type": "boolean",
+      "technical": true,
+      "value": "peut-être",
+      "expect": "rejected",
+      "why": "Valeur non booléenne"
+    },
+    {
+      "id": "channels.push_enabled#1",
+      "key": "channels.push_enabled",
+      "tab": "Canaux",
+      "type": "boolean",
+      "technical": true,
+      "value": true,
+      "expect": "accepted",
+      "why": "Activé"
+    },
+    {
+      "id": "channels.push_enabled#2",
+      "key": "channels.push_enabled",
+      "tab": "Canaux",
+      "type": "boolean",
+      "technical": true,
+      "value": false,
+      "expect": "accepted",
+      "why": "Désactivé"
+    },
+    {
+      "id": "channels.push_enabled#3",
+      "key": "channels.push_enabled",
+      "tab": "Canaux",
+      "type": "boolean",
+      "technical": true,
+      "value": "peut-être",
+      "expect": "rejected",
+      "why": "Valeur non booléenne"
+    },
+    {
+      "id": "integrations.api_enabled#1",
+      "key": "integrations.api_enabled",
+      "tab": "Intégrations",
+      "type": "boolean",
+      "technical": true,
+      "value": true,
+      "expect": "accepted",
+      "why": "Activé"
+    },
+    {
+      "id": "integrations.api_enabled#2",
+      "key": "integrations.api_enabled",
+      "tab": "Intégrations",
+      "type": "boolean",
+      "technical": true,
+      "value": false,
+      "expect": "accepted",
+      "why": "Désactivé"
+    },
+    {
+      "id": "integrations.api_enabled#3",
+      "key": "integrations.api_enabled",
+      "tab": "Intégrations",
+      "type": "boolean",
+      "technical": true,
+      "value": "peut-être",
+      "expect": "rejected",
+      "why": "Valeur non booléenne"
+    },
+    {
+      "id": "alerts.critical_after_hours#1",
+      "key": "alerts.critical_after_hours",
+      "tab": "Alertes et supervision",
+      "type": "boolean",
+      "technical": false,
+      "value": true,
+      "expect": "accepted",
+      "why": "Activé"
+    },
+    {
+      "id": "alerts.critical_after_hours#2",
+      "key": "alerts.critical_after_hours",
+      "tab": "Alertes et supervision",
+      "type": "boolean",
+      "technical": false,
+      "value": false,
+      "expect": "accepted",
+      "why": "Désactivé"
+    },
+    {
+      "id": "alerts.critical_after_hours#3",
+      "key": "alerts.critical_after_hours",
+      "tab": "Alertes et supervision",
+      "type": "boolean",
+      "technical": false,
+      "value": "peut-être",
+      "expect": "rejected",
+      "why": "Valeur non booléenne"
+    },
+    {
+      "id": "anomalies.storage_ratio_pct#1",
+      "key": "anomalies.storage_ratio_pct",
+      "tab": "Alertes et supervision",
+      "type": "integer",
+      "technical": true,
+      "value": 50,
+      "expect": "accepted",
+      "why": "Borne basse (50)"
+    },
+    {
+      "id": "anomalies.storage_ratio_pct#2",
+      "key": "anomalies.storage_ratio_pct",
+      "tab": "Alertes et supervision",
+      "type": "integer",
+      "technical": true,
+      "value": 99,
+      "expect": "accepted",
+      "why": "Borne haute (99)"
+    },
+    {
+      "id": "anomalies.storage_ratio_pct#3",
+      "key": "anomalies.storage_ratio_pct",
+      "tab": "Alertes et supervision",
+      "type": "integer",
+      "technical": true,
+      "value": 75,
+      "expect": "accepted",
+      "why": "Valeur médiane"
+    },
+    {
+      "id": "anomalies.storage_ratio_pct#4",
+      "key": "anomalies.storage_ratio_pct",
+      "tab": "Alertes et supervision",
+      "type": "integer",
+      "technical": true,
+      "value": 49,
+      "expect": "rejected",
+      "why": "Sous la borne basse (49)"
+    },
+    {
+      "id": "anomalies.storage_ratio_pct#5",
+      "key": "anomalies.storage_ratio_pct",
+      "tab": "Alertes et supervision",
+      "type": "integer",
+      "technical": true,
+      "value": 100,
+      "expect": "rejected",
+      "why": "Au-dessus de la borne haute (100)"
+    },
+    {
+      "id": "anomalies.storage_ratio_pct#6",
+      "key": "anomalies.storage_ratio_pct",
+      "tab": "Alertes et supervision",
+      "type": "integer",
+      "technical": true,
+      "value": "douze",
+      "expect": "rejected",
+      "why": "Texte au lieu d’un entier"
+    },
+    {
+      "id": "anomalies.clock_skew_s#1",
+      "key": "anomalies.clock_skew_s",
+      "tab": "Alertes et supervision",
+      "type": "integer",
+      "technical": true,
+      "value": 5,
+      "expect": "accepted",
+      "why": "Borne basse (5)"
+    },
+    {
+      "id": "anomalies.clock_skew_s#2",
+      "key": "anomalies.clock_skew_s",
+      "tab": "Alertes et supervision",
+      "type": "integer",
+      "technical": true,
+      "value": 600,
+      "expect": "accepted",
+      "why": "Borne haute (600)"
+    },
+    {
+      "id": "anomalies.clock_skew_s#3",
+      "key": "anomalies.clock_skew_s",
+      "tab": "Alertes et supervision",
+      "type": "integer",
+      "technical": true,
+      "value": 303,
+      "expect": "accepted",
+      "why": "Valeur médiane"
+    },
+    {
+      "id": "anomalies.clock_skew_s#4",
+      "key": "anomalies.clock_skew_s",
+      "tab": "Alertes et supervision",
+      "type": "integer",
+      "technical": true,
+      "value": 4,
+      "expect": "rejected",
+      "why": "Sous la borne basse (4)"
+    },
+    {
+      "id": "anomalies.clock_skew_s#5",
+      "key": "anomalies.clock_skew_s",
+      "tab": "Alertes et supervision",
+      "type": "integer",
+      "technical": true,
+      "value": 601,
+      "expect": "rejected",
+      "why": "Au-dessus de la borne haute (601)"
+    },
+    {
+      "id": "anomalies.clock_skew_s#6",
+      "key": "anomalies.clock_skew_s",
+      "tab": "Alertes et supervision",
+      "type": "integer",
+      "technical": true,
+      "value": "douze",
+      "expect": "rejected",
+      "why": "Texte au lieu d’un entier"
+    },
+    {
+      "id": "anomalies.sync_stalled_minutes#1",
+      "key": "anomalies.sync_stalled_minutes",
+      "tab": "Alertes et supervision",
+      "type": "integer",
+      "technical": true,
+      "value": 10,
+      "expect": "accepted",
+      "why": "Borne basse (10)"
+    },
+    {
+      "id": "anomalies.sync_stalled_minutes#2",
+      "key": "anomalies.sync_stalled_minutes",
+      "tab": "Alertes et supervision",
+      "type": "integer",
+      "technical": true,
+      "value": 1440,
+      "expect": "accepted",
+      "why": "Borne haute (1440)"
+    },
+    {
+      "id": "anomalies.sync_stalled_minutes#3",
+      "key": "anomalies.sync_stalled_minutes",
+      "tab": "Alertes et supervision",
+      "type": "integer",
+      "technical": true,
+      "value": 725,
+      "expect": "accepted",
+      "why": "Valeur médiane"
+    },
+    {
+      "id": "anomalies.sync_stalled_minutes#4",
+      "key": "anomalies.sync_stalled_minutes",
+      "tab": "Alertes et supervision",
+      "type": "integer",
+      "technical": true,
+      "value": 9,
+      "expect": "rejected",
+      "why": "Sous la borne basse (9)"
+    },
+    {
+      "id": "anomalies.sync_stalled_minutes#5",
+      "key": "anomalies.sync_stalled_minutes",
+      "tab": "Alertes et supervision",
+      "type": "integer",
+      "technical": true,
+      "value": 1441,
+      "expect": "rejected",
+      "why": "Au-dessus de la borne haute (1441)"
+    },
+    {
+      "id": "anomalies.sync_stalled_minutes#6",
+      "key": "anomalies.sync_stalled_minutes",
+      "tab": "Alertes et supervision",
+      "type": "integer",
+      "technical": true,
+      "value": "douze",
+      "expect": "rejected",
+      "why": "Texte au lieu d’un entier"
+    },
+    {
+      "id": "supervision.suspect_after_s#1",
+      "key": "supervision.suspect_after_s",
+      "tab": "Alertes et supervision",
+      "type": "integer",
+      "technical": true,
+      "value": 45,
+      "expect": "accepted",
+      "why": "Borne basse (45)",
+      "constraint": "supervision_order"
+    },
+    {
+      "id": "supervision.suspect_after_s#2",
+      "key": "supervision.suspect_after_s",
+      "tab": "Alertes et supervision",
+      "type": "integer",
+      "technical": true,
+      "value": 1800,
+      "expect": "accepted",
+      "why": "Borne haute (1800)",
+      "constraint": "supervision_order"
+    },
+    {
+      "id": "supervision.suspect_after_s#3",
+      "key": "supervision.suspect_after_s",
+      "tab": "Alertes et supervision",
+      "type": "integer",
+      "technical": true,
+      "value": 923,
+      "expect": "accepted",
+      "why": "Valeur médiane",
+      "constraint": "supervision_order"
+    },
+    {
+      "id": "supervision.suspect_after_s#4",
+      "key": "supervision.suspect_after_s",
+      "tab": "Alertes et supervision",
+      "type": "integer",
+      "technical": true,
+      "value": 44,
+      "expect": "rejected",
+      "why": "Sous la borne basse (44)"
+    },
+    {
+      "id": "supervision.suspect_after_s#5",
+      "key": "supervision.suspect_after_s",
+      "tab": "Alertes et supervision",
+      "type": "integer",
+      "technical": true,
+      "value": 1801,
+      "expect": "rejected",
+      "why": "Au-dessus de la borne haute (1801)"
+    },
+    {
+      "id": "supervision.suspect_after_s#6",
+      "key": "supervision.suspect_after_s",
+      "tab": "Alertes et supervision",
+      "type": "integer",
+      "technical": true,
+      "value": "douze",
+      "expect": "rejected",
+      "why": "Texte au lieu d’un entier"
+    },
+    {
+      "id": "supervision.offline_after_s#1",
+      "key": "supervision.offline_after_s",
+      "tab": "Alertes et supervision",
+      "type": "integer",
+      "technical": true,
+      "value": 90,
+      "expect": "accepted",
+      "why": "Borne basse (90)",
+      "constraint": "supervision_order"
+    },
+    {
+      "id": "supervision.offline_after_s#2",
+      "key": "supervision.offline_after_s",
+      "tab": "Alertes et supervision",
+      "type": "integer",
+      "technical": true,
+      "value": 3600,
+      "expect": "accepted",
+      "why": "Borne haute (3600)",
+      "constraint": "supervision_order"
+    },
+    {
+      "id": "supervision.offline_after_s#3",
+      "key": "supervision.offline_after_s",
+      "tab": "Alertes et supervision",
+      "type": "integer",
+      "technical": true,
+      "value": 1845,
+      "expect": "accepted",
+      "why": "Valeur médiane",
+      "constraint": "supervision_order"
+    },
+    {
+      "id": "supervision.offline_after_s#4",
+      "key": "supervision.offline_after_s",
+      "tab": "Alertes et supervision",
+      "type": "integer",
+      "technical": true,
+      "value": 89,
+      "expect": "rejected",
+      "why": "Sous la borne basse (89)"
+    },
+    {
+      "id": "supervision.offline_after_s#5",
+      "key": "supervision.offline_after_s",
+      "tab": "Alertes et supervision",
+      "type": "integer",
+      "technical": true,
+      "value": 3601,
+      "expect": "rejected",
+      "why": "Au-dessus de la borne haute (3601)"
+    },
+    {
+      "id": "supervision.offline_after_s#6",
+      "key": "supervision.offline_after_s",
+      "tab": "Alertes et supervision",
+      "type": "integer",
+      "technical": true,
+      "value": "douze",
+      "expect": "rejected",
+      "why": "Texte au lieu d’un entier"
+    },
+    {
+      "id": "anomalies.stalled_minutes#1",
+      "key": "anomalies.stalled_minutes",
+      "tab": "Alertes et supervision",
+      "type": "integer",
+      "technical": true,
+      "value": 5,
+      "expect": "accepted",
+      "why": "Borne basse (5)"
+    },
+    {
+      "id": "anomalies.stalled_minutes#2",
+      "key": "anomalies.stalled_minutes",
+      "tab": "Alertes et supervision",
+      "type": "integer",
+      "technical": true,
+      "value": 240,
+      "expect": "accepted",
+      "why": "Borne haute (240)"
+    },
+    {
+      "id": "anomalies.stalled_minutes#3",
+      "key": "anomalies.stalled_minutes",
+      "tab": "Alertes et supervision",
+      "type": "integer",
+      "technical": true,
+      "value": 123,
+      "expect": "accepted",
+      "why": "Valeur médiane"
+    },
+    {
+      "id": "anomalies.stalled_minutes#4",
+      "key": "anomalies.stalled_minutes",
+      "tab": "Alertes et supervision",
+      "type": "integer",
+      "technical": true,
+      "value": 4,
+      "expect": "rejected",
+      "why": "Sous la borne basse (4)"
+    },
+    {
+      "id": "anomalies.stalled_minutes#5",
+      "key": "anomalies.stalled_minutes",
+      "tab": "Alertes et supervision",
+      "type": "integer",
+      "technical": true,
+      "value": 241,
+      "expect": "rejected",
+      "why": "Au-dessus de la borne haute (241)"
+    },
+    {
+      "id": "anomalies.stalled_minutes#6",
+      "key": "anomalies.stalled_minutes",
+      "tab": "Alertes et supervision",
+      "type": "integer",
+      "technical": true,
+      "value": "douze",
+      "expect": "rejected",
+      "why": "Texte au lieu d’un entier"
+    },
+    {
+      "id": "anomalies.errors_per_hour#1",
+      "key": "anomalies.errors_per_hour",
+      "tab": "Alertes et supervision",
+      "type": "integer",
+      "technical": true,
+      "value": 1,
+      "expect": "accepted",
+      "why": "Borne basse (1)"
+    },
+    {
+      "id": "anomalies.errors_per_hour#2",
+      "key": "anomalies.errors_per_hour",
+      "tab": "Alertes et supervision",
+      "type": "integer",
+      "technical": true,
+      "value": 500,
+      "expect": "accepted",
+      "why": "Borne haute (500)"
+    },
+    {
+      "id": "anomalies.errors_per_hour#3",
+      "key": "anomalies.errors_per_hour",
+      "tab": "Alertes et supervision",
+      "type": "integer",
+      "technical": true,
+      "value": 251,
+      "expect": "accepted",
+      "why": "Valeur médiane"
+    },
+    {
+      "id": "anomalies.errors_per_hour#4",
+      "key": "anomalies.errors_per_hour",
+      "tab": "Alertes et supervision",
+      "type": "integer",
+      "technical": true,
+      "value": 0,
+      "expect": "rejected",
+      "why": "Sous la borne basse (0)"
+    },
+    {
+      "id": "anomalies.errors_per_hour#5",
+      "key": "anomalies.errors_per_hour",
+      "tab": "Alertes et supervision",
+      "type": "integer",
+      "technical": true,
+      "value": 501,
+      "expect": "rejected",
+      "why": "Au-dessus de la borne haute (501)"
+    },
+    {
+      "id": "anomalies.errors_per_hour#6",
+      "key": "anomalies.errors_per_hour",
+      "tab": "Alertes et supervision",
+      "type": "integer",
+      "technical": true,
+      "value": "douze",
+      "expect": "rejected",
+      "why": "Texte au lieu d’un entier"
+    },
+    {
+      "id": "anomalies.outdated_hours#1",
+      "key": "anomalies.outdated_hours",
+      "tab": "Alertes et supervision",
+      "type": "integer",
+      "technical": true,
+      "value": 1,
+      "expect": "accepted",
+      "why": "Borne basse (1)"
+    },
+    {
+      "id": "anomalies.outdated_hours#2",
+      "key": "anomalies.outdated_hours",
+      "tab": "Alertes et supervision",
+      "type": "integer",
+      "technical": true,
+      "value": 720,
+      "expect": "accepted",
+      "why": "Borne haute (720)"
+    },
+    {
+      "id": "anomalies.outdated_hours#3",
+      "key": "anomalies.outdated_hours",
+      "tab": "Alertes et supervision",
+      "type": "integer",
+      "technical": true,
+      "value": 361,
+      "expect": "accepted",
+      "why": "Valeur médiane"
+    },
+    {
+      "id": "anomalies.outdated_hours#4",
+      "key": "anomalies.outdated_hours",
+      "tab": "Alertes et supervision",
+      "type": "integer",
+      "technical": true,
+      "value": 0,
+      "expect": "rejected",
+      "why": "Sous la borne basse (0)"
+    },
+    {
+      "id": "anomalies.outdated_hours#5",
+      "key": "anomalies.outdated_hours",
+      "tab": "Alertes et supervision",
+      "type": "integer",
+      "technical": true,
+      "value": 721,
+      "expect": "rejected",
+      "why": "Au-dessus de la borne haute (721)"
+    },
+    {
+      "id": "anomalies.outdated_hours#6",
+      "key": "anomalies.outdated_hours",
+      "tab": "Alertes et supervision",
+      "type": "integer",
+      "technical": true,
+      "value": "douze",
+      "expect": "rejected",
+      "why": "Texte au lieu d’un entier"
+    },
+    {
+      "id": "anomalies.temperature_c#1",
+      "key": "anomalies.temperature_c",
+      "tab": "Alertes et supervision",
+      "type": "integer",
+      "technical": true,
+      "value": 40,
+      "expect": "accepted",
+      "why": "Borne basse (40)"
+    },
+    {
+      "id": "anomalies.temperature_c#2",
+      "key": "anomalies.temperature_c",
+      "tab": "Alertes et supervision",
+      "type": "integer",
+      "technical": true,
+      "value": 110,
+      "expect": "accepted",
+      "why": "Borne haute (110)"
+    },
+    {
+      "id": "anomalies.temperature_c#3",
+      "key": "anomalies.temperature_c",
+      "tab": "Alertes et supervision",
+      "type": "integer",
+      "technical": true,
+      "value": 75,
+      "expect": "accepted",
+      "why": "Valeur médiane"
+    },
+    {
+      "id": "anomalies.temperature_c#4",
+      "key": "anomalies.temperature_c",
+      "tab": "Alertes et supervision",
+      "type": "integer",
+      "technical": true,
+      "value": 39,
+      "expect": "rejected",
+      "why": "Sous la borne basse (39)"
+    },
+    {
+      "id": "anomalies.temperature_c#5",
+      "key": "anomalies.temperature_c",
+      "tab": "Alertes et supervision",
+      "type": "integer",
+      "technical": true,
+      "value": 111,
+      "expect": "rejected",
+      "why": "Au-dessus de la borne haute (111)"
+    },
+    {
+      "id": "anomalies.temperature_c#6",
+      "key": "anomalies.temperature_c",
+      "tab": "Alertes et supervision",
+      "type": "integer",
+      "technical": true,
+      "value": "douze",
+      "expect": "rejected",
+      "why": "Texte au lieu d’un entier"
+    },
+    {
+      "id": "anomalies.unstable_losses#1",
+      "key": "anomalies.unstable_losses",
+      "tab": "Alertes et supervision",
+      "type": "integer",
+      "technical": true,
+      "value": 2,
+      "expect": "accepted",
+      "why": "Borne basse (2)"
+    },
+    {
+      "id": "anomalies.unstable_losses#2",
+      "key": "anomalies.unstable_losses",
+      "tab": "Alertes et supervision",
+      "type": "integer",
+      "technical": true,
+      "value": 50,
+      "expect": "accepted",
+      "why": "Borne haute (50)"
+    },
+    {
+      "id": "anomalies.unstable_losses#3",
+      "key": "anomalies.unstable_losses",
+      "tab": "Alertes et supervision",
+      "type": "integer",
+      "technical": true,
+      "value": 26,
+      "expect": "accepted",
+      "why": "Valeur médiane"
+    },
+    {
+      "id": "anomalies.unstable_losses#4",
+      "key": "anomalies.unstable_losses",
+      "tab": "Alertes et supervision",
+      "type": "integer",
+      "technical": true,
+      "value": 1,
+      "expect": "rejected",
+      "why": "Sous la borne basse (1)"
+    },
+    {
+      "id": "anomalies.unstable_losses#5",
+      "key": "anomalies.unstable_losses",
+      "tab": "Alertes et supervision",
+      "type": "integer",
+      "technical": true,
+      "value": 51,
+      "expect": "rejected",
+      "why": "Au-dessus de la borne haute (51)"
+    },
+    {
+      "id": "anomalies.unstable_losses#6",
+      "key": "anomalies.unstable_losses",
+      "tab": "Alertes et supervision",
+      "type": "integer",
+      "technical": true,
+      "value": "douze",
+      "expect": "rejected",
+      "why": "Texte au lieu d’un entier"
+    },
+    {
+      "id": "anomalies.fallback_minutes#1",
+      "key": "anomalies.fallback_minutes",
+      "tab": "Alertes et supervision",
+      "type": "integer",
+      "technical": true,
+      "value": 5,
+      "expect": "accepted",
+      "why": "Borne basse (5)"
+    },
+    {
+      "id": "anomalies.fallback_minutes#2",
+      "key": "anomalies.fallback_minutes",
+      "tab": "Alertes et supervision",
+      "type": "integer",
+      "technical": true,
+      "value": 720,
+      "expect": "accepted",
+      "why": "Borne haute (720)"
+    },
+    {
+      "id": "anomalies.fallback_minutes#3",
+      "key": "anomalies.fallback_minutes",
+      "tab": "Alertes et supervision",
+      "type": "integer",
+      "technical": true,
+      "value": 363,
+      "expect": "accepted",
+      "why": "Valeur médiane"
+    },
+    {
+      "id": "anomalies.fallback_minutes#4",
+      "key": "anomalies.fallback_minutes",
+      "tab": "Alertes et supervision",
+      "type": "integer",
+      "technical": true,
+      "value": 4,
+      "expect": "rejected",
+      "why": "Sous la borne basse (4)"
+    },
+    {
+      "id": "anomalies.fallback_minutes#5",
+      "key": "anomalies.fallback_minutes",
+      "tab": "Alertes et supervision",
+      "type": "integer",
+      "technical": true,
+      "value": 721,
+      "expect": "rejected",
+      "why": "Au-dessus de la borne haute (721)"
+    },
+    {
+      "id": "anomalies.fallback_minutes#6",
+      "key": "anomalies.fallback_minutes",
+      "tab": "Alertes et supervision",
+      "type": "integer",
+      "technical": true,
+      "value": "douze",
+      "expect": "rejected",
+      "why": "Texte au lieu d’un entier"
+    },
+    {
+      "id": "incidents.delay_critical_min#1",
+      "key": "incidents.delay_critical_min",
+      "tab": "Alertes et supervision",
+      "type": "integer",
+      "technical": true,
+      "value": 5,
+      "expect": "accepted",
+      "why": "Borne basse (5)"
+    },
+    {
+      "id": "incidents.delay_critical_min#2",
+      "key": "incidents.delay_critical_min",
+      "tab": "Alertes et supervision",
+      "type": "integer",
+      "technical": true,
+      "value": 1440,
+      "expect": "accepted",
+      "why": "Borne haute (1440)"
+    },
+    {
+      "id": "incidents.delay_critical_min#3",
+      "key": "incidents.delay_critical_min",
+      "tab": "Alertes et supervision",
+      "type": "integer",
+      "technical": true,
+      "value": 723,
+      "expect": "accepted",
+      "why": "Valeur médiane"
+    },
+    {
+      "id": "incidents.delay_critical_min#4",
+      "key": "incidents.delay_critical_min",
+      "tab": "Alertes et supervision",
+      "type": "integer",
+      "technical": true,
+      "value": 4,
+      "expect": "rejected",
+      "why": "Sous la borne basse (4)"
+    },
+    {
+      "id": "incidents.delay_critical_min#5",
+      "key": "incidents.delay_critical_min",
+      "tab": "Alertes et supervision",
+      "type": "integer",
+      "technical": true,
+      "value": 1441,
+      "expect": "rejected",
+      "why": "Au-dessus de la borne haute (1441)"
+    },
+    {
+      "id": "incidents.delay_critical_min#6",
+      "key": "incidents.delay_critical_min",
+      "tab": "Alertes et supervision",
+      "type": "integer",
+      "technical": true,
+      "value": "douze",
+      "expect": "rejected",
+      "why": "Texte au lieu d’un entier"
+    },
+    {
+      "id": "incidents.delay_major_min#1",
+      "key": "incidents.delay_major_min",
+      "tab": "Alertes et supervision",
+      "type": "integer",
+      "technical": true,
+      "value": 5,
+      "expect": "accepted",
+      "why": "Borne basse (5)"
+    },
+    {
+      "id": "incidents.delay_major_min#2",
+      "key": "incidents.delay_major_min",
+      "tab": "Alertes et supervision",
+      "type": "integer",
+      "technical": true,
+      "value": 2880,
+      "expect": "accepted",
+      "why": "Borne haute (2880)"
+    },
+    {
+      "id": "incidents.delay_major_min#3",
+      "key": "incidents.delay_major_min",
+      "tab": "Alertes et supervision",
+      "type": "integer",
+      "technical": true,
+      "value": 1443,
+      "expect": "accepted",
+      "why": "Valeur médiane"
+    },
+    {
+      "id": "incidents.delay_major_min#4",
+      "key": "incidents.delay_major_min",
+      "tab": "Alertes et supervision",
+      "type": "integer",
+      "technical": true,
+      "value": 4,
+      "expect": "rejected",
+      "why": "Sous la borne basse (4)"
+    },
+    {
+      "id": "incidents.delay_major_min#5",
+      "key": "incidents.delay_major_min",
+      "tab": "Alertes et supervision",
+      "type": "integer",
+      "technical": true,
+      "value": 2881,
+      "expect": "rejected",
+      "why": "Au-dessus de la borne haute (2881)"
+    },
+    {
+      "id": "incidents.delay_major_min#6",
+      "key": "incidents.delay_major_min",
+      "tab": "Alertes et supervision",
+      "type": "integer",
+      "technical": true,
+      "value": "douze",
+      "expect": "rejected",
+      "why": "Texte au lieu d’un entier"
+    },
+    {
+      "id": "incidents.delay_medium_min#1",
+      "key": "incidents.delay_medium_min",
+      "tab": "Alertes et supervision",
+      "type": "integer",
+      "technical": true,
+      "value": 5,
+      "expect": "accepted",
+      "why": "Borne basse (5)"
+    },
+    {
+      "id": "incidents.delay_medium_min#2",
+      "key": "incidents.delay_medium_min",
+      "tab": "Alertes et supervision",
+      "type": "integer",
+      "technical": true,
+      "value": 10080,
+      "expect": "accepted",
+      "why": "Borne haute (10080)"
+    },
+    {
+      "id": "incidents.delay_medium_min#3",
+      "key": "incidents.delay_medium_min",
+      "tab": "Alertes et supervision",
+      "type": "integer",
+      "technical": true,
+      "value": 5043,
+      "expect": "accepted",
+      "why": "Valeur médiane"
+    },
+    {
+      "id": "incidents.delay_medium_min#4",
+      "key": "incidents.delay_medium_min",
+      "tab": "Alertes et supervision",
+      "type": "integer",
+      "technical": true,
+      "value": 4,
+      "expect": "rejected",
+      "why": "Sous la borne basse (4)"
+    },
+    {
+      "id": "incidents.delay_medium_min#5",
+      "key": "incidents.delay_medium_min",
+      "tab": "Alertes et supervision",
+      "type": "integer",
+      "technical": true,
+      "value": 10081,
+      "expect": "rejected",
+      "why": "Au-dessus de la borne haute (10081)"
+    },
+    {
+      "id": "incidents.delay_medium_min#6",
+      "key": "incidents.delay_medium_min",
+      "tab": "Alertes et supervision",
+      "type": "integer",
+      "technical": true,
+      "value": "douze",
+      "expect": "rejected",
+      "why": "Texte au lieu d’un entier"
+    },
+    {
+      "id": "incidents.delay_minor_min#1",
+      "key": "incidents.delay_minor_min",
+      "tab": "Alertes et supervision",
+      "type": "integer",
+      "technical": true,
+      "value": 5,
+      "expect": "accepted",
+      "why": "Borne basse (5)"
+    },
+    {
+      "id": "incidents.delay_minor_min#2",
+      "key": "incidents.delay_minor_min",
+      "tab": "Alertes et supervision",
+      "type": "integer",
+      "technical": true,
+      "value": 20160,
+      "expect": "accepted",
+      "why": "Borne haute (20160)"
+    },
+    {
+      "id": "incidents.delay_minor_min#3",
+      "key": "incidents.delay_minor_min",
+      "tab": "Alertes et supervision",
+      "type": "integer",
+      "technical": true,
+      "value": 10083,
+      "expect": "accepted",
+      "why": "Valeur médiane"
+    },
+    {
+      "id": "incidents.delay_minor_min#4",
+      "key": "incidents.delay_minor_min",
+      "tab": "Alertes et supervision",
+      "type": "integer",
+      "technical": true,
+      "value": 4,
+      "expect": "rejected",
+      "why": "Sous la borne basse (4)"
+    },
+    {
+      "id": "incidents.delay_minor_min#5",
+      "key": "incidents.delay_minor_min",
+      "tab": "Alertes et supervision",
+      "type": "integer",
+      "technical": true,
+      "value": 20161,
+      "expect": "rejected",
+      "why": "Au-dessus de la borne haute (20161)"
+    },
+    {
+      "id": "incidents.delay_minor_min#6",
+      "key": "incidents.delay_minor_min",
+      "tab": "Alertes et supervision",
+      "type": "integer",
+      "technical": true,
+      "value": "douze",
+      "expect": "rejected",
+      "why": "Texte au lieu d’un entier"
+    },
+    {
+      "id": "incidents.default_assignee_id#1",
+      "key": "incidents.default_assignee_id",
+      "tab": "Alertes et supervision",
+      "type": "string",
+      "technical": true,
+      "value": null,
+      "expect": "accepted",
+      "why": "Aucun destinataire par défaut"
+    },
+    {
+      "id": "incidents.default_assignee_id#2",
+      "key": "incidents.default_assignee_id",
+      "tab": "Alertes et supervision",
+      "type": "string",
+      "technical": true,
+      "value": "$CURRENT_USER",
+      "expect": "accepted",
+      "why": "Compte actif existant (résolu à l’exécution)"
+    },
+    {
+      "id": "incidents.default_assignee_id#3",
+      "key": "incidents.default_assignee_id",
+      "tab": "Alertes et supervision",
+      "type": "string",
+      "technical": true,
+      "value": "00000000-0000-4000-8000-000000000000",
+      "expect": "rejected",
+      "why": "Identifiant inconnu"
+    },
+    {
+      "id": "incidents.default_assignee_id#4",
+      "key": "incidents.default_assignee_id",
+      "tab": "Alertes et supervision",
+      "type": "string",
+      "technical": true,
+      "value": "pas-un-uuid",
+      "expect": "rejected",
+      "why": "Identifiant mal formé"
+    },
+    {
+      "id": "retention.telemetry_days#1",
+      "key": "retention.telemetry_days",
+      "tab": "Conservation",
+      "type": "integer",
+      "technical": false,
+      "value": 30,
+      "expect": "accepted",
+      "why": "Borne basse (30)"
+    },
+    {
+      "id": "retention.telemetry_days#2",
+      "key": "retention.telemetry_days",
+      "tab": "Conservation",
+      "type": "integer",
+      "technical": false,
+      "value": 730,
+      "expect": "accepted",
+      "why": "Borne haute (730)"
+    },
+    {
+      "id": "retention.telemetry_days#3",
+      "key": "retention.telemetry_days",
+      "tab": "Conservation",
+      "type": "integer",
+      "technical": false,
+      "value": 380,
+      "expect": "accepted",
+      "why": "Valeur médiane"
+    },
+    {
+      "id": "retention.telemetry_days#4",
+      "key": "retention.telemetry_days",
+      "tab": "Conservation",
+      "type": "integer",
+      "technical": false,
+      "value": 29,
+      "expect": "rejected",
+      "why": "Sous la borne basse (29)"
+    },
+    {
+      "id": "retention.telemetry_days#5",
+      "key": "retention.telemetry_days",
+      "tab": "Conservation",
+      "type": "integer",
+      "technical": false,
+      "value": 731,
+      "expect": "rejected",
+      "why": "Au-dessus de la borne haute (731)"
+    },
+    {
+      "id": "retention.telemetry_days#6",
+      "key": "retention.telemetry_days",
+      "tab": "Conservation",
+      "type": "integer",
+      "technical": false,
+      "value": "douze",
+      "expect": "rejected",
+      "why": "Texte au lieu d’un entier"
+    },
+    {
+      "id": "retention.notifications_days#1",
+      "key": "retention.notifications_days",
+      "tab": "Conservation",
+      "type": "integer",
+      "technical": false,
+      "value": 30,
+      "expect": "accepted",
+      "why": "Borne basse (30)"
+    },
+    {
+      "id": "retention.notifications_days#2",
+      "key": "retention.notifications_days",
+      "tab": "Conservation",
+      "type": "integer",
+      "technical": false,
+      "value": 730,
+      "expect": "accepted",
+      "why": "Borne haute (730)"
+    },
+    {
+      "id": "retention.notifications_days#3",
+      "key": "retention.notifications_days",
+      "tab": "Conservation",
+      "type": "integer",
+      "technical": false,
+      "value": 380,
+      "expect": "accepted",
+      "why": "Valeur médiane"
+    },
+    {
+      "id": "retention.notifications_days#4",
+      "key": "retention.notifications_days",
+      "tab": "Conservation",
+      "type": "integer",
+      "technical": false,
+      "value": 29,
+      "expect": "rejected",
+      "why": "Sous la borne basse (29)"
+    },
+    {
+      "id": "retention.notifications_days#5",
+      "key": "retention.notifications_days",
+      "tab": "Conservation",
+      "type": "integer",
+      "technical": false,
+      "value": 731,
+      "expect": "rejected",
+      "why": "Au-dessus de la borne haute (731)"
+    },
+    {
+      "id": "retention.notifications_days#6",
+      "key": "retention.notifications_days",
+      "tab": "Conservation",
+      "type": "integer",
+      "technical": false,
+      "value": "douze",
+      "expect": "rejected",
+      "why": "Texte au lieu d’un entier"
+    },
+    {
+      "id": "retention.auto_purge#1",
+      "key": "retention.auto_purge",
+      "tab": "Conservation",
+      "type": "boolean",
+      "technical": true,
+      "value": true,
+      "expect": "accepted",
+      "why": "Activé"
+    },
+    {
+      "id": "retention.auto_purge#2",
+      "key": "retention.auto_purge",
+      "tab": "Conservation",
+      "type": "boolean",
+      "technical": true,
+      "value": false,
+      "expect": "accepted",
+      "why": "Désactivé"
+    },
+    {
+      "id": "retention.auto_purge#3",
+      "key": "retention.auto_purge",
+      "tab": "Conservation",
+      "type": "boolean",
+      "technical": true,
+      "value": "peut-être",
+      "expect": "rejected",
+      "why": "Valeur non booléenne"
+    },
+    {
+      "id": "releases.auto_promote#1",
+      "key": "releases.auto_promote",
+      "tab": "Alertes et supervision",
+      "type": "boolean",
+      "technical": true,
+      "value": true,
+      "expect": "accepted",
+      "why": "Activé"
+    },
+    {
+      "id": "releases.auto_promote#2",
+      "key": "releases.auto_promote",
+      "tab": "Alertes et supervision",
+      "type": "boolean",
+      "technical": true,
+      "value": false,
+      "expect": "accepted",
+      "why": "Désactivé"
+    },
+    {
+      "id": "releases.auto_promote#3",
+      "key": "releases.auto_promote",
+      "tab": "Alertes et supervision",
+      "type": "boolean",
+      "technical": true,
+      "value": "peut-être",
+      "expect": "rejected",
+      "why": "Valeur non booléenne"
+    },
+    {
+      "id": "releases.promote_after_h#1",
+      "key": "releases.promote_after_h",
+      "tab": "Alertes et supervision",
+      "type": "integer",
+      "technical": true,
+      "value": 24,
+      "expect": "accepted",
+      "why": "Borne basse (24)"
+    },
+    {
+      "id": "releases.promote_after_h#2",
+      "key": "releases.promote_after_h",
+      "tab": "Alertes et supervision",
+      "type": "integer",
+      "technical": true,
+      "value": 720,
+      "expect": "accepted",
+      "why": "Borne haute (720)"
+    },
+    {
+      "id": "releases.promote_after_h#3",
+      "key": "releases.promote_after_h",
+      "tab": "Alertes et supervision",
+      "type": "integer",
+      "technical": true,
+      "value": 372,
+      "expect": "accepted",
+      "why": "Valeur médiane"
+    },
+    {
+      "id": "releases.promote_after_h#4",
+      "key": "releases.promote_after_h",
+      "tab": "Alertes et supervision",
+      "type": "integer",
+      "technical": true,
+      "value": 23,
+      "expect": "rejected",
+      "why": "Sous la borne basse (23)"
+    },
+    {
+      "id": "releases.promote_after_h#5",
+      "key": "releases.promote_after_h",
+      "tab": "Alertes et supervision",
+      "type": "integer",
+      "technical": true,
+      "value": 721,
+      "expect": "rejected",
+      "why": "Au-dessus de la borne haute (721)"
+    },
+    {
+      "id": "releases.promote_after_h#6",
+      "key": "releases.promote_after_h",
+      "tab": "Alertes et supervision",
+      "type": "integer",
+      "technical": true,
+      "value": "douze",
+      "expect": "rejected",
+      "why": "Texte au lieu d’un entier"
+    },
+    {
+      "id": "retention.receipts_days#1",
+      "key": "retention.receipts_days",
+      "tab": "Conservation",
+      "type": "integer",
+      "technical": false,
+      "value": 90,
+      "expect": "accepted",
+      "why": "Borne basse (90)"
+    },
+    {
+      "id": "retention.receipts_days#2",
+      "key": "retention.receipts_days",
+      "tab": "Conservation",
+      "type": "integer",
+      "technical": false,
+      "value": 1095,
+      "expect": "accepted",
+      "why": "Borne haute (1095)"
+    },
+    {
+      "id": "retention.receipts_days#3",
+      "key": "retention.receipts_days",
+      "tab": "Conservation",
+      "type": "integer",
+      "technical": false,
+      "value": 593,
+      "expect": "accepted",
+      "why": "Valeur médiane"
+    },
+    {
+      "id": "retention.receipts_days#4",
+      "key": "retention.receipts_days",
+      "tab": "Conservation",
+      "type": "integer",
+      "technical": false,
+      "value": 89,
+      "expect": "rejected",
+      "why": "Sous la borne basse (89)"
+    },
+    {
+      "id": "retention.receipts_days#5",
+      "key": "retention.receipts_days",
+      "tab": "Conservation",
+      "type": "integer",
+      "technical": false,
+      "value": 1096,
+      "expect": "rejected",
+      "why": "Au-dessus de la borne haute (1096)"
+    },
+    {
+      "id": "retention.receipts_days#6",
+      "key": "retention.receipts_days",
+      "tab": "Conservation",
+      "type": "integer",
+      "technical": false,
+      "value": "douze",
+      "expect": "rejected",
+      "why": "Texte au lieu d’un entier"
+    },
+    {
+      "id": "retention.commands_days#1",
+      "key": "retention.commands_days",
+      "tab": "Conservation",
+      "type": "integer",
+      "technical": false,
+      "value": 30,
+      "expect": "accepted",
+      "why": "Borne basse (30)"
+    },
+    {
+      "id": "retention.commands_days#2",
+      "key": "retention.commands_days",
+      "tab": "Conservation",
+      "type": "integer",
+      "technical": false,
+      "value": 1095,
+      "expect": "accepted",
+      "why": "Borne haute (1095)"
+    },
+    {
+      "id": "retention.commands_days#3",
+      "key": "retention.commands_days",
+      "tab": "Conservation",
+      "type": "integer",
+      "technical": false,
+      "value": 563,
+      "expect": "accepted",
+      "why": "Valeur médiane"
+    },
+    {
+      "id": "retention.commands_days#4",
+      "key": "retention.commands_days",
+      "tab": "Conservation",
+      "type": "integer",
+      "technical": false,
+      "value": 29,
+      "expect": "rejected",
+      "why": "Sous la borne basse (29)"
+    },
+    {
+      "id": "retention.commands_days#5",
+      "key": "retention.commands_days",
+      "tab": "Conservation",
+      "type": "integer",
+      "technical": false,
+      "value": 1096,
+      "expect": "rejected",
+      "why": "Au-dessus de la borne haute (1096)"
+    },
+    {
+      "id": "retention.commands_days#6",
+      "key": "retention.commands_days",
+      "tab": "Conservation",
+      "type": "integer",
+      "technical": false,
+      "value": "douze",
+      "expect": "rejected",
+      "why": "Texte au lieu d’un entier"
+    },
+    {
+      "id": "retention.states_days#1",
+      "key": "retention.states_days",
+      "tab": "Conservation",
+      "type": "integer",
+      "technical": false,
+      "value": 90,
+      "expect": "accepted",
+      "why": "Borne basse (90)"
+    },
+    {
+      "id": "retention.states_days#2",
+      "key": "retention.states_days",
+      "tab": "Conservation",
+      "type": "integer",
+      "technical": false,
+      "value": 1825,
+      "expect": "accepted",
+      "why": "Borne haute (1825)"
+    },
+    {
+      "id": "retention.states_days#3",
+      "key": "retention.states_days",
+      "tab": "Conservation",
+      "type": "integer",
+      "technical": false,
+      "value": 958,
+      "expect": "accepted",
+      "why": "Valeur médiane"
+    },
+    {
+      "id": "retention.states_days#4",
+      "key": "retention.states_days",
+      "tab": "Conservation",
+      "type": "integer",
+      "technical": false,
+      "value": 89,
+      "expect": "rejected",
+      "why": "Sous la borne basse (89)"
+    },
+    {
+      "id": "retention.states_days#5",
+      "key": "retention.states_days",
+      "tab": "Conservation",
+      "type": "integer",
+      "technical": false,
+      "value": 1826,
+      "expect": "rejected",
+      "why": "Au-dessus de la borne haute (1826)"
+    },
+    {
+      "id": "retention.states_days#6",
+      "key": "retention.states_days",
+      "tab": "Conservation",
+      "type": "integer",
+      "technical": false,
+      "value": "douze",
+      "expect": "rejected",
+      "why": "Texte au lieu d’un entier"
+    },
+    {
+      "id": "retention.exchanges_days#1",
+      "key": "retention.exchanges_days",
+      "tab": "Conservation",
+      "type": "integer",
+      "technical": false,
+      "value": 7,
+      "expect": "accepted",
+      "why": "Borne basse (7)"
+    },
+    {
+      "id": "retention.exchanges_days#2",
+      "key": "retention.exchanges_days",
+      "tab": "Conservation",
+      "type": "integer",
+      "technical": false,
+      "value": 365,
+      "expect": "accepted",
+      "why": "Borne haute (365)"
+    },
+    {
+      "id": "retention.exchanges_days#3",
+      "key": "retention.exchanges_days",
+      "tab": "Conservation",
+      "type": "integer",
+      "technical": false,
+      "value": 186,
+      "expect": "accepted",
+      "why": "Valeur médiane"
+    },
+    {
+      "id": "retention.exchanges_days#4",
+      "key": "retention.exchanges_days",
+      "tab": "Conservation",
+      "type": "integer",
+      "technical": false,
+      "value": 6,
+      "expect": "rejected",
+      "why": "Sous la borne basse (6)"
+    },
+    {
+      "id": "retention.exchanges_days#5",
+      "key": "retention.exchanges_days",
+      "tab": "Conservation",
+      "type": "integer",
+      "technical": false,
+      "value": 366,
+      "expect": "rejected",
+      "why": "Au-dessus de la borne haute (366)"
+    },
+    {
+      "id": "retention.exchanges_days#6",
+      "key": "retention.exchanges_days",
+      "tab": "Conservation",
+      "type": "integer",
+      "technical": false,
+      "value": "douze",
+      "expect": "rejected",
+      "why": "Texte au lieu d’un entier"
+    },
+    {
+      "id": "retention.audit_months#1",
+      "key": "retention.audit_months",
+      "tab": "Conservation",
+      "type": "integer",
+      "technical": false,
+      "value": 12,
+      "expect": "accepted",
+      "why": "Borne basse (12)"
+    },
+    {
+      "id": "retention.audit_months#2",
+      "key": "retention.audit_months",
+      "tab": "Conservation",
+      "type": "integer",
+      "technical": false,
+      "value": 120,
+      "expect": "accepted",
+      "why": "Borne haute (120)"
+    },
+    {
+      "id": "retention.audit_months#3",
+      "key": "retention.audit_months",
+      "tab": "Conservation",
+      "type": "integer",
+      "technical": false,
+      "value": 66,
+      "expect": "accepted",
+      "why": "Valeur médiane"
+    },
+    {
+      "id": "retention.audit_months#4",
+      "key": "retention.audit_months",
+      "tab": "Conservation",
+      "type": "integer",
+      "technical": false,
+      "value": 11,
+      "expect": "rejected",
+      "why": "Sous la borne basse (11)"
+    },
+    {
+      "id": "retention.audit_months#5",
+      "key": "retention.audit_months",
+      "tab": "Conservation",
+      "type": "integer",
+      "technical": false,
+      "value": 121,
+      "expect": "rejected",
+      "why": "Au-dessus de la borne haute (121)"
+    },
+    {
+      "id": "retention.audit_months#6",
+      "key": "retention.audit_months",
+      "tab": "Conservation",
+      "type": "integer",
+      "technical": false,
+      "value": "douze",
+      "expect": "rejected",
+      "why": "Texte au lieu d’un entier"
+    },
+    {
+      "id": "retention.export_hours#1",
+      "key": "retention.export_hours",
+      "tab": "Conservation",
+      "type": "integer",
+      "technical": false,
+      "value": 1,
+      "expect": "accepted",
+      "why": "Borne basse (1)"
+    },
+    {
+      "id": "retention.export_hours#2",
+      "key": "retention.export_hours",
+      "tab": "Conservation",
+      "type": "integer",
+      "technical": false,
+      "value": 720,
+      "expect": "accepted",
+      "why": "Borne haute (720)"
+    },
+    {
+      "id": "retention.export_hours#3",
+      "key": "retention.export_hours",
+      "tab": "Conservation",
+      "type": "integer",
+      "technical": false,
+      "value": 361,
+      "expect": "accepted",
+      "why": "Valeur médiane"
+    },
+    {
+      "id": "retention.export_hours#4",
+      "key": "retention.export_hours",
+      "tab": "Conservation",
+      "type": "integer",
+      "technical": false,
+      "value": 0,
+      "expect": "rejected",
+      "why": "Sous la borne basse (0)"
+    },
+    {
+      "id": "retention.export_hours#5",
+      "key": "retention.export_hours",
+      "tab": "Conservation",
+      "type": "integer",
+      "technical": false,
+      "value": 721,
+      "expect": "rejected",
+      "why": "Au-dessus de la borne haute (721)"
+    },
+    {
+      "id": "retention.export_hours#6",
+      "key": "retention.export_hours",
+      "tab": "Conservation",
+      "type": "integer",
+      "technical": false,
+      "value": "douze",
+      "expect": "rejected",
+      "why": "Texte au lieu d’un entier"
+    },
+    {
+      "id": "documents.four_eyes#1",
+      "key": "documents.four_eyes",
+      "tab": "Diffusion",
+      "type": "boolean",
+      "technical": false,
+      "value": true,
+      "expect": "accepted",
+      "why": "Activé"
+    },
+    {
+      "id": "documents.four_eyes#2",
+      "key": "documents.four_eyes",
+      "tab": "Diffusion",
+      "type": "boolean",
+      "technical": false,
+      "value": false,
+      "expect": "accepted",
+      "why": "Désactivé"
+    },
+    {
+      "id": "documents.four_eyes#3",
+      "key": "documents.four_eyes",
+      "tab": "Diffusion",
+      "type": "boolean",
+      "technical": false,
+      "value": "peut-être",
+      "expect": "rejected",
+      "why": "Valeur non booléenne"
+    },
+    {
+      "id": "campaigns.urgent_from#1",
+      "key": "campaigns.urgent_from",
+      "tab": "Diffusion",
+      "type": "integer",
+      "technical": false,
+      "value": 60,
+      "expect": "accepted",
+      "why": "Borne basse (60)"
+    },
+    {
+      "id": "campaigns.urgent_from#2",
+      "key": "campaigns.urgent_from",
+      "tab": "Diffusion",
+      "type": "integer",
+      "technical": false,
+      "value": 99,
+      "expect": "accepted",
+      "why": "Borne haute (99)"
+    },
+    {
+      "id": "campaigns.urgent_from#3",
+      "key": "campaigns.urgent_from",
+      "tab": "Diffusion",
+      "type": "integer",
+      "technical": false,
+      "value": 80,
+      "expect": "accepted",
+      "why": "Valeur médiane"
+    },
+    {
+      "id": "campaigns.urgent_from#4",
+      "key": "campaigns.urgent_from",
+      "tab": "Diffusion",
+      "type": "integer",
+      "technical": false,
+      "value": 59,
+      "expect": "rejected",
+      "why": "Sous la borne basse (59)"
+    },
+    {
+      "id": "campaigns.urgent_from#5",
+      "key": "campaigns.urgent_from",
+      "tab": "Diffusion",
+      "type": "integer",
+      "technical": false,
+      "value": 100,
+      "expect": "rejected",
+      "why": "Au-dessus de la borne haute (100)"
+    },
+    {
+      "id": "campaigns.urgent_from#6",
+      "key": "campaigns.urgent_from",
+      "tab": "Diffusion",
+      "type": "integer",
+      "technical": false,
+      "value": "douze",
+      "expect": "rejected",
+      "why": "Texte au lieu d’un entier"
+    }
+  ],
+  "access": [
+    {
+      "id": "access#agent",
+      "login": "loic.bouanga",
+      "key": "display.default_slide_s",
+      "value": 30,
+      "expect": "forbidden",
+      "why": "Un agent ne modifie pas les paramètres"
+    },
+    {
+      "id": "access#unknown-key",
+      "login": null,
+      "key": "inconnu.parametre",
+      "value": 1,
+      "expect": "rejected",
+      "why": "Clé de paramètre inconnue"
+    },
+    {
+      "id": "access#no-reason",
+      "login": null,
+      "key": "display.default_slide_s",
+      "value": 30,
+      "reason": "",
+      "expect": "rejected",
+      "why": "Motif obligatoire"
+    }
+  ]
+}

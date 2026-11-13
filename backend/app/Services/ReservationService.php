@@ -139,6 +139,13 @@ class ReservationService
             if (! $approve && (! $reason || mb_strlen(trim($reason)) < 5)) {
                 throw new BusinessException('REASON_REQUIRED', 'Le motif du refus est obligatoire.', 422);
             }
+            // SAL-01 : une fermeture posée après la demande interdit sa confirmation (le refus reste possible).
+            if ($approve) {
+                $blocked = $occurrences->filter(fn (ReservationOccurrence $o): bool => RoomBlock::query()->where('room_id', $o->room_id)->where('starts_at', '<', $o->ends_at)->where('ends_at', '>', $o->starts_at)->exists());
+                if ($blocked->isNotEmpty()) {
+                    throw new BusinessException('ROOM_BLOCKED', 'La salle est fermée sur '.$blocked->count().' créneau(x) demandé(s) : refusez la demande ou proposez un autre créneau.', 409, ['conflicts' => $blocked->map(fn ($o) => $this->slotView(CarbonImmutable::instance($o->starts_at), CarbonImmutable::instance($o->ends_at)))->values()->all()]);
+                }
+            }
             foreach ($occurrences as $occurrence) {
                 $occurrence->forceFill(['status' => $approve ? 'confirmed' : 'refused', 'hold_until' => null, 'decided_by' => $user->id, 'decided_at' => now(), 'decision_reason' => $reason, 'version' => $occurrence->version + 1])->save();
                 if (! $approve) {
@@ -187,11 +194,14 @@ class ReservationService
             // SAL-07 : l'exemption de validation se juge sur la salle de destination (son gestionnaire), pas sur la salle d'origine.
             $managesTarget = $this->manages($room, $user);
             $needsApproval = $room->approval_mode === 'manual' && ! $managesTarget && ($room->id !== $occurrence->room_id || ! $start->equalTo($occurrence->starts_at) || ! $end->equalTo($occurrence->ends_at));
-            DB::transaction(function () use ($occurrence, $room, $start, $end, $changes, $reservation, $needsApproval, $user, $override): void {
+            $roomChanged = $room->id !== $occurrence->room_id;
+            // Une demande en attente déplacée vers une salle sans validation, ou par le gestionnaire de destination, est confirmée.
+            $nextStatus = $needsApproval ? 'pending' : ($occurrence->status === 'pending' && $roomChanged && ($room->approval_mode === 'auto' || $managesTarget) ? 'confirmed' : $occurrence->status);
+            DB::transaction(function () use ($occurrence, $room, $start, $end, $changes, $reservation, $needsApproval, $user, $override, $nextStatus, $roomChanged, $before): void {
                 $occurrence->forceFill([
                     'room_id' => $room->id, 'starts_at' => $start, 'ends_at' => $end,
                     'blocking_start' => $start->subMinutes($room->prep_minutes), 'blocking_end' => $end->addMinutes($room->cleanup_minutes),
-                    'status' => $needsApproval ? 'pending' : $occurrence->status, 'hold_until' => $needsApproval ? now()->addHours($room->pending_hold_hours) : $occurrence->hold_until,
+                    'status' => $nextStatus, 'hold_until' => $nextStatus === 'pending' ? ($needsApproval ? now()->addHours($room->pending_hold_hours) : $occurrence->hold_until) : null,
                     'version' => $occurrence->version + 1, 'capacity_override' => $override !== null, 'capacity_override_reason' => $override,
                 ])->save();
                 $occurrence->resourceBookings()->update(['blocking_start' => $occurrence->blocking_start, 'blocking_end' => $occurrence->blocking_end]);
@@ -200,8 +210,18 @@ class ReservationService
                 if (isset($changes['participant_count']) || isset($changes['subject'])) {
                     $reservation->forceFill(array_filter(['participant_count' => $changes['participant_count'] ?? null, 'subject' => $changes['subject'] ?? null]) + ['version' => $reservation->version + 1])->save();
                 }
+                $openApproval = Approval::query()->where('object_type', 'reservation')->where('object_id', $reservation->id)->where('status', 'open');
+                if ($nextStatus === 'confirmed' && $before['status'] === 'pending' && ! $reservation->occurrences()->where('status', 'pending')->exists()) {
+                    (clone $openApproval)->update(['status' => 'cancelled', 'reason' => 'Demande déplacée vers une salle sans validation', 'updated_at' => now()]);
+                }
+                // Demande toujours en attente déplacée vers une autre salle : la tâche suit le gestionnaire de la salle de destination.
+                if ($nextStatus === 'pending' && $roomChanged && (clone $openApproval)->exists()) {
+                    $manager = $room->manager;
+                    (clone $openApproval)->update(['assignee_id' => $manager?->id, 'backup_id' => $manager?->backup_user_id, 'escalated_at' => null, 'updated_at' => now()]);
+                    DB::afterCommit(fn () => $this->notifier->notify($manager, 'reservation.pending', 'Réservation à valider', $room->name.' · '.$this->localLabel($start), "/reservations/{$reservation->id}", 'reservation', $reservation->id, 'moved-'.$occurrence->id.'-'.$occurrence->version));
+                }
                 // La demande redevenue « en attente » est présentée au gestionnaire de la salle de destination (tâche, rappel, escalade).
-                if ($needsApproval && ! Approval::query()->where('object_type', 'reservation')->where('object_id', $reservation->id)->where('status', 'open')->exists()) {
+                if ($needsApproval && ! (clone $openApproval)->exists()) {
                     $manager = $room->manager;
                     Approval::query()->create([
                         'object_type' => 'reservation', 'object_id' => $reservation->id, 'title' => $reservation->confidential ? 'Réservation confidentielle' : $reservation->subject,
@@ -313,11 +333,18 @@ class ReservationService
             'all' => $query,
             default => $query->whereKey($occurrence->id),
         };
-        $count = DB::transaction(function () use ($query, $reason): int {
+        $servicesCancelled = 0;
+        $count = DB::transaction(function () use ($query, $reason, $reservation, &$servicesCancelled): int {
             $items = $query->lockForUpdate()->get();
             foreach ($items as $item) {
+                $servicesCancelled += $item->serviceRequests()->whereNotIn('status', ['ready', 'impossible', 'cancelled'])->count();
                 $item->forceFill(['status' => 'cancelled', 'cancel_reason' => $reason, 'version' => $item->version + 1])->save();
                 $this->release($item);
+            }
+            // HAB-04 : plus aucune occurrence en attente, la tâche de validation n'a plus d'objet (ni rappel ni escalade).
+            if ($items->isNotEmpty() && ! $reservation->occurrences()->where('status', 'pending')->exists()) {
+                Approval::query()->where('object_type', 'reservation')->where('object_id', $reservation->id)->where('status', 'open')
+                    ->update(['status' => 'cancelled', 'reason' => 'Réservation annulée'.($reason ? ' : '.$reason : ''), 'updated_at' => now()]);
             }
 
             return $items->count();
@@ -325,7 +352,16 @@ class ReservationService
         if ($count === 0) {
             throw new BusinessException('INVALID_TRANSITION', 'Aucune occurrence annulable.', 409);
         }
-        $this->notifier->notify($reservation->organizer, 'reservation.cancelled', 'Réservation annulée', $reservation->confidential ? 'Réservation confidentielle' : $reservation->subject, "/reservations/{$reservation->id}", 'reservation', $reservation->id, 'cancel-'.$occurrence->id.'-'.$scope);
+        $title = $reservation->confidential ? 'Réservation confidentielle' : $reservation->subject;
+        $this->notifier->notify($reservation->organizer, 'reservation.cancelled', 'Réservation annulée', $title, "/reservations/{$reservation->id}", 'reservation', $reservation->id, 'cancel-'.$occurrence->id.'-'.$scope);
+        // NOT-01 : le gestionnaire de la salle est prévenu d'une annulation faite par l'organisateur, les prestataires de leurs demandes annulées.
+        $manager = $occurrence->room->manager;
+        if ($manager && $manager->id !== $user->id) {
+            $this->notifier->notify($manager, 'reservation.cancelled', 'Réservation annulée par l’organisateur', $occurrence->room->name.' · '.$this->localLabel($occurrence->starts_at), "/reservations/{$reservation->id}", 'reservation', $reservation->id, 'cancel-manager-'.$occurrence->id.'-'.$scope);
+        }
+        if ($servicesCancelled > 0) {
+            $this->notifyServiceHolders($reservation, $reservation->occurrences()->pluck('id')->all(), 'service.cancelled', 'Prestation annulée');
+        }
         $this->audit->log('reservation.cancelled', $reservation, $reason, after: ['scope' => $scope, 'count' => $count]);
 
         return $count;
@@ -634,7 +670,17 @@ class ReservationService
      */
     private function notifyServiceManagers(Reservation $reservation, array $occurrences): void
     {
-        $types = ServiceRequest::query()->whereIn('occurrence_id', collect($occurrences)->pluck('id'))->with('serviceType')->get()->pluck('serviceType.code')->unique();
+        $this->notifyServiceHolders($reservation, collect($occurrences)->pluck('id')->all(), 'service.requested', 'Nouvelle demande de prestation');
+    }
+
+    /**
+     * Titulaires du pouvoir « prestations » concernés par les types de prestation demandés sur ces occurrences.
+     *
+     * @param  list<string>  $occurrenceIds
+     */
+    public function notifyServiceHolders(Reservation $reservation, array $occurrenceIds, string $event, string $title): void
+    {
+        $types = ServiceRequest::query()->whereIn('occurrence_id', $occurrenceIds)->with('serviceType')->get()->pluck('serviceType.code')->unique();
         if ($types->isEmpty()) {
             return;
         }
@@ -644,7 +690,7 @@ class ReservationService
 
                 return $scope === null || $types->intersect($scope['service_types'] ?? [])->isNotEmpty();
             });
-        $this->notifier->notify($holders, 'service.requested', 'Nouvelle demande de prestation', $reservation->reference, '/prestations', 'reservation', $reservation->id);
+        $this->notifier->notify($holders, $event, $title, $reservation->reference, '/prestations', 'reservation', $reservation->id);
     }
 
     /**

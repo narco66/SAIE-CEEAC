@@ -78,6 +78,9 @@ return Application::configure(basePath: dirname(__DIR__))
                 $e instanceof ThrottleRequestsException => $error($request, 'TOO_MANY_REQUESTS', 'Trop de tentatives. Réessayez plus tard.', 429),
                 $e instanceof QueryException && $e->getCode() === '23P01' => $error($request, 'BOOKING_CONFLICT', 'Le créneau demandé chevauche une réservation existante.', 409),
                 $e instanceof QueryException && $e->getCode() === '23505' => $error($request, 'DUPLICATE', 'Un objet portant ce code existe déjà.', 409),
+                // API-01 : une règle de cohérence de la base (contrainte CHECK) violée est une saisie invalide, jamais une erreur 500.
+                $e instanceof QueryException && $e->getCode() === '23514' => $error($request, 'CONSTRAINT_VIOLATION', 'Les valeurs saisies sont incohérentes entre elles.', 422),
+                $e instanceof QueryException && $e->getCode() === '23503' => $error($request, 'REFERENCE_IN_USE', 'Cet objet est encore référencé : il ne peut pas être supprimé ni modifié ainsi.', 409),
                 $e instanceof HttpExceptionInterface => $error($request, 'HTTP_'.$e->getStatusCode(), $e->getMessage() ?: 'Requête refusée.', $e->getStatusCode()),
                 default => config('app.debug') ? null : $error($request, 'SERVER_ERROR', 'Une erreur interne est survenue. Communiquez l’identifiant de diagnostic au support.', 500),
             };

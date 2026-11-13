@@ -41,24 +41,41 @@ class ImportController extends Controller
 
     public function simulate(Request $request): JsonResponse
     {
-        $this->authorizePermission('imports.run');
-        $data = $request->validate(['type' => ['required', 'string'], 'file' => ['required', 'file', 'mimes:csv,txt', 'max:5120']]);
+        $data = $this->validatedImport($request);
 
         return response()->json(['data' => $this->analyse($data['type'], $request->file('file'), false)]);
     }
 
     public function commit(Request $request): JsonResponse
     {
-        $this->authorizePermission('imports.run');
-        $data = $request->validate(['type' => ['required', 'string'], 'file' => ['required', 'file', 'mimes:csv,txt', 'max:5120']]);
-        $result = DB::transaction(fn () => $this->analyse($data['type'], $request->file('file'), true));
-        if ($result['summary']['invalid'] > 0) {
-            throw new BusinessException('IMPORT_INVALID', 'Le fichier contient des lignes invalides : corrigez-les avant confirmation.', 422, $result);
-        }
+        $data = $this->validatedImport($request);
+        // REF-03 : confirmation « tout ou rien » ; une seule ligne invalide annule toutes les écritures de la transaction.
+        $result = DB::transaction(function () use ($data, $request): array {
+            $result = $this->analyse($data['type'], $request->file('file'), true);
+            if ($result['summary']['invalid'] > 0) {
+                throw new BusinessException('IMPORT_INVALID', 'Le fichier contient des lignes invalides : corrigez-les avant confirmation. Aucune ligne n’a été enregistrée.', 422, $result);
+            }
+
+            return $result;
+        });
         ImportRun::query()->create(['type' => $data['type'], 'file_name' => $request->file('file')->getClientOriginalName(), 'match_key' => Referentials::definition($data['type'])['key'], 'status' => 'committed', 'summary' => $result['summary'], 'created_by' => $this->user()->id]);
         $this->audit()->log('import.committed', $data['type'], after: $result['summary']);
 
         return response()->json(['data' => $result]);
+    }
+
+    /**
+     * Un import écrit dans un référentiel : il exige le droit d'import et celui de gérer ce référentiel (salles : module Salles).
+     *
+     * @return array{type: string, file: UploadedFile}
+     */
+    private function validatedImport(Request $request): array
+    {
+        $this->authorizePermission('imports.run');
+        $data = $request->validate(['type' => ['required', 'string', 'in:'.implode(',', array_keys(Referentials::definitions()))], 'file' => ['required', 'file', 'mimes:csv,txt', 'max:5120']]);
+        $this->authorizePermission($data['type'] === 'rooms' ? 'rooms.manage' : 'referentials.manage');
+
+        return $data;
     }
 
     /**

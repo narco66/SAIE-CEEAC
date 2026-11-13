@@ -173,6 +173,7 @@ function useRoomPatch(room: Room) {
   const [error, setError] = useState<ApiError | null>(null)
   const [affected, setAffected] = useState<{ reference: string; starts_at: string; participants: number }[] | null>(null)
   const [pending, setPending] = useState<Record<string, unknown> | null>(null)
+  const [affectedCode, setAffectedCode] = useState<string | null>(null)
   const submit = async (body: Record<string, unknown>, confirm = false): Promise<boolean> => {
     setBusy(true)
     setError(null)
@@ -186,8 +187,9 @@ function useRoomPatch(room: Room) {
       return true
     } catch (e) {
       const err = e instanceof ApiError ? e : new ApiError(500, { message: String(e) })
-      if (err.code === 'CAPACITY_AFFECTS_BOOKINGS') {
+      if (err.code === 'CAPACITY_AFFECTS_BOOKINGS' || err.code === 'CHANGE_AFFECTS_BOOKINGS') {
         setAffected((err.details.affected as typeof affected) ?? [])
+        setAffectedCode(err.code)
         setPending(body)
       } else setError(err)
       return false
@@ -195,7 +197,7 @@ function useRoomPatch(room: Room) {
       setBusy(false)
     }
   }
-  return { submit, busy, error, affected, pending, cancelAffected: () => { setAffected(null); setPending(null) } }
+  return { submit, busy, error, affected, affectedCode, pending, cancelAffected: () => { setAffected(null); setPending(null) } }
 }
 
 function EquipmentTab({ room }: { room: Room }) {
@@ -237,6 +239,7 @@ function EquipmentTab({ room }: { room: Room }) {
 interface RulesForm {
   name: string; location_text: string; location_id: string; capacity: string; open_from: string; open_to: string; prep_minutes: string; cleanup_minutes: string
   min_minutes: string; max_minutes: string; lead_days: string; approval_mode: 'auto' | 'manual'; pending_hold_hours: string; auto_release_enabled: boolean; status: string
+  manager_id: string
 }
 
 function Rules({ room }: { room: Room }) {
@@ -247,6 +250,7 @@ function Rules({ room }: { room: Room }) {
     name: room.name, location_text: room.location_text ?? '', location_id: room.location_id ?? '', capacity: String(room.capacity), open_from: room.open_from, open_to: room.open_to,
     prep_minutes: String(room.prep_minutes), cleanup_minutes: String(room.cleanup_minutes), min_minutes: String(room.min_minutes), max_minutes: String(room.max_minutes),
     lead_days: String(room.lead_days), approval_mode: room.approval_mode, pending_hold_hours: String(room.pending_hold_hours), auto_release_enabled: room.auto_release_enabled, status: room.status,
+    manager_id: room.manager?.id ?? '',
   }
   const [f, setF] = useState<RulesForm>(initial)
   const upd = <K extends keyof RulesForm>(k: K, v: RulesForm[K]) => setF((x) => ({ ...x, [k]: v }))
@@ -255,6 +259,7 @@ function Rules({ room }: { room: Room }) {
     name: f.name, location_text: f.location_text || null, location_id: f.location_id || null, capacity: Number(f.capacity), open_from: f.open_from, open_to: f.open_to,
     prep_minutes: Number(f.prep_minutes), cleanup_minutes: Number(f.cleanup_minutes), min_minutes: Number(f.min_minutes), max_minutes: Number(f.max_minutes),
     lead_days: Number(f.lead_days), approval_mode: f.approval_mode, pending_hold_hours: Number(f.pending_hold_hours), auto_release_enabled: f.auto_release_enabled, status: f.status,
+    manager_id: f.manager_id || null,
   })
   const save = async (confirm = false) => {
     if (await patch.submit(confirm && patch.pending ? patch.pending : body(), confirm)) setEditing(false)
@@ -305,6 +310,13 @@ function Rules({ room }: { room: Room }) {
           <Field label="Mode de validation" error={err('approval_mode')}>
             <select value={f.approval_mode} onChange={(e) => upd('approval_mode', e.target.value as 'auto' | 'manual')}><option value="auto">Confirmation automatique</option><option value="manual">Validation par le gestionnaire</option></select>
           </Field>
+          <Field label="Gestionnaire" required={f.approval_mode === 'manual'} error={err('manager_id')} help="Reçoit et valide les demandes de réservation">
+            <select value={f.manager_id} onChange={(e) => upd('manager_id', e.target.value)}>
+              <option value="">— Aucun —</option>
+              {room.manager && !(refs.data?.users ?? []).some((u) => u.id === room.manager?.id) && <option value={room.manager.id}>{room.manager.name}</option>}
+              {(refs.data?.users ?? []).map((u) => <option key={u.id} value={u.id}>{u.name}</option>)}
+            </select>
+          </Field>
           <label className="check-label"><input type="checkbox" checked={f.auto_release_enabled} onChange={(e) => upd('auto_release_enabled', e.target.checked)} /> Libération automatique</label>
         </div>
         {patch.error && <div style={{ marginTop: 12 }}><Notice tone="danger">{patch.error.message}</Notice></div>}
@@ -314,9 +326,11 @@ function Rules({ room }: { room: Room }) {
         </div>
       </div>
       {patch.affected && (
-        <ConfirmDialog title="Réduction de capacité" object={`Nouvelle capacité : ${f.capacity} personnes`} danger
-          consequence="Les réservations futures ci-dessous dépassent la nouvelle capacité. Elles sont conservées : prévenez leurs organisateurs, qui pourront les déplacer ou les annuler depuis leur fiche."
-          confirmLabel="Confirmer la réduction" onClose={patch.cancelAffected} onConfirm={async () => { await save(true) }}>
+        <ConfirmDialog title={patch.affectedCode === 'CHANGE_AFFECTS_BOOKINGS' ? 'Réservations futures touchées' : 'Réduction de capacité'} object={patch.affectedCode === 'CHANGE_AFFECTS_BOOKINGS' ? room.name : `Nouvelle capacité : ${f.capacity} personnes`} danger
+          consequence={patch.affectedCode === 'CHANGE_AFFECTS_BOOKINGS'
+            ? 'La mise hors service, la réduction des horaires ou l’allongement des temps de préparation touche les réservations futures ci-dessous. Elles sont conservées et leurs organisateurs sont prévenus : ils pourront les déplacer ou les annuler.'
+            : 'Les réservations futures ci-dessous dépassent la nouvelle capacité. Elles sont conservées : prévenez leurs organisateurs, qui pourront les déplacer ou les annuler depuis leur fiche.'}
+          confirmLabel="Confirmer la modification" onClose={patch.cancelAffected} onConfirm={async () => { await save(true) }}>
           <table style={{ marginTop: 12 }}>
             <thead><tr><th>Réservation</th><th>Début</th><th>Participants</th></tr></thead>
             <tbody>{patch.affected.map((a) => <tr key={a.reference + a.starts_at}><td className="mono">{a.reference}</td><td>{fmtDateTime(a.starts_at)}</td><td>{a.participants}</td></tr>)}</tbody>
@@ -397,9 +411,10 @@ function Closures({ room }: { room: Room }) {
       )}
       {removing && (
         <ConfirmDialog title="Supprimer la fermeture" object={`${fmtDateTime(removing.starts_at)} → ${fmtDateTime(removing.ends_at)}`} danger
-          consequence="La salle redeviendra réservable sur cette période." confirmLabel="Supprimer la fermeture" onClose={() => setRemoving(null)}
-          onConfirm={async () => {
-            await api.delete(`/room-blocks/${removing.id}`)
+          consequence="La salle redeviendra réservable sur cette période. Le retrait et son motif sont inscrits au journal." confirmLabel="Supprimer la fermeture" onClose={() => setRemoving(null)}
+          reasonLabel="Motif du retrait" reasonRequired
+          onConfirm={async (reason) => {
+            await api.delete(`/room-blocks/${removing.id}`, { reason })
             toast.success('Fermeture supprimée')
             client.invalidateQueries({ queryKey: ['room', room.id] })
             client.invalidateQueries({ queryKey: ['rooms-calendar'] })

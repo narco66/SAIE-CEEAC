@@ -460,7 +460,10 @@ class ManifestBuilder
      */
     private function fallbackFor(string $zoneId, array &$assets): array
     {
-        $fallback = FallbackContent::query()->with('contentVersion')->where('zone_id', $zoneId)->where('is_active', true)->where('valid_until', '>', now())->orderByDesc('created_at')->first();
+        $fallback = FallbackContent::query()->with('contentVersion')->where('zone_id', $zoneId)->where('is_active', true)->where('valid_until', '>', now())
+            // PUB-01 : l'archivage, l'expiration ou la suspension du contenu le retirent aussi du repli.
+            ->whereHas('contentVersion.content', fn ($q) => $q->whereNotIn('status', ['archived', 'expired', 'suspended']))
+            ->orderByDesc('created_at')->first();
         if (! $fallback || $fallback->contentVersion->classification !== 'public') {
             return ['content_version' => null, 'valid_until' => null, 'slide' => null];
         }
